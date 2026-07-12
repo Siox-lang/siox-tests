@@ -1,0 +1,52 @@
+module examples::match_pattern_test;
+
+using std::logic::{Clock, Logic};
+using std::bits::uint;
+
+// `match` over bit patterns (spec 3.22): `?` digits are don't-cares, `_` is a
+// separator, and a hex `?` masks its whole nibble. Each arm lowers to
+// `(scrutinee & mask) == value` with first-match priority — the natural shape
+// of an instruction decoder.
+entity Decode { in op: uint[8]; out cls: uint[2]; }
+impl Decode {
+    match op {
+        b"00??_????" => { cls = 0; }   // top quarter of the space
+        x"A?"        => { cls = 1; }   // any 0xA0..0xAF
+        b"1?1?_0000" => { cls = 2; }
+        _            => { cls = 3; }
+    }
+}
+
+// The same patterns clock through a register (the sequential match path).
+entity DecodeReg { in clk: Clock; in op: uint[8]; out cls: uint[2]; }
+impl DecodeReg {
+    let r: uint[2] = 0;
+    if clk::rising {
+        match op {
+            x"A?" => { r = 1; }
+            _     => { r = 3; }
+        }
+    }
+    cls = r;
+}
+
+#[test]
+entity MatchPatternTest {}
+
+impl MatchPatternTest {
+    let op: uint[8]; let cls: uint[2];
+    let d = Decode { .op, .cls };
+
+    op = 0x15; await 1ns; assert!(cls == 0, "b\"00??_????\"");
+    op = 0xA7; await 1ns; assert!(cls == 1, "x\"A?\"");
+    op = 0xB0; await 1ns; assert!(cls == 2, "b\"1?1?_0000\"");
+    op = 0x55; await 1ns; assert!(cls == 3, "fallthrough");
+
+    let clk: Logic = '0'; let rcls: uint[2];
+    let r = DecodeReg { .clk, .op = op, .cls = rcls };
+    clk = not clk after 5ns;
+    op = 0xAF; await clk::rising; await 1ns;
+    assert!(rcls == 1, "sequential match on x\"A?\"");
+
+    print!("match patterns ok");
+}
