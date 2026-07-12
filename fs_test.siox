@@ -8,7 +8,7 @@ using std::text::{unicode};
 // binary carries its ROM even if the file disappears.
 entity Rom { in addr: uint[2]; out data: uint[8]; }
 impl Rom {
-    let mem: uint[8][4] = read("examples/rom.bin");
+    let mem: uint[8][4] = read("rom.bin");
     data = mem[0];
 }
 
@@ -19,12 +19,12 @@ impl FsTest {
     let d = Rom { .addr, .data };
 
     // Runtime read in the testbench (runner-side).
-    let s: string = read_to_string("examples/banner.txt");
+    let s: string = read_to_string("banner.txt");
 
     await 1ns;
     assert!(data == 17, "rom.bin[0] = 0x11, baked at compile time");
     assert!(unicode(s[0]) == 72, "banner 'H'");
     assert!(unicode(s[1]) == 105, "banner 'i'");
-    assert!(exists("examples/rom.bin") == true, "exists");
-    assert!(exists("examples/nope.bin") == false, "not exists");
+    assert!(exists("rom.bin") == true, "exists");
+    assert!(exists("nope.bin") == false, "not exists");
 }
