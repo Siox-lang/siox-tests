@@ -1,0 +1,34 @@
+module examples::const_test;
+
+using std::logic::{Bit, Logic, LOW, HIGH};
+
+// Module-level `const`s (std's LOW/HIGH, user consts) resolve to their values
+// in testbench expressions on every engine — not just the ones that happen to
+// be zero.
+const WIDTH: integer = 8;
+const MASK: integer = 255;
+
+entity Buf { in a: Bit; out y: Bit; }
+impl Buf { y = a; }
+
+#[test]
+entity ConstTest {}
+
+impl ConstTest {
+    let a: Bit; let y: Bit;
+    let d = Buf { .a, .y };
+
+    a = HIGH;
+    await 1ns;
+    assert!(y == HIGH, "HIGH is '1', not 0");
+    assert!(y == '1', "and equals the literal");
+
+    a = LOW;
+    await 1ns;
+    assert!(y == LOW, "LOW is '0'");
+
+    assert!(WIDTH == 8, "user integer const");
+    assert!(MASK == 255, "user integer const");
+
+    print!("consts ok");
+}
