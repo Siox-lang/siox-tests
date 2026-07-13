@@ -1,0 +1,35 @@
+module examples::chain_test;
+
+using std::bits::uint;
+
+// DUT-to-DUT chaining through a plain testbench local: a name bound to one
+// DUT's `out` and another's `in` becomes a real feedback driver in the
+// lowered design, so values propagate on every settle — no hardware wrapper
+// needed.
+entity Inc { in x: uint[8]; out y: uint[8]; }
+impl Inc { y = x + 1; }
+
+entity Dbl { in x: uint[8]; out y: uint[8]; }
+impl Dbl { y = x + x; }
+
+#[test]
+entity ChainTest {}
+
+impl ChainTest {
+    let a: uint[8];
+    let mid: uint[8];
+    let res: uint[8];
+    let i = Inc { .x = a, .y = mid };
+    let d = Dbl { .x = mid, .y = res };
+
+    a = 5;
+    await 1ns;
+    assert!(mid == 6, "first stage output reaches the local");
+    assert!(res == 12, "second stage sees it: (5+1)*2");
+
+    a = 20;
+    await 1ns;
+    assert!(res == 42, "re-propagates on change: (20+1)*2");
+
+    print!("chain ok");
+}
