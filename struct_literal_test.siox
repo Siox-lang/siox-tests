@@ -1,0 +1,28 @@
+module examples::struct_literal_test;
+
+using std::bits::uint;
+
+// A struct-literal assignment (`p = { .x = 10, .y = 20 }`) writes each field of
+// a connected struct port — on the interpreter, JIT, and native binary alike.
+struct Pt { x: uint[8], y: uint[8] }
+
+entity Sum { in p: Pt; out s: uint[8]; }
+impl Sum { s = p.x + p.y; }
+
+#[test]
+entity StructLiteralTest {}
+
+impl StructLiteralTest {
+    let p: Pt; let s: uint[8];
+    let d = Sum { .p, .s };
+
+    p = { .x = 10, .y = 20 };
+    await 1ns;
+    assert!(s == 30, "10 + 20");
+
+    p = { .x = 100, .y = 5 };
+    await 1ns;
+    assert!(s == 105, "reassignment propagates");
+
+    print!("struct literal ok");
+}
