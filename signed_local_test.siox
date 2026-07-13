@@ -1,0 +1,34 @@
+module examples::signed_local_test;
+
+using std::bits::int;
+
+// Signed operator semantics on TESTBENCH LOCALS: the runner (and the native
+// harness) dispatch binary operators on family-typed names through the
+// family's std operator impls — int's Div truncates toward zero and Ord
+// compares two's-complement — exactly like the same expressions in hardware.
+#[test]
+entity SignedLocalTest {}
+
+impl SignedLocalTest {
+    let a: int[8] = 0 - 7;
+    let b: int[8] = 2;
+
+    let q: int[8];
+    q = a / b;
+    assert!(q == 0 - 3, "-7 / 2 truncates toward zero (-3)");
+
+    let lt: Bool;
+    lt = a < b;
+    assert!(lt == true, "-7 < 2 under signed compare");
+
+    let gt: Bool;
+    gt = b > a;
+    assert!(gt == true, "2 > -7 under signed compare");
+
+    // Arithmetic shift right (int's Shr) keeps the sign.
+    let sh: int[8];
+    sh = a >> 1;
+    assert!(sh == 0 - 4, "-7 >> 1 arithmetic = -4");
+
+    print!("signed locals ok");
+}
