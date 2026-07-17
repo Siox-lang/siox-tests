@@ -1,0 +1,55 @@
+module examples::stream_bus_test;
+
+// Bus modes (spec 3.19): a ready/valid `Stream` interface as a directional
+// view over a struct. The Source drives valid/data and reads ready; the Sink
+// mirrors it. Connecting two instances to one `Stream` net wires each leaf in
+// its own direction.
+
+using std::logic::{Bit};
+using std::bits::uint;
+
+struct Stream { valid: Bit, ready: Bit, data: uint[8], }
+
+impl out Stream::Source { out valid; out data; in ready; }
+impl in Stream::Sink { in valid; in data; out ready; }
+
+entity Producer { bus: out Stream::Source; in d: uint[8]; in go: Bit; out canpush: Bit; }
+impl Producer {
+    bus.valid = go;
+    bus.data = d;
+    canpush = bus.ready;     // ready flows back from the Sink
+}
+
+entity Consumer { bus: in Stream::Sink; in accept: Bit; out got: uint[8]; out seen: Bit; }
+impl Consumer {
+    bus.ready = accept;      // ready flows toward the Source
+    got = bus.data;
+    seen = bus.valid;
+}
+
+#[top]
+entity Link { in d: uint[8]; in go: Bit; in accept: Bit;
+              out got: uint[8]; out seen: Bit; out canpush: Bit; }
+impl Link {
+    let s: Stream;
+    let p = Producer { .bus = s, .d, .go, .canpush };
+    let c = Consumer { .bus = s, .accept, .got, .seen };
+}
+
+#[test]
+entity StreamBusTest {}
+impl StreamBusTest {
+    let d: uint[8]; let go: Bit; let accept: Bit;
+    let got: uint[8]; let seen: Bit; let canpush: Bit;
+    let dut = Link { .d, .go, .accept, .got, .seen, .canpush };
+
+    d = 0xAB; go = '1'; accept = '1';
+    await 1ns;
+    assert!(got == 0xAB, "data flows Source -> Sink");
+    assert!(seen == '1', "valid flows Source -> Sink");
+    assert!(canpush == '1', "ready flows Sink -> Source");
+
+    accept = '0';
+    await 1ns;
+    assert!(canpush == '0', "ready deasserts back at the Source");
+}
