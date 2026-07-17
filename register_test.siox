@@ -5,7 +5,7 @@ using std::bits::uint;
 
 // A parameterized register: `q` captures `d` on the rising clock edge.
 entity Register<W: integer> {
-    in clk: Logic;
+    in clk: Bit;
     in d: uint[W];
     out q: uint[W];
 }
@@ -24,7 +24,7 @@ impl Register<W: integer> {
 entity RegisterTest {}
 
 impl RegisterTest {
-    let clk: Logic = '0';
+    let clk: Bit = '0';
     let d: uint[8] = 0;
     let q: uint[8];
 

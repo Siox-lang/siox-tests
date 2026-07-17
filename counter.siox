@@ -6,7 +6,7 @@ using std::bits::uint;
 // A parameterized up-counter with synchronous reset and enable.
 #[top]
 entity Counter<W: integer> {
-    in clk: Logic;
+    in clk: Bit;
     in rst: Logic;
     in en: Bit;
     out count: uint[W];

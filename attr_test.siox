@@ -3,14 +3,14 @@ module examples::attr_test;
 // A vendor-style attribute, valid only on Pll (spec 3.5, type-targeted).
 pub attr external_clock: Bool for Pll;
 
-entity Pll { in clk: Logic; out locked: Bool; }
+entity Pll { in clk: Bit; out locked: Bool; }
 impl Pll { locked = true; }
 
-entity Ram { in clk: Logic; out ok: Bool; }
+entity Ram { in clk: Bit; out ok: Bool; }
 impl Ram { ok = true; }
 
 #[top]
-entity Top { in clk: Logic; out l: Bool; out o: Bool; }
+entity Top { in clk: Bit; out l: Bool; out o: Bool; }
 impl Top {
     #[external_clock = true]
     let p = Pll { .clk = clk, .locked = l };

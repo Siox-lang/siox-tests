@@ -1,7 +1,7 @@
 module examples::multiclock_test;
 using std::logic::{Logic};
 using std::bits::uint;
-entity Dual { in cf: Logic; in cs: Logic; out a: uint[8]; out b: uint[8]; }
+entity Dual { in cf: Bit; in cs: Bit; out a: uint[8]; out b: uint[8]; }
 impl Dual {
     let va: uint[8] = 0; let vb: uint[8] = 0;
     if cf::rising { va = va + 1; }
@@ -11,7 +11,7 @@ impl Dual {
 #[test]
 entity M {}
 impl M {
-    let cf: Logic = '0'; let cs: Logic = '0';
+    let cf: Bit = '0'; let cs: Bit = '0';
     let a: uint[8]; let b: uint[8];
     let d = Dual { .cf, .cs, .a, .b };
     cf = not cf after 2ns;

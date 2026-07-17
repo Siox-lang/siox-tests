@@ -5,7 +5,7 @@ using std::bits::uint;
 
 // The device under test: a parameterized counter.
 entity Counter<W: integer> {
-    in clk: Logic;
+    in clk: Bit;
     in rst: Logic;
     in en: Bit;
     out count: uint[W];
@@ -30,7 +30,7 @@ impl Counter<W: integer> {
 entity Harness {}
 
 impl Harness {
-    let clk: Logic = '0';
+    let clk: Bit = '0';
     let rst: Logic = '1';
     let en: Bit = '1';
     let count: uint[8];

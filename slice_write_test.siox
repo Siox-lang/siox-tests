@@ -2,7 +2,7 @@ module examples::slice_write_test;
 using std::bits::uint;
 // Register bit-field update + two-field combinational pack.
 entity E {
-    in clk: Logic;
+    in clk: Bit;
     in lo_in: uint[4];
     in hi_in: uint[4];
     in we_lo: Bit;
@@ -25,7 +25,7 @@ impl E {
 }
 #[test] entity T {}
 impl T {
-    let clk: Logic = '0'; let lo_in: uint[4] = 0; let hi_in: uint[4] = 0; let we_lo: Bit = '0';
+    let clk: Bit = '0'; let lo_in: uint[4] = 0; let hi_in: uint[4] = 0; let we_lo: Bit = '0';
     let reg: uint[8]; let packed: uint[8];
     let d = E { .clk, .lo_in, .hi_in, .we_lo, .reg, .packed };
     clk = not clk after 5ns;

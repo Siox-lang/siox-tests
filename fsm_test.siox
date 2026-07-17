@@ -11,7 +11,7 @@ enum State: uint[2] {
 
 // A 3-state FSM: Idle --(start)--> Run --> Done --> Idle.
 entity Fsm {
-    in clk: Logic;
+    in clk: Bit;
     in start: Bit;
     out st: State;
 }
@@ -42,7 +42,7 @@ impl Fsm {
 entity FsmTest {}
 
 impl FsmTest {
-    let clk: Logic = '0';
+    let clk: Bit = '0';
     let start: Bit = '0';
     let st: State;
 

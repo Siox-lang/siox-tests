@@ -9,7 +9,7 @@ using std::bits::{uint};
 
 #[top]
 entity Counter8 {
-    in clk: Logic;
+    in clk: Bit;
     in rst: Logic;
     out count: uint[8];
 }

@@ -18,7 +18,7 @@ impl Decode {
 }
 
 // The same patterns clock through a register (the sequential match path).
-entity DecodeReg { in clk: Logic; in op: uint[8]; out cls: uint[2]; }
+entity DecodeReg { in clk: Bit; in op: uint[8]; out cls: uint[2]; }
 impl DecodeReg {
     let r: uint[2] = 0;
     if clk::rising {
@@ -42,7 +42,7 @@ impl MatchPatternTest {
     op = 0xB0; await 1ns; assert!(cls == 2, "b\"1?1?_0000\"");
     op = 0x55; await 1ns; assert!(cls == 3, "fallthrough");
 
-    let clk: Logic = '0'; let rcls: uint[2];
+    let clk: Bit = '0'; let rcls: uint[2];
     let r = DecodeReg { .clk, .op = op, .cls = rcls };
     clk = not clk after 5ns;
     op = 0xAF; await clk::rising; await 1ns;

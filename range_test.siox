@@ -3,7 +3,7 @@ module examples::range_test;
 // A ranged numeric (spec 3.26) is a dynamic range assert: every settled
 // value must lie in 1..10 — leaving it fails the simulation (unlike a
 // wrapping uint). Initial values are real: v starts at 1, not 0.
-entity Bounded { in clk: Logic; out n: integer<1..10>; }
+entity Bounded { in clk: Bit; out n: integer<1..10>; }
 impl Bounded {
     let v: integer<1..10> = 1;
     if clk::rising { v = v + 1; }
@@ -13,7 +13,7 @@ impl Bounded {
 #[test]
 entity RangeTest {}
 impl RangeTest {
-    let clk: Logic = '0';
+    let clk: Bit = '0';
     let n: integer<1..10>;
     let d = Bounded { .clk, .n };
     clk = not clk after 5ns;
