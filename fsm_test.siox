@@ -1,6 +1,6 @@
 module examples::fsm_test;
 
-using std::logic::{Bit, Logic, Clock};
+using std::logic::{Bit, Logic};
 using std::bits::uint;
 
 enum State: uint[2] {
@@ -11,7 +11,7 @@ enum State: uint[2] {
 
 // A 3-state FSM: Idle --(start)--> Run --> Done --> Idle.
 entity Fsm {
-    in clk: Clock;
+    in clk: Logic;
     in start: Bit;
     out st: State;
 }

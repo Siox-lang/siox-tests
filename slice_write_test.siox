@@ -2,7 +2,7 @@ module examples::slice_write_test;
 using std::bits::uint;
 // Register bit-field update + two-field combinational pack.
 entity E {
-    in clk: Clock;
+    in clk: Logic;
     in lo_in: uint[4];
     in hi_in: uint[4];
     in we_lo: Bit;

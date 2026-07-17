@@ -6,7 +6,7 @@ using std::bits::uint;
 // full, `pop` dequeues when not empty; head/tail pointers wrap and `count`
 // tracks occupancy. Exercises dynamic array read AND write.
 entity Fifo {
-    in clk: Clock;
+    in clk: Logic;
     in push: Bit;
     in pop: Bit;
     in din: uint[8];

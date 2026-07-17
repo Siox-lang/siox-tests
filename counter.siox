@@ -1,12 +1,12 @@
 module examples::counter;
 
-using std::logic::{Bit, Logic, Clock};
+using std::logic::{Bit, Logic};
 using std::bits::uint;
 
 // A parameterized up-counter with synchronous reset and enable.
 #[top]
 entity Counter<W: integer> {
-    in clk: Clock;
+    in clk: Logic;
     in rst: Logic;
     in en: Bit;
     out count: uint[W];

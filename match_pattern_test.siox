@@ -1,6 +1,6 @@
 module examples::match_pattern_test;
 
-using std::logic::{Clock, Logic};
+using std::logic::{Logic};
 using std::bits::uint;
 
 // `match` over bit patterns (spec 3.22): `?` digits are don't-cares, `_` is a
@@ -18,7 +18,7 @@ impl Decode {
 }
 
 // The same patterns clock through a register (the sequential match path).
-entity DecodeReg { in clk: Clock; in op: uint[8]; out cls: uint[2]; }
+entity DecodeReg { in clk: Logic; in op: uint[8]; out cls: uint[2]; }
 impl DecodeReg {
     let r: uint[2] = 0;
     if clk::rising {

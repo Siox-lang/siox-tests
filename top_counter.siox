@@ -4,12 +4,12 @@ module examples::top_counter;
 // `sioxc build` compiles this (rooted at the #[top]) to a native object —
 // no testbench involved.
 
-using std::logic::{Clock, Logic};
+using std::logic::{Logic};
 using std::bits::{uint};
 
 #[top]
 entity Counter8 {
-    in clk: Clock;
+    in clk: Logic;
     in rst: Logic;
     out count: uint[8];
 }

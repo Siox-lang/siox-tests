@@ -1,7 +1,7 @@
 module examples::regfile_test;
 using std::bits::uint;
 entity RF {
-    in clk: Clock;
+    in clk: Logic;
     in we: Bit;
     in waddr: uint[2];
     in wdata: uint[8];

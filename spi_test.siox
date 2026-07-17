@@ -6,7 +6,7 @@ using std::bits::uint;
 // one bit per clock while sampling `miso` into a receive register. Eight bits,
 // then the byte sits in `rx`. Serial wires are uint[1].
 entity SpiMaster {
-    in clk: Clock;
+    in clk: Logic;
     in start: Bit;
     in tx: uint[8];
     in miso: uint[1];
@@ -45,7 +45,7 @@ impl SpiMaster {
 // Loopback harness: miso <- mosi wired in hardware (a testbench local can't
 // carry a DUT output back into a DUT input, but instance wiring can).
 entity SpiLoopback {
-    in clk: Clock;
+    in clk: Logic;
     in start: Bit;
     in tx: uint[8];
     out rx: uint[8];

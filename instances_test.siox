@@ -4,10 +4,10 @@ module examples::instances_test;
 // Each DUT lowers per-instance under the testbench path (MI.cf.*, MI.cs.*),
 // so their state is independent — the classic shared-DUT collision test.
 
-using std::logic::{Logic, Clock};
+using std::logic::{Logic};
 using std::bits::uint;
 
-entity Ctr { in clk: Clock; out n: uint[8]; }
+entity Ctr { in clk: Logic; out n: uint[8]; }
 impl Ctr { let v: uint[8] = 0; if clk::rising { v = v + 1; } n = v; }
 
 #[test]
