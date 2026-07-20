@@ -1,0 +1,31 @@
+module examples::char_read_test;
+
+using std::text::{string, unicode};
+using std::attrs::{test};
+
+// A string is a `Char` array; each element reads as its Unicode code point.
+// Exercised on all three engines, including the native binary.
+entity Echo {
+    in s: string[3];
+    out o: string[3];
+}
+
+impl Echo {
+    o = s;
+}
+
+#[test]
+entity CharReadTest {}
+
+impl CharReadTest {
+    let s: string = "Hi!";
+    let o: string[3];
+
+    let dut: Echo = { .s, .o };
+
+    await 1ns;
+    assert!(unicode(o[0]) == 72, "'H' is code point 72");
+    assert!(unicode(o[1]) == 105, "'i' is code point 105");
+    assert!(o[2] == '!', "a char element compares to a char literal");
+    assert!(o == "Hi!", "and the whole string matches");
+}
