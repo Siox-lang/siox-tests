@@ -2,7 +2,7 @@ module examples::instance_array_test;
 
 using std::bits::uint;
 
-// An array of instances: `let stage: Inc[N]` declares N instances, built
+// An array of instances: `inst stage: Inc[N]` declares N instances, built
 // element-wise in a generate loop and wired head-to-tail. Unlike a plain
 // generate loop, the array is named and indexable — an element's port can be
 // read from outside the loop (`stage[i].y`), and an output left unconnected at
@@ -14,7 +14,7 @@ entity Pipeline { in a: uint[8]; out b: uint[8]; out probe: uint[8]; }
 impl Pipeline {
     let w: uint[8][4];
     w[0] = a;
-    let stage: Inc[3];
+    inst stage: Inc[3];
     for i in 0..2 {
         stage[i] = Inc { .x = w[i], .y = w[i+1] };
     }
@@ -27,7 +27,7 @@ entity InstanceArrayTest {}
 
 impl InstanceArrayTest {
     let a: uint[8] = 10; let b: uint[8]; let probe: uint[8];
-    let d: Pipeline = { .a, .b, .probe };
+    inst d: Pipeline = { .a, .b, .probe };
     await 1ns;
     assert!(b == 13, "10 through 3 incrementers = 13");
     assert!(probe == 12, "stage[1] output = 12");

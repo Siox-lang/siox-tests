@@ -15,8 +15,8 @@ entity MI {}
 impl MI {
     let fast: Logic = '0'; let slow: Logic = '0';
     let nf: uint[8]; let ns: uint[8];
-    let cf: Ctr = { .clk = fast, .n = nf };
-    let cs: Ctr = { .clk = slow, .n = ns };
+    inst cf: Ctr = { .clk = fast, .n = nf };
+    inst cs: Ctr = { .clk = slow, .n = ns };
     fast = not fast after 2ns;
     slow = not slow after 5ns;
     await 40ns;

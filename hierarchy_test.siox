@@ -12,8 +12,8 @@ impl Add1 { y = a + 1; }
 entity Add2 { in a: uint[8]; out y: uint[8]; }
 impl Add2 {
     let mid: uint[8];
-    let s1: Add1 = { .a = a, .y = mid };
-    let s2: Add1 = { .a = mid, .y = y };
+    inst s1: Add1 = { .a = a, .y = mid };
+    inst s2: Add1 = { .a = mid, .y = y };
 }
 
 #[test]
@@ -21,7 +21,7 @@ entity HierTest {}
 impl HierTest {
     let a: uint[8] = 10;
     let y: uint[8];
-    let dut: Add2 = { .a, .y };
+    inst dut: Add2 = { .a, .y };
     await 1ns;
     assert!(y == 12, "10 + 2 == 12 through two nested Add1 instances");
 }

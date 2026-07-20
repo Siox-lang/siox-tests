@@ -19,8 +19,8 @@ impl ChainTest {
     let a: uint[8];
     let mid: uint[8];
     let res: uint[8];
-    let i: Inc = { .x = a, .y = mid };
-    let d: Dbl = { .x = mid, .y = res };
+    inst i: Inc = { .x = a, .y = mid };
+    inst d: Dbl = { .x = mid, .y = res };
 
     a = 5;
     await 1ns;

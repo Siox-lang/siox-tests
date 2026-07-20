@@ -32,7 +32,7 @@ impl MuxTest {
     let y: Bit;
     let z: Bit;
 
-    let dut: Mux = {
+    inst dut: Mux = {
         .sel,
         .a,
         .b,

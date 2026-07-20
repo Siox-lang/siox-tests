@@ -28,7 +28,7 @@ impl DecodeTest {
     let insn: uint[32] = 0;
     let opcode: uint[7]; let rd: uint[5]; let funct3: uint[3];
     let rs1: uint[5]; let rs2: uint[5]; let funct7: uint[7];
-    let d: Decoder = { .insn, .opcode, .rd, .funct3, .rs1, .rs2, .funct7 };
+    inst d: Decoder = { .insn, .opcode, .rd, .funct3, .rs1, .rs2, .funct7 };
 
     // addi x5, x0, 1  =  0x00100293
     insn = 1049235;

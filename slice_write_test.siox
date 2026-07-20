@@ -27,7 +27,7 @@ impl E {
 impl T {
     let clk: Bit = '0'; let lo_in: uint[4] = 0; let hi_in: uint[4] = 0; let we_lo: Bit = '0';
     let reg: uint[8]; let packed: uint[8];
-    let d: E = { .clk, .lo_in, .hi_in, .we_lo, .reg, .packed };
+    inst d: E = { .clk, .lo_in, .hi_in, .we_lo, .reg, .packed };
     clk = not clk after 5ns;
 
     hi_in = 10; lo_in = 5; await 1ns;

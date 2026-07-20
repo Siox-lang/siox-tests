@@ -15,7 +15,7 @@ impl Chain {
     let wires: uint[8][4];
     wires[0] = a;
     for i in 0..2 {
-        let inc: Inc = { .x = wires[i], .y = wires[i+1] };
+        inst inc: Inc = { .x = wires[i], .y = wires[i+1] };
     }
     b = wires[3];
 }
@@ -24,7 +24,7 @@ impl Chain {
 impl T {
     let a: uint[8] = 10;
     let b: uint[8];
-    let d: Chain = { .a, .b };
+    inst d: Chain = { .a, .b };
     await 1ns;
     print!("b={}", b);
     assert!(b == 13, "10 + 3 incrementers = 13");
