@@ -28,7 +28,7 @@ impl RegisterTest {
     let d: uint[8] = 0;
     let q: uint[8];
 
-    inst dut: Register<W = 8> = {
+    let dut: Register<W = 8> = {
         .clk,
         .d,
         .q,

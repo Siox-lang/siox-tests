@@ -11,7 +11,7 @@ impl Abs { y = uint[8](labs(sext(x))); }
 entity FfiTest {}
 impl FfiTest {
     let x: int[8]; let y: uint[8];
-    inst d: Abs = { .x, .y };
+    let d: Abs = { .x, .y };
     x = 236;  // -20
     await 1ns;
     assert!(y == 20, "labs(-20) == 20 via libc in hardware");

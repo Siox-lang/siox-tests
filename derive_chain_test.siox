@@ -32,7 +32,7 @@ impl ChainTest {
     let u: ULogic = 'Z';
     let v: Bit = '1'; let k: uint[4] = 7; let dt: uint[8] = 42;
     let lg: Logic; let hk: uint[4]; let ext: Extended;
-    inst d: DUT = { .u, .v, .k, .dt, .lg, .hk, .ext };
+    let d: DUT = { .u, .v, .k, .dt, .lg, .hk, .ext };
     await 1ns;
     assert!(lg == 'Z', "ULogic -> Logic keeps 'Z'");
     assert!(hk == 7, "Packet -> Header projection");

@@ -23,7 +23,7 @@ entity FromTest {}
 impl FromTest {
     let n: uint[8] = 7; let u: ULogic = 'Z';
     let lo: uint[8]; let hi: uint[8]; let l: Logic;
-    inst d: F = { .n, .u, .lo, .hi, .l };
+    let d: F = { .n, .u, .lo, .hi, .l };
     await 1ns;
     assert!(lo == 7, "From struct field lo");
     assert!(hi == 42, "From struct field hi");

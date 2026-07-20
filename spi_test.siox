@@ -53,7 +53,7 @@ entity SpiLoopback {
 }
 impl SpiLoopback {
     let wire: uint[1];
-    inst m: SpiMaster = {
+    let m: SpiMaster = {
         .clk, .start, .tx, .miso = wire, .mosi = wire, .rx, .busy
     };
 }
@@ -64,7 +64,7 @@ impl SpiTest {
     let clk: Bit = '0';
     let start: Bit = '0'; let tx: uint[8] = 0;
     let rx: uint[8]; let busy: Logic;
-    inst d: SpiLoopback = { .clk, .start, .tx, .rx, .busy };
+    let d: SpiLoopback = { .clk, .start, .tx, .rx, .busy };
     clk = not clk after 5ns;
 
     tx = 165;            // 0xA5 = 10100101

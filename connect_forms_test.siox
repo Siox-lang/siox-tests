@@ -24,8 +24,8 @@ entity Chain {
 }
 
 impl Chain {
-    inst s1: Add = {};      // ports wired post-declaration
-    inst s2: Add = {};
+    let s1: Add = {};      // ports wired post-declaration
+    let s2: Add = {};
     s1.a = x;
     s1.b = 1;
     s2.a = s1.y;          // s1 output feeds s2 input
@@ -42,7 +42,7 @@ impl ConnectFormsTest {
     let y: uint[8];
 
     // Form 1: explicit named connection.
-    inst named: Add = { .a = a, .b = b, .y = y };
+    let named: Add = { .a = a, .b = b, .y = y };
 
     a = 10;
     b = 20;
@@ -51,12 +51,12 @@ impl ConnectFormsTest {
     // Form 3 + post-declaration: drive Chain's input and read its output.
     let x: uint[8];
     let z: uint[8];
-    inst chain: Add = { x, x, z };   // positional: a = x, b = x, y = z
+    let chain: Add = { x, x, z };   // positional: a = x, b = x, y = z
     x = 7;
     assert!(z == 14, "positional a=b=x");
 
     // Post-declaration form: instantiate empty, then wire through the instance.
-    inst dut: Add = {};
+    let dut: Add = {};
     dut.a = 3;
     dut.b = 4;
     assert!(dut.y == 7, "post-declaration dut.a / dut.y");

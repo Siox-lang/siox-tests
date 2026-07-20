@@ -18,7 +18,7 @@ impl BusTest {
     let en_a: Bit = '0'; let a: Logic = '1';
     let en_b: Bit = '0'; let b: Logic = '0';
     let bus: Logic;
-    inst d: Bus = { .en_a, .a, .en_b, .b, .bus };
+    let d: Bus = { .en_a, .a, .en_b, .b, .bus };
     await 1ns;
     assert!(bus == 'Z', "nobody driving");
     en_a = '1';

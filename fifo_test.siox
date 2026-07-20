@@ -57,7 +57,7 @@ impl FifoTest {
     let clk: Bit = '0';
     let push: Bit = '0'; let pop: Bit = '0'; let din: uint[8] = 0;
     let dout: uint[8]; let full: Logic; let empty: Logic;
-    inst d: Fifo = { .clk, .push, .pop, .din, .dout, .full, .empty };
+    let d: Fifo = { .clk, .push, .pop, .din, .dout, .full, .empty };
     clk = not clk after 5ns;
 
     await 1ns;

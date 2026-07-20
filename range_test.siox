@@ -15,7 +15,7 @@ entity RangeTest {}
 impl RangeTest {
     let clk: Bit = '0';
     let n: integer<1..10>;
-    inst d: Bounded = { .clk, .n };
+    let d: Bounded = { .clk, .n };
     clk = not clk after 5ns;
     await 85ns;                       // 9 rises: 1 -> 10, the top of the range
     assert!(n == 10, "counts to the top of its range");

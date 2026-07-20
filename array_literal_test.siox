@@ -22,7 +22,7 @@ impl LutTest {
     let sel: uint[8];
     let y: uint[8];
 
-    inst dut: Lut = {
+    let dut: Lut = {
         .sel,
         .y,
     };

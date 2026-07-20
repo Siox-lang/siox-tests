@@ -24,8 +24,8 @@ impl Consumer {
 entity Link { out got: uint[8]; }
 impl Link {
     let wire: Stream;
-    inst p: Producer = { .s = wire };
-    inst c: Consumer = { .s = wire, .got };
+    let p: Producer = { .s = wire };
+    let c: Consumer = { .s = wire, .got };
 }
 
 #[test]
@@ -33,7 +33,7 @@ entity StreamTest {}
 
 impl StreamTest {
     let got: uint[8];
-    inst dut: Link = { .got };
+    let dut: Link = { .got };
     await 1ns;
     print!("got={}", got);
     assert!(got == 42, "the struct bundle carries data across the instance boundary");

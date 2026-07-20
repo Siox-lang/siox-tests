@@ -14,7 +14,7 @@ entity StructLiteralTest {}
 
 impl StructLiteralTest {
     let p: Pt; let s: uint[8];
-    inst d: Sum = { .p, .s };
+    let d: Sum = { .p, .s };
 
     p = { .x = 10, .y = 20 };
     await 1ns;

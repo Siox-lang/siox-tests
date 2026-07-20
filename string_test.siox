@@ -23,7 +23,7 @@ impl StringTest {
     let s: string = "hello";
     let o: string[5];
 
-    inst dut: Echo = { .s, .o };
+    let dut: Echo = { .s, .o };
 
     await 1ns;
     assert!(o == "hello", "the echoed string matches the input");

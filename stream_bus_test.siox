@@ -32,8 +32,8 @@ entity Link { in d: uint[8]; in go: Bit; in accept: Bit;
               out got: uint[8]; out seen: Bit; out canpush: Bit; }
 impl Link {
     let s: Stream;
-    inst p: Producer = { .bus = s, .d, .go, .canpush };
-    inst c: Consumer = { .bus = s, .accept, .got, .seen };
+    let p: Producer = { .bus = s, .d, .go, .canpush };
+    let c: Consumer = { .bus = s, .accept, .got, .seen };
 }
 
 #[test]
@@ -41,7 +41,7 @@ entity StreamBusTest {}
 impl StreamBusTest {
     let d: uint[8]; let go: Bit; let accept: Bit;
     let got: uint[8]; let seen: Bit; let canpush: Bit;
-    inst dut: Link = { .d, .go, .accept, .got, .seen, .canpush };
+    let dut: Link = { .d, .go, .accept, .got, .seen, .canpush };
 
     d = 0xAB; go = '1'; accept = '1';
     await 1ns;

@@ -35,7 +35,7 @@ entity MatchPatternTest {}
 
 impl MatchPatternTest {
     let op: uint[8]; let cls: uint[2];
-    inst d: Decode = { .op, .cls };
+    let d: Decode = { .op, .cls };
 
     op = 0x15; await 1ns; assert!(cls == 0, "b\"00??_????\"");
     op = 0xA7; await 1ns; assert!(cls == 1, "x\"A?\"");
@@ -43,7 +43,7 @@ impl MatchPatternTest {
     op = 0x55; await 1ns; assert!(cls == 3, "fallthrough");
 
     let clk: Bit = '0'; let rcls: uint[2];
-    inst r: DecodeReg = { .clk, .op = op, .cls = rcls };
+    let r: DecodeReg = { .clk, .op = op, .cls = rcls };
     clk = not clk after 5ns;
     op = 0xAF; await clk::rising; await 1ns;
     assert!(rcls == 1, "sequential match on x\"A?\"");

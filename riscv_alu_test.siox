@@ -46,7 +46,7 @@ entity AluTest {}
 impl AluTest {
     let a: uint[32] = 0; let b: uint[32] = 0; let op: AluOp;
     let y: uint[32]; let zero: Logic;
-    inst dut: Alu = { .a, .b, .op, .y, .zero };
+    let dut: Alu = { .a, .b, .op, .y, .zero };
 
     a = 100; b = 30; op = AluOp::Add;  await 1ns;
     assert!(y == 130, "add");
