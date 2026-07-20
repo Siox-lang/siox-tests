@@ -19,7 +19,7 @@ entity GenericTest {}
 impl GenericTest {
     let x: int[8] = 5; let y: int[8] = 251;   // y = -5
     let m: int[8];
-    let d = Pick { .x, .y, .m };
+    let d: Pick = { .x, .y, .m };
     await 1ns;
     assert!(m == 5, "signed generic max: 5 > -5 via int's Ord");
 }

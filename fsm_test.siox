@@ -46,7 +46,7 @@ impl FsmTest {
     let start: Bit = '0';
     let st: State;
 
-    let dut = Fsm {
+    let dut: Fsm = {
         .clk,
         .start,
         .st,

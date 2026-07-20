@@ -33,12 +33,12 @@ entity S2Test {}
 impl S2Test {
     let u8: uint[8] = 200; let s8: int[8] = 240;   // s8 = -16
     let wide: uint[16]; let swide: int[16]; let narrow: uint[4]; let rz: uint[16];
-    let c = Conv { .u8, .s8, .wide, .swide, .narrow, .rz };
+    let c: Conv = { .u8, .s8, .wide, .swide, .narrow, .rz };
 
     let a: int[8] = 236;   // -20
     let b: int[8] = 3;
     let q: int[8]; let sh: int[8];
-    let m = SMath { .a, .b, .q, .sh };
+    let m: SMath = { .a, .b, .q, .sh };
 
     await 1ns;
     assert!(wide == 200, "zero-extend");

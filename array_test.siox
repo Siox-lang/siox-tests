@@ -20,7 +20,7 @@ impl BankTest {
     let a: Bit[4];
     let y: Bit;
 
-    let dut = Bank {
+    let dut: Bank = {
         .a,
         .y,
     };

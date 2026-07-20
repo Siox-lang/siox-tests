@@ -13,7 +13,7 @@ entity M {}
 impl M {
     let cf: Bit = '0'; let cs: Bit = '0';
     let a: uint[8]; let b: uint[8];
-    let d = Dual { .cf, .cs, .a, .b };
+    let d: Dual = { .cf, .cs, .a, .b };
     cf = not cf after 2ns;
     cs = not cs after 5ns;
     await 40ns;

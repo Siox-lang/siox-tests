@@ -28,8 +28,8 @@ entity Bus {
 
 impl Bus {
     let wire: Logic;
-    let a = Pad { .drive = da, .en = ea, .pin = wire, .sensed = sa };
-    let b = Pad { .drive = db, .en = eb, .pin = wire, .sensed = sb };
+    let a: Pad = { .drive = da, .en = ea, .pin = wire, .sensed = sa };
+    let b: Pad = { .drive = db, .en = eb, .pin = wire, .sensed = sb };
 }
 
 #[test]
@@ -39,7 +39,7 @@ impl BusTest {
     let da: Logic; let ea: Logic;
     let db: Logic; let eb: Logic;
     let sa: Logic; let sb: Logic;
-    let dut = Bus { .da, .ea, .db, .eb, .sa, .sb };
+    let dut: Bus = { .da, .ea, .db, .eb, .sa, .sb };
 
     // Pad A drives '1', pad B listens: both see '1' on the shared line.
     da = '1'; ea = '1'; db = '0'; eb = 'Z';

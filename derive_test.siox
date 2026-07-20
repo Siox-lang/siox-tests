@@ -17,7 +17,7 @@ entity SD {}
 impl SD {
     let p_valid: Bit = '1'; let p_kind: uint[4] = 3; let p_data: uint[8] = 200;
     let ok: Bit; let d: uint[8];
-    let r = Rx { .p_valid, .p_kind, .p_data, .ok, .d };
+    let r: Rx = { .p_valid, .p_kind, .p_data, .ok, .d };
     await 1ns;
     assert!(ok == 1, "inherited field valid");
     assert!(d == 200, "own field data");

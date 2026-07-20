@@ -26,7 +26,7 @@ impl SinkTest {
     let p: Packet;
     let got: uint[8];
 
-    let dut = Sink {
+    let dut: Sink = {
         .p,
         .got,
     };

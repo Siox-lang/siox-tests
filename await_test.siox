@@ -23,7 +23,7 @@ impl AwaitEdge {
     let rst: Logic = '1';
     let en: Bit = '1';
     let count: uint[8];
-    let dut = Counter<W = 8> { .clk, .rst, .en, .count };
+    let dut: Counter<W = 8> = { .clk, .rst, .en, .count };
 
     clk = not clk after 5ns; // background 10ns clock (VHDL-style)
     await clk::rising;       // first edge (still in reset)

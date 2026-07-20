@@ -21,7 +21,7 @@ impl RF {
 impl T {
     let clk: Bit = '0'; let we: Bit; let waddr: uint[2]; let wdata: uint[8];
     let raddr: uint[2]; let rdata: uint[8];
-    let d = RF { .clk, .we, .waddr, .wdata, .raddr, .rdata };
+    let d: RF = { .clk, .we, .waddr, .wdata, .raddr, .rdata };
     clk = not clk after 5ns;
     we = '1'; waddr = 2; wdata = 99; await 10ns;   // write reg[2]=99
     we = '0'; raddr = 2; await 10ns;

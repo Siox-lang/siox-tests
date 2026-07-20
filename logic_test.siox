@@ -31,7 +31,7 @@ impl LogicTest {
     let y_or: Logic;
     let y_not: Logic;
 
-    let dut = Gates { .a, .b, .y_and, .y_or, .y_not };
+    let dut: Gates = { .a, .b, .y_and, .y_or, .y_not };
 
     await 1ns;
     assert!(y_and == '0', "0 and 0 = 0");
