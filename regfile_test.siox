@@ -10,7 +10,7 @@ entity RF {
 }
 impl RF {
     let regs: uint[8][4];
-    if clk::rising {
+    if clk.rising() {
         if we {
             regs[waddr] = wdata;   // dynamic write
         }

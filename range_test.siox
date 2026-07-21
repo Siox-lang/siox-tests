@@ -6,7 +6,7 @@ module examples::range_test;
 entity Bounded { in clk: Bit; out n: integer<1..10>; }
 impl Bounded {
     let v: integer<1..10> = 1;
-    if clk::rising { v = v + 1; }
+    if clk.rising() { v = v + 1; }
     n = v;
 }
 

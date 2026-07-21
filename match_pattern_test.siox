@@ -21,7 +21,7 @@ impl Decode {
 entity DecodeReg { in clk: Bit; in op: uint[8]; out cls: uint[2]; }
 impl DecodeReg {
     let r: uint[2] = 0;
-    if clk::rising {
+    if clk.rising() {
         match op {
             x"A?" => { r = 1; }
             _     => { r = 3; }
@@ -45,7 +45,7 @@ impl MatchPatternTest {
     let clk: Bit = '0'; let rcls: uint[2];
     let r: DecodeReg = { .clk, .op = op, .cls = rcls };
     clk = not clk after 5ns;
-    op = 0xAF; await clk::rising; await 1ns;
+    op = 0xAF; await clk.rising(); await 1ns;
     assert!(rcls == 1, "sequential match on x\"A?\"");
 
     print!("match patterns ok");

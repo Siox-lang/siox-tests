@@ -13,7 +13,7 @@ entity Register<W: integer> {
 impl Register<W: integer> {
     let state: uint[W] = 0;
 
-    if clk::rising {
+    if clk.rising() {
         state = d;
     }
 

@@ -15,7 +15,7 @@ entity Counter<W: integer> {
 impl Counter<W: integer> {
     let value: uint[W] = 0;
 
-    if clk::rising {
+    if clk.rising() {
         if rst == '1' {
             value = 0;
         } else if en {

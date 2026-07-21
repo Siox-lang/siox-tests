@@ -20,7 +20,7 @@ impl Fifo {
     let tail: uint[2] = 0;
     let count: uint[3] = 0;
 
-    if clk::rising {
+    if clk.rising() {
         // enqueue on a valid push
         if push {
             if count < 4 {

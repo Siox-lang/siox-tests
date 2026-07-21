@@ -19,7 +19,7 @@ entity Fsm {
 impl Fsm {
     let state: State = State::Idle;
 
-    if clk::rising {
+    if clk.rising() {
         match state {
             State::Idle => {
                 if start {

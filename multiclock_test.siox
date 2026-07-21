@@ -4,8 +4,8 @@ using std::bits::uint;
 entity Dual { in cf: Bit; in cs: Bit; out a: uint[8]; out b: uint[8]; }
 impl Dual {
     let va: uint[8] = 0; let vb: uint[8] = 0;
-    if cf::rising { va = va + 1; }
-    if cs::rising { vb = vb + 1; }
+    if cf.rising() { va = va + 1; }
+    if cs.rising() { vb = vb + 1; }
     a = va; b = vb;
 }
 #[test]

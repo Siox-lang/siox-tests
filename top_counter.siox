@@ -17,7 +17,7 @@ entity Counter8 {
 impl Counter8 {
     let value: uint[8] = 0;
 
-    if clk::rising {
+    if clk.rising() {
         if rst == '1' {
             value = 0;
         } else {

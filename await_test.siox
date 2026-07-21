@@ -10,7 +10,7 @@ entity Counter<W: integer> {
 }
 impl Counter<W: integer> {
     let value: uint[W] = 0;
-    if clk::rising {
+    if clk.rising() {
         if rst == '1' { value = 0; } else if en { value = value + 1; }
     }
     count = value;
@@ -26,7 +26,7 @@ impl AwaitEdge {
     let dut: Counter<W = 8> = { .clk, .rst, .en, .count };
 
     clk = not clk after 5ns; // background 10ns clock (VHDL-style)
-    await clk::rising;       // first edge (still in reset)
+    await clk.rising();       // first edge (still in reset)
     rst = '0';
     await count == 7;        // wait until the counter reaches 7
     assert!(count == 7, "reached 7 via await condition");

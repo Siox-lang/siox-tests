@@ -20,7 +20,7 @@ impl SpiMaster {
     let bits: uint[4] = 0;
     let running: Bit = '0';
 
-    if clk::rising {
+    if clk.rising() {
         if running {
             shift_rx = (shift_rx << 1) or uint[8](miso);
             shift_tx = shift_tx << 1;

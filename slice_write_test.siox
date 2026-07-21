@@ -11,7 +11,7 @@ entity E {
 }
 impl E {
     let r: uint[8] = 0;
-    if clk::rising {
+    if clk.rising() {
         if we_lo {
             r[3..0] = lo_in;      // update only the low nibble; high holds
         }
