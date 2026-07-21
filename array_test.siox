@@ -21,8 +21,8 @@ impl BankTest {
     let y: Bit;
 
     let dut: Bank = {
-        .a,
-        .y,
+        .a = a,
+        .y = y,
     };
 
     a[2] = '1';

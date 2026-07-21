@@ -34,7 +34,7 @@ impl ComplexTest {
     let b: Complex = { .re = 0, .im = 5 };
     let z: Complex;
 
-    let dut: Adder = { .a, .b, .z };
+    let dut: Adder = { .a = a, .b = b, .z = z };
 
     await 1ns;
     assert!(z.re == 10, "10 + 5i: real part");

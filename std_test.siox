@@ -23,7 +23,7 @@ impl StdTest {
     let a: Bit = LOW;
     let y: Bit;
 
-    let buf: Buf = { .a, .y };
+    let buf: Buf = { .a = a, .y = y };
 
     a = HIGH;
     await 1ns;

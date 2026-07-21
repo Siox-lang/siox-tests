@@ -33,11 +33,11 @@ impl MuxTest {
     let z: Bit;
 
     let dut: Mux = {
-        .sel,
-        .a,
-        .b,
-        .y,
-        .z,
+        .sel = sel,
+        .a = a,
+        .b = b,
+        .y = y,
+        .z = z,
     };
 
     // sel = 0 selects b — both spellings agree.

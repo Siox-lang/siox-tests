@@ -39,7 +39,7 @@ impl BusTest {
     let da: Logic; let ea: Logic;
     let db: Logic; let eb: Logic;
     let sa: Logic; let sb: Logic;
-    let dut: Bus = { .da, .ea, .db, .eb, .sa, .sb };
+    let dut: Bus = { .da = da, .ea = ea, .db = db, .eb = eb, .sa = sa, .sb = sb };
 
     // Pad A drives '1', pad B listens: both see '1' on the shared line.
     da = '1'; ea = '1'; db = '0'; eb = 'Z';

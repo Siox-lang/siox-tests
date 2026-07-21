@@ -16,7 +16,7 @@ entity FnTest {}
 impl FnTest {
     let a: uint[8] = 30; let b: uint[8] = 200;
     let hi: uint[8]; let addr: uint[9];
-    let d: Pick = { .a, .b, .hi, .addr };
+    let d: Pick = { .a = a, .b = b, .hi = hi, .addr = addr };
     await 1ns;
     assert!(hi == 200, "max inlined in hardware");
     assert!(addr == 299, "clog2(300)=9 bits held 299");

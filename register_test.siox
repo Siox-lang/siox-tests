@@ -29,9 +29,9 @@ impl RegisterTest {
     let q: uint[8];
 
     let dut: Register<W = 8> = {
-        .clk,
-        .d,
-        .q,
+        .clk = clk,
+        .d = d,
+        .q = q,
     };
 
     // Before any edge, q holds its reset value.

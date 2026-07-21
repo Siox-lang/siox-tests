@@ -23,8 +23,8 @@ impl LutTest {
     let y: uint[8];
 
     let dut: Lut = {
-        .sel,
-        .y,
+        .sel = sel,
+        .y = y,
     };
 
     sel = 0;

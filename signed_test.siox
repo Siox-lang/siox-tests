@@ -23,7 +23,7 @@ entity SignedTest {}
 impl SignedTest {
     let a: int[8]; let b: int[8];
     let lt: Bool; let ge: Bool;
-    let d: Cmp = { .a, .b, .lt, .ge };
+    let d: Cmp = { .a = a, .b = b, .lt = lt, .ge = ge };
     let ua: uint[8]; let ub: uint[8]; let ult: Bool;
     let u: UCmp = { .a = ua, .b = ub, .lt = ult };
 

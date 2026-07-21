@@ -24,7 +24,7 @@ impl Chain {
 impl T {
     let a: uint[8] = 10;
     let b: uint[8];
-    let d: Chain = { .a, .b };
+    let d: Chain = { .a = a, .b = b };
     await 1ns;
     print!("b={}", b);
     assert!(b == 13, "10 + 3 incrementers = 13");

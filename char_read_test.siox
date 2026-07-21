@@ -21,7 +21,7 @@ impl CharReadTest {
     let s: string = "Hi!";
     let o: string[3];
 
-    let dut: Echo = { .s, .o };
+    let dut: Echo = { .s = s, .o = o };
 
     await 1ns;
     assert!(unicode(o[0]) == 72, "'H' is code point 72");

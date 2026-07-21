@@ -16,7 +16,7 @@ entity ConstTest {}
 
 impl ConstTest {
     let a: Bit; let y: Bit;
-    let d: Buf = { .a, .y };
+    let d: Buf = { .a = a, .y = y };
 
     a = HIGH;
     await 1ns;

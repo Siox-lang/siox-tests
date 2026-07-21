@@ -27,8 +27,8 @@ impl SinkTest {
     let got: uint[8];
 
     let dut: Sink = {
-        .p,
-        .got,
+        .p = p,
+        .got = got,
     };
 
     p.data = 55;

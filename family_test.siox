@@ -11,7 +11,7 @@ impl E { y = a; }
 entity FamTest {}
 impl FamTest {
     let a: Word[8] = 200; let y: Word[8];
-    let d: E = { .a, .y };
+    let d: E = { .a = a, .y = y };
     await 1ns;
     assert!(y == 200, "user Logic-vector family: width + literal + eq");
 }

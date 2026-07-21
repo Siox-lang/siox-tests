@@ -47,9 +47,9 @@ impl FsmTest {
     let st: State;
 
     let dut: Fsm = {
-        .clk,
-        .start,
-        .st,
+        .clk = clk,
+        .start = start,
+        .st = st,
     };
 
     // Idle with start low stays Idle. (A pulse is plain code.)

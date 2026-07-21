@@ -27,7 +27,7 @@ entity InstanceArrayTest {}
 
 impl InstanceArrayTest {
     let a: uint[8] = 10; let b: uint[8]; let probe: uint[8];
-    let d: Pipeline = { .a, .b, .probe };
+    let d: Pipeline = { .a = a, .b = b, .probe = probe };
     await 1ns;
     assert!(b == 13, "10 through 3 incrementers = 13");
     assert!(probe == 12, "stage[1] output = 12");
