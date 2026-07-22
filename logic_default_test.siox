@@ -1,0 +1,31 @@
+module examples::logic_default_test;
+using std::logic::{Logic, Bit};
+
+// `impl New` uninitialized defaults (IEEE 1076-2019): an undriven `Logic`
+// powers on to `'U'` (uninitialized), an undriven `Bit` to `'0'`.
+entity D {
+    out yl: Logic;
+    out yb: Bit;
+}
+impl D {
+    let lg: Logic;    // undriven -> 'U'
+    let bt: Bit;      // undriven -> '0'
+    yl = lg;
+    yb = bt;
+}
+
+#[test]
+entity DefaultTest {}
+impl DefaultTest {
+    let yl: Logic;
+    let yb: Bit;
+    let d: D = { .yl = yl, .yb = yb };
+    // testbench locals default the same way
+    let tl: Logic;
+    let tb: Bit;
+    await 1ns;
+    assert!(yl == 'U', "undriven hardware Logic powers on to 'U'");
+    assert!(yb == '0', "undriven hardware Bit powers on to '0'");
+    assert!(tl == 'U', "uninitialized Logic testbench local is 'U'");
+    assert!(tb == '0', "uninitialized Bit testbench local is '0'");
+}
