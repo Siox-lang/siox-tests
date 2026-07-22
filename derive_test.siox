@@ -19,6 +19,6 @@ impl SD {
     let ok: Bit; let d: uint[8];
     let r: Rx = { .p_valid = p_valid, .p_kind = p_kind, .p_data = p_data, .ok = ok, .d = d };
     await 1ns;
-    assert!(ok == 1, "inherited field valid");
+    assert!(ok == '1', "inherited field valid");
     assert!(d == 200, "own field data");
 }
