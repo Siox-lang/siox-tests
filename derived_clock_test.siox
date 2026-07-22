@@ -1,0 +1,39 @@
+module examples::derived_clock_test;
+using std::bits::uint;
+
+// A derived (divided) clock: `h` toggles on clk (clk/2) and a counter runs on
+// the *derived* clock `h` — a cascaded event domain a single-delta engine
+// cannot simulate. Plus a 2-bit ripple counter (clk -> b0 -> b1), a two-level
+// cascade.
+entity Derived {
+    in clk: Bit;
+    out cnt: uint[8];
+    out ripple: uint[2];
+}
+impl Derived {
+    let h: Bit = '0';
+    let c: uint[8] = 0;
+    let b0: Bit = '0';
+    let b1: Bit = '0';
+    if clk.rising() { h = not h; }
+    if h.rising()   { c = c + 1; }      // counts on the divided clock
+    if clk.rising() { b0 = not b0; }    // ripple bit 0 (clk/2)
+    if b0.falling() { b1 = not b1; }    // ripple bit 1 toggles when b0 falls
+    cnt = c;
+    ripple = { b1, b0 };
+}
+
+#[test]
+entity DerivedTest {}
+impl DerivedTest {
+    let clk: Bit = '0';
+    let cnt: uint[8];
+    let ripple: uint[2];
+    let d: Derived = { .clk = clk, .cnt = cnt, .ripple = ripple };
+    clk = not clk after 2ns;   // rises at 2,6,10,...,38 (10 rises)
+    await 41ns;
+    // h rises at 2,10,18,26,34 (every other clk rise) -> c = 5.
+    assert!(cnt == 5, "divided-clock counter reached 5");
+    // 2-bit ripple after 10 clk rises = 10 mod 4 = 2.
+    assert!(ripple == 2, "ripple counter = 10 mod 4 = 2");
+}
