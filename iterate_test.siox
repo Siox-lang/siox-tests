@@ -12,7 +12,7 @@ impl IterTest {
     let dut: Sum = { .xs = xs, .total = total };
     xs[0] = 1; xs[1] = 2; xs[2] = 3; xs[3] = 4;
     await 1ns;
-    assert!(xs::len == 4, "array length attribute");
+    assert!(xs::length == 4, "array length attribute");
     // Python-style: iterate the array's elements.
     let acc: uint[8] = 0;
     for x in xs {
