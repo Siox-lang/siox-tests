@@ -1,0 +1,46 @@
+module examples::logic_ninevalue_test;
+using std::logic::Logic;
+
+// The 9-value std_ulogic operators (IEEE 1076-2019 / std_logic_1164), spot-
+// checked against the reference tables: a forcing low (0/L) dominates AND even
+// against 'U'; 'U' dominates the remaining unknowns; weak 'L'/'H' reduce to
+// 0/1; 'X'/'Z'/'W'/'-' propagate as unknown; resolution yields on 'Z', lets a
+// forcing level beat weak, and folds conflicting weak drivers to 'W'.
+#[test]
+entity NineValue {}
+impl NineValue {
+    let u: Logic = 'U'; let x: Logic = 'X'; let z: Logic = 'Z'; let w: Logic = 'W';
+    let l: Logic = 'L'; let h: Logic = 'H'; let zero: Logic = '0'; let one: Logic = '1';
+    let dc: Logic = '-';
+
+    // not: 0/L -> 1, 1/H -> 0, U -> U, else X
+    assert!((not l) == '1', "not L = 1");
+    assert!((not h) == '0', "not H = 0");
+    assert!((not u) == 'U', "not U = U");
+    assert!((not z) == 'X', "not Z = X");
+
+    // and / or: forcing level dominates; U beats the rest; unknown -> X
+    assert!((zero and u) == '0', "0 and U = 0");
+    assert!((l and one) == '0', "L and 1 = 0");
+    assert!((u and one) == 'U', "U and 1 = U");
+    assert!((one and z) == 'X', "1 and Z = X");
+    assert!((h and h) == '1', "H and H = 1");
+    assert!((one or u) == '1', "1 or U = 1");
+    assert!((h or zero) == '1', "H or 0 = 1");
+    assert!((u or zero) == 'U', "U or 0 = U");
+    assert!((zero or w) == 'X', "0 or W = X");
+
+    // xor: defined operands reduce to 0/1; U dominates; unknown -> X
+    assert!((h xor l) == '1', "H xor L = 1");
+    assert!((l xor l) == '0', "L xor L = 0");
+    assert!((u xor zero) == 'U', "U xor 0 = U");
+    assert!((x xor one) == 'X', "X xor 1 = X");
+
+    // resolution (parallel drivers): Z yields, forcing beats weak, weak folds
+    assert!((z.resolve(one)) == '1', "Z res 1 = 1");
+    assert!((zero.resolve(one)) == 'X', "0 res 1 = X");
+    assert!((l.resolve(h)) == 'W', "L res H = W (conflicting weak)");
+    assert!((zero.resolve(l)) == '0', "0 res L = 0 (forcing beats weak)");
+    assert!((u.resolve(zero)) == 'U', "U res 0 = U");
+    assert!((dc.resolve(one)) == 'X', "- res 1 = X");
+}
