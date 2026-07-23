@@ -1,0 +1,58 @@
+module examples::string_to_array_test;
+
+// A string literal is a sequence of characters, and its meaning comes from the
+// target type (like VHDL) — no `b"…"` prefix needed:
+//   - to a Logic-vector, each char is a std_ulogic value (metavalues too);
+//   - to an array of a char-enum, each char is that enum's variant.
+
+using std::attrs::{test};
+using std::logic::{Logic};
+
+// A small char enum, VHDL-`character`-style (each variant is a char literal;
+// its discriminant is its position in the declaration).
+enum Ascii { 'H', 'e', 'l', 'o', ' ', 'S', 'i', 'x' }
+
+// A user FSM-ish char enum.
+enum Nibble { 'r', 'g', 'b', 'a' }
+
+entity Probe {
+    out lv: uint[4];         // from a plain binary string
+    out mvx: Logic;          // a metavalue bit read back
+    out a0: Ascii;  out a4: Ascii;  out a5: Ascii;   // "Hello Six" indices
+    out n1: Nibble; out n3: Nibble;
+}
+
+impl Probe {
+    let bits: uint[4] = "1010";      // = 10, no prefix
+    let meta: uint[4] = "1X10";      // element 2 is 'X'
+    let word: Ascii[8] = "Hello Si";  // each char -> Ascii variant
+    let chan: Nibble[4] = "rgba";
+
+    lv = bits;
+    mvx = meta[2..2];
+    a0 = word[0];   // 'H'
+    a4 = word[5];   // space
+    a5 = word[6];   // S
+    n1 = chan[1];   // 'g'
+    n3 = chan[3];   // 'a'
+}
+
+#[test]
+entity StringToArrayTest {}
+
+impl StringToArrayTest {
+    let lv: uint[4];  let mvx: Logic;
+    let a0: Ascii;  let a4: Ascii;  let a5: Ascii;
+    let n1: Nibble; let n3: Nibble;
+    let dut: Probe = {
+        .lv = lv, .mvx = mvx, .a0 = a0, .a4 = a4, .a5 = a5, .n1 = n1, .n3 = n3
+    };
+
+    assert!(lv == 10, "\"1010\" -> 10");
+    assert!(mvx == 'X', "\"1X10\" element 2 is 'X'");
+    assert!(a0 == 'H', "Ascii \"Hello Si\"[0] = 'H'");
+    assert!(a4 == ' ', "Ascii \"Hello Si\"[5] = ' ' (space)");
+    assert!(a5 == 'S', "Ascii[6] = 'S'");
+    assert!(n1 == 'g', "Nibble \"rgba\"[1] = 'g'");
+    assert!(n3 == 'a', "Nibble[3] = 'a'");
+}
