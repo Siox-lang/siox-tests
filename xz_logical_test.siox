@@ -1,0 +1,43 @@
+module examples::xz_logical_test;
+
+// Per-element std_logic_1164 logical: a forcing operand clears the metavalue,
+// unlike arithmetic (which poisons the whole result). `0 and X = 0`,
+// `1 and X = X`, `1 or X = 1`, `0 or X = X` — proven element by element.
+
+using std::attrs::{test};
+using std::logic::{Logic};
+
+entity Gates {
+    out and_hi: Logic;   // element 1: X and 1 = X
+    out and_lo: Logic;   // element 0: X and 0 = 0
+    out or_hi: Logic;    // element 1: X or 1 = 1
+    out or_lo: Logic;    // element 0: X or 0 = X
+}
+
+impl Gates {
+    let xx: uint[2] = b"XX";   // both elements X
+    let mask: uint[2] = b"10"; // bit1 = 1, bit0 = 0
+    let a: uint[2];
+    let o: uint[2];
+    a = xx and mask;           // {X and 1, X and 0} = {X, 0}
+    o = xx or mask;            // {X or 1,  X or 0}  = {1, X}
+    and_hi = a[1..1];
+    and_lo = a[0..0];
+    or_hi = o[1..1];
+    or_lo = o[0..0];
+}
+
+#[test]
+entity XzLogicalTest {}
+
+impl XzLogicalTest {
+    let and_hi: Logic;  let and_lo: Logic;  let or_hi: Logic;  let or_lo: Logic;
+    let dut: Gates = {
+        .and_hi = and_hi, .and_lo = and_lo, .or_hi = or_hi, .or_lo = or_lo
+    };
+
+    assert!(and_hi == 'X', "X and 1 = X");
+    assert!(and_lo == '0', "X and 0 = 0 (forcing 0 clears X)");
+    assert!(or_hi == '1', "X or 1 = 1 (forcing 1 clears X)");
+    assert!(or_lo == 'X', "X or 0 = X");
+}
