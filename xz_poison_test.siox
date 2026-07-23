@@ -1,0 +1,36 @@
+module examples::xz_poison_test;
+
+// numeric_std arithmetic poisoning: if any operand element is a metavalue, the
+// whole result is `'X'`. `mv` has an `'X'` in one element, so `a + mv` poisons
+// every element of the result — read back per element, they are all `'X'`.
+
+using std::attrs::{test};
+using std::logic::{Logic};
+
+entity Alu {
+    in a: uint[4];
+    out lo: Logic;
+    out hi: Logic;
+}
+
+impl Alu {
+    let mv: uint[4] = b"0X00";   // element 2 is a metavalue
+    let y: uint[4];
+    y = a + mv;
+    lo = y[0..0];
+    hi = y[3..3];
+}
+
+#[test]
+entity XzPoisonTest {}
+
+impl XzPoisonTest {
+    let a: uint[4];
+    let lo: Logic;
+    let hi: Logic;
+    let dut: Alu = { .a = a, .lo = lo, .hi = hi };
+
+    a = 5;
+    assert!(lo == 'X', "poisoned: low element is 'X'");
+    assert!(hi == 'X', "poisoned: high element is 'X'");
+}
