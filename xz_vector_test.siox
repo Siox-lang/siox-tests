@@ -1,0 +1,40 @@
+module examples::xz_vector_test;
+
+// X/Z on vectors: a metavalue written into a `uint` (a `Logic[]`) survives in
+// the element-container companion and reads back per element as its full
+// 9-value `std_ulogic`. `b"1X10"` — bit 3 = '1', bit 2 = 'X', bit 1 = '1',
+// bit 0 = '0'.
+
+using std::attrs::{test};
+using std::logic::{Logic};
+
+entity Probe {
+    out b3: Logic;
+    out b2: Logic;
+    out b1: Logic;
+    out b0: Logic;
+}
+
+impl Probe {
+    let v: uint[4] = b"1X10";
+    b3 = v[3..3];
+    b2 = v[2..2];
+    b1 = v[1..1];
+    b0 = v[0..0];
+}
+
+#[test]
+entity XzVectorTest {}
+
+impl XzVectorTest {
+    let b3: Logic;
+    let b2: Logic;
+    let b1: Logic;
+    let b0: Logic;
+    let dut: Probe = { .b3 = b3, .b2 = b2, .b1 = b1, .b0 = b0 };
+
+    assert!(b3 == '1', "bit 3 is '1'");
+    assert!(b2 == 'X', "bit 2 is 'X' (metavalue survives)");
+    assert!(b1 == '1', "bit 1 is '1'");
+    assert!(b0 == '0', "bit 0 is '0'");
+}
