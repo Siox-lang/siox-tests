@@ -1,0 +1,40 @@
+module examples::real_compare_test;
+
+// Float (`real`) comparisons use ordered IEEE-754 semantics, not an integer
+// compare on the raw f64 bit patterns — which would misorder negatives and
+// `±0.0`. The values are formed in hardware (real subtraction) so the compare
+// runs in the IR/LLVM path; each result is a `Bool` output.
+
+using std::attrs::{test};
+
+entity Cmp {
+    out lt: Bool;
+    out ge: Bool;
+    out eq: Bool;
+    out ne: Bool;
+}
+
+impl Cmp {
+    // -2.0 and -1.0 as real subtractions. Integer compare on the bit patterns
+    // would give `lt = false` (the negative bit patterns sort backwards).
+    lt = (0.0 - 2.0) < (0.0 - 1.0);
+    ge = (0.0 - 2.0) >= (0.0 - 1.0);
+    eq = (0.0 - 2.0) == (0.0 - 1.0);
+    ne = (0.0 - 2.0) != (0.0 - 1.0);
+}
+
+#[test]
+entity RealCompareTest {}
+
+impl RealCompareTest {
+    let lt: Bool;
+    let ge: Bool;
+    let eq: Bool;
+    let ne: Bool;
+    let dut: Cmp = { .lt = lt, .ge = ge, .eq = eq, .ne = ne };
+
+    assert!(lt == true, "-2.0 < -1.0 is true");
+    assert!(ge == false, "-2.0 >= -1.0 is false");
+    assert!(eq == false, "-2.0 == -1.0 is false");
+    assert!(ne == true, "-2.0 != -1.0 is true");
+}
