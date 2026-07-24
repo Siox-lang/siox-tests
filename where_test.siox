@@ -1,10 +1,10 @@
 module examples::where_test;
 using std::bits::{int};
 
-// The `where` form — identical to `fn maxi<T: Ord>`.
+// The `where` form — identical to `fn maxi<T: Operator>`.
 fn maxi<T>(a: T, b: T) -> T
 where
-    T: Ord,
+    T: Operator,
 {
     if a > b { return a; }
     return b;
@@ -20,5 +20,5 @@ impl WhereTest {
     let m: int[8];
     let d: Pick = { .x = x, .y = y, .m = m };
     await 1ns;
-    assert!(m == 5, "where-bounded generic max dispatches int Ord");
+    assert!(m == 5, "where-bounded generic max dispatches int <=>");
 }

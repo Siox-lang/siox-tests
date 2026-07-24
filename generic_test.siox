@@ -4,9 +4,10 @@ using std::bits::{int};
 
 // A type-generic function with a trait bound. `fn`s inline, so each call is a
 // monomorphization: the body dispatches operators on the caller's concrete
-// type (int's signed `Ord` here, not the kernel unsigned compare), and the
-// bound `T: Ord` is checked at the call site.
-fn maxi<T: Ord>(a: T, b: T) -> T {
+// type (int's signed `<=>` here, not the kernel unsigned compare), and the
+// bound `T: Operator` (T supports operator overloading) is checked at the call
+// site.
+fn maxi<T: Operator>(a: T, b: T) -> T {
     if a > b { return a; }
     return b;
 }
