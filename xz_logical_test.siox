@@ -15,8 +15,8 @@ entity Gates {
 }
 
 impl Gates {
-    let xx: uint[2] = b"XX";   // both elements X
-    let mask: uint[2] = b"10"; // bit1 = 1, bit0 = 0
+    let xx: uint[2] = "XX";   // both elements X
+    let mask: uint[2] = "10"; // bit1 = 1, bit0 = 0
     let a: uint[2];
     let o: uint[2];
     a = xx and mask;           // {X and 1, X and 0} = {X, 0}

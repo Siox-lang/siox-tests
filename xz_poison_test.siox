@@ -14,7 +14,7 @@ entity Alu {
 }
 
 impl Alu {
-    let mv: uint[4] = b"0X00";   // element 2 is a metavalue
+    let mv: uint[4] = "0X00";   // element 2 is a metavalue
     let y: uint[4];
     y = a + mv;
     lo = y[0..0];

@@ -10,9 +10,9 @@ using std::bits::uint;
 entity Decode { in op: uint[8]; out cls: uint[2]; }
 impl Decode {
     match op {
-        b"00??_????" => { cls = 0; }   // top quarter of the space
+        "00------" => { cls = 0; }   // top quarter of the space
         x"A?"        => { cls = 1; }   // any 0xA0..0xAF
-        b"1?1?_0000" => { cls = 2; }
+        "1-1-0000" => { cls = 2; }
         _            => { cls = 3; }
     }
 }

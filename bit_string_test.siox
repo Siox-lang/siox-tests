@@ -1,11 +1,11 @@
 module examples::bit_string_test;
 
-// Bit-string literals in the three bases. Each expands MSB-first:
+// Bit-string prefixes are radix conversions declared by `impl Prefix for uint`
+// in std (the compiler names the trait; std owns which prefixes exist):
 //   x"…" — 4 bits/hex digit, 2-value
 //   o"…" — 3 bits/octal digit, 2-value
-//   b"…" — 1 bit/char, full std_ulogic alphabet (metavalues allowed)
-// (a bare "…" string assigned to a vector behaves like b"…"; see
-//  string_to_array_test.)
+// A plain string needs no prefix: a string of logic values reads as a Logic
+// array by context (`"1010"`, metavalues too — see string_to_array_test).
 
 using std::attrs::{test};
 
@@ -13,26 +13,26 @@ entity Probe {
     out h: uint[16];   // x"BEEF"
     out o: uint[6];    // o"17"  = 001_111 = 15
     out o2: uint[9];   // o"725" = 111_010_101 = 469
-    out b: uint[4];    // b"1010" = 10
+    out s: uint[4];    // bare "1010" = 10
 }
 
 impl Probe {
     let hv: uint[16] = x"BEEF";
     let ov: uint[6]  = o"17";
     let o2v: uint[9] = o"725";
-    let bv: uint[4]  = b"1010";
-    h = hv;   o = ov;   o2 = o2v;   b = bv;
+    let sv: uint[4]  = "1010";     // no prefix
+    h = hv;   o = ov;   o2 = o2v;   s = sv;
 }
 
 #[test]
 entity BitStringTest {}
 
 impl BitStringTest {
-    let h: uint[16]; let o: uint[6]; let o2: uint[9]; let b: uint[4];
-    let dut: Probe = { .h = h, .o = o, .o2 = o2, .b = b };
+    let h: uint[16]; let o: uint[6]; let o2: uint[9]; let s: uint[4];
+    let dut: Probe = { .h = h, .o = o, .o2 = o2, .s = s };
 
     assert!(h == 0xBEEF, "x\"BEEF\" = 0xBEEF");
     assert!(o == 15, "o\"17\" = 15");
     assert!(o2 == 469, "o\"725\" = 469");
-    assert!(b == 10, "b\"1010\" = 10");
+    assert!(s == 10, "bare \"1010\" = 10");
 }

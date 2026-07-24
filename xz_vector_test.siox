@@ -2,7 +2,7 @@ module examples::xz_vector_test;
 
 // X/Z on vectors: a metavalue written into a `uint` (a `Logic[]`) survives in
 // the element-container companion and reads back per element as its full
-// 9-value `std_ulogic`. `b"1X10"` — bit 3 = '1', bit 2 = 'X', bit 1 = '1',
+// 9-value `std_ulogic`. `"1X10"` — bit 3 = '1', bit 2 = 'X', bit 1 = '1',
 // bit 0 = '0'.
 
 using std::attrs::{test};
@@ -16,7 +16,7 @@ entity Probe {
 }
 
 impl Probe {
-    let v: uint[4] = b"1X10";
+    let v: uint[4] = "1X10";
     b3 = v[3..3];
     b2 = v[2..2];
     b1 = v[1..1];
