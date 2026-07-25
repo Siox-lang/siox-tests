@@ -1,7 +1,7 @@
 module examples::complex_test;
 
 // Complex arithmetic from the standard library: `+` on std::math::Complex
-// resolves to its operator-trait impl, inlined into the IR per field.
+// resolves to `Operator<"+", Complex, Complex>`, inlined into the IR per field.
 
 using std::math::{Complex};
 using std::attrs::{test};
@@ -16,8 +16,9 @@ impl Adder {
     z = a + b;
 }
 
-// The `i` literal suffix comes from `impl Suffix for Complex` in std::math;
-// the mixed-operand `impl "+" for integer` makes the literal form work.
+// The `i` literal suffix comes from `impl Suffix<"i", integer> for Complex` in
+// std::math; the mixed-input `Operator<"+", Complex, Complex>` implementation
+// on integer makes the literal form work.
 entity Imag {
     out z: Complex;
 }

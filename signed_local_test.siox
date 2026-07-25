@@ -4,8 +4,9 @@ using std::bits::int;
 
 // Signed operator semantics on TESTBENCH LOCALS: the runner (and the native
 // harness) dispatch binary operators on family-typed names through the
-// family's std operator impls — int's Div truncates toward zero and Ord
-// compares two's-complement — exactly like the same expressions in hardware.
+// family's std Operator impls — int's `/` implementation truncates toward
+// zero and `<=>` compares two's-complement — exactly like the same expressions
+// in hardware.
 #[test]
 entity SignedLocalTest {}
 
@@ -25,7 +26,7 @@ impl SignedLocalTest {
     gt = b > a;
     assert!(gt == true, "2 > -7 under signed compare");
 
-    // Arithmetic shift right (int's Shr) keeps the sign.
+    // Arithmetic shift right (int's `>>` Operator impl) keeps the sign.
     let sh: int[8];
     sh = a >> 1;
     assert!(sh == 0 - 4, "-7 >> 1 arithmetic = -4");

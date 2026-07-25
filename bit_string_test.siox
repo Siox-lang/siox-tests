@@ -1,7 +1,8 @@
 module examples::bit_string_test;
 
-// Bit-string prefixes are radix conversions declared by `impl Prefix for uint`
-// in std (the compiler names the trait; std owns which prefixes exist):
+// Bit-string prefixes are radix conversions declared by
+// `impl Prefix<"x", string> for uint` (and `"o"`) in std. The compiler names
+// the trait while std owns which prefixes exist:
 //   x"…" — 4 bits/hex digit, 2-value
 //   o"…" — 3 bits/octal digit, 2-value
 // A plain string needs no prefix: a string of logic values reads as a Logic

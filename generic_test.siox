@@ -22,5 +22,5 @@ impl GenericTest {
     let m: int[8];
     let d: Pick = { .x = x, .y = y, .m = m };
     await 1ns;
-    assert!(m == 5, "signed generic max: 5 > -5 via int's Ord");
+    assert!(m == 5, "signed generic max: 5 > -5 via int's <=> Operator");
 }

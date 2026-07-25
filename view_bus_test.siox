@@ -1,0 +1,164 @@
+module examples::view_bus_test;
+
+using std::bits::uint;
+using std::logic::Bit;
+
+// A reusable physical layout can have distinct producer and consumer views.
+// Both views flatten onto the same Stream net; only their permissions and
+// implementations differ.
+struct Stream {
+    valid: Bit,
+    ready: Bit,
+    data: uint[8],
+}
+
+view out Source for Stream {
+    out valid;
+    in ready;
+    out data;
+}
+
+view in Sink for Stream {
+    in valid;
+    out ready;
+    in data;
+}
+
+impl Source {
+    fn publish(self, value: uint[8], enabled: Bit) {
+        self.valid = enabled;
+        self.data = value;
+    }
+}
+
+impl Sink {
+    fn accept(self, enabled: Bit) {
+        self.ready = enabled;
+    }
+}
+
+entity Producer {
+    bus: Source;
+    in value: uint[8];
+    in enabled: Bit;
+    out ready: Bit;
+}
+
+impl Producer {
+    bus.publish(value, enabled);
+    ready = bus.ready;
+}
+
+entity Consumer {
+    bus: Sink;
+    in enabled: Bit;
+    out valid: Bit;
+    out value: uint[8];
+}
+
+impl Consumer {
+    bus.accept(enabled);
+    valid = bus.valid;
+    value = bus.data;
+}
+
+entity StreamLink {
+    in tx_value: uint[8];
+    in tx_enabled: Bit;
+    in rx_enabled: Bit;
+    out tx_ready: Bit;
+    out rx_valid: Bit;
+    out rx_value: uint[8];
+}
+
+impl StreamLink {
+    let wire: Stream;
+    let source: Producer = {
+        .bus = wire,
+        .value = tx_value,
+        .enabled = tx_enabled,
+        .ready = tx_ready,
+    };
+    let sink: Consumer = {
+        .bus = wire,
+        .enabled = rx_enabled,
+        .valid = rx_valid,
+        .value = rx_value,
+    };
+}
+
+// A small bus can be declared directly as a standalone view. Its fields carry
+// types because there is no separate backing struct.
+view out StatusBus {
+    in enabled: Bit;
+    out active: Bit;
+    out value: uint[8];
+}
+
+impl StatusBus {
+    fn update(self, next: uint[8]) {
+        self.active = self.enabled;
+        self.value = next;
+    }
+}
+
+entity Status {
+    bus: StatusBus;
+    in next: uint[8];
+}
+
+impl Status {
+    bus.update(next);
+}
+
+#[test]
+entity ViewBusTest {}
+
+impl ViewBusTest {
+    let tx_value: uint[8];
+    let tx_enabled: Bit;
+    let rx_enabled: Bit;
+    let tx_ready: Bit;
+    let rx_valid: Bit;
+    let rx_value: uint[8];
+
+    let stream: StreamLink = {
+        .tx_value = tx_value,
+        .tx_enabled = tx_enabled,
+        .rx_enabled = rx_enabled,
+        .tx_ready = tx_ready,
+        .rx_valid = rx_valid,
+        .rx_value = rx_value,
+    };
+
+    let status: StatusBus;
+    let next: uint[8];
+    let status_device: Status = {
+        .bus = status,
+        .next = next,
+    };
+
+    tx_value = 0xA5;
+    tx_enabled = '1';
+    rx_enabled = '1';
+    status.enabled = '1';
+    next = 37;
+    await 1ns;
+
+    assert!(tx_ready == '1', "ready travels from Sink to Source");
+    assert!(rx_valid == '1', "valid travels from Source to Sink");
+    assert!(rx_value == 0xA5, "payload travels through the struct-backed views");
+    assert!(status.active == '1', "standalone view input reaches its implementation");
+    assert!(status.value == 37, "standalone view outputs reach the testbench");
+
+    rx_enabled = '0';
+    tx_enabled = '0';
+    status.enabled = '0';
+    next = 99;
+    await 1ns;
+
+    assert!(tx_ready == '0', "sink backpressure reaches the producer");
+    assert!(rx_valid == '0', "producer can deassert valid");
+    assert!(status.active == '0', "standalone input changes propagate");
+    assert!(status.value == 99, "standalone payload updates propagate");
+}

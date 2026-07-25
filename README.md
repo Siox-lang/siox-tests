@@ -3,7 +3,7 @@
 The `.siox` example and conformance corpus for the
 [**siox**](https://github.com/Siox-lang/sioxc) hardware description language —
 counters, FSMs, a FIFO, SPI, RISC-V ALU/decoder fragments, tristate buses,
-generate loops, struct/bus ports, and more.
+directional views, generate loops, struct/view ports, and more.
 
 These programs are the language-level integration suite for the `sioxc`
 compiler. They are engine-agnostic: each is a self-contained `.siox` module,

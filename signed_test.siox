@@ -2,7 +2,8 @@ module examples::signed_test;
 using std::logic::{Bool};
 using std::bits::{int, uint};
 
-// Signed comparison comes from std's `impl Ord for int` — not the compiler.
+// Signed comparison comes from std's
+// `impl Operator<"<=>", int, Ordering> for int` — not the compiler.
 entity Cmp {
     in a: int[8];
     in b: int[8];
