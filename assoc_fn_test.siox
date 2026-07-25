@@ -1,0 +1,60 @@
+module examples::assoc_fn_test;
+
+using std::bits::{uint};
+using std::attrs::{test};
+
+// Static associated functions (no `self`) are callable in expressions as
+// `Type::name(..)`, in hardware and in a testbench alike. This is what makes
+// VHDL's attribute-functions unnecessary: `'pos`/`'val`/`'image`-style
+// operations are ordinary std code on an explicit, named table rather than
+// magic attributes.
+
+// An encoding table, VHDL's `'pos`/`'val` made explicit and table-scoped.
+struct Ascii {}
+impl Ascii {
+    fn code(c: integer) -> integer { return c; }        // 'pos
+    fn char(n: integer) -> integer { return n; }        // 'val
+    fn is_digit(c: integer) -> integer {
+        if c >= 48 and c <= 57 { return 1; }
+        return 0;
+    }
+}
+
+// Associated fns compose and const-fold, so they work as widths/params too.
+struct Bits {}
+impl Bits {
+    fn mask(n: integer) -> integer { return (1 << n) - 1; }
+}
+
+entity Probe {
+    out digit: uint[8];    // Ascii::code('7'-ish) round trip
+    out isd: uint[8];      // is_digit over a digit code
+    out notd: uint[8];     // is_digit over a letter code
+    out m: uint[8];        // Bits::mask(4)
+}
+
+impl Probe {
+    digit = Ascii::char(Ascii::code(55));   // 55 = '7'
+    isd = Ascii::is_digit(55);
+    notd = Ascii::is_digit(65);             // 65 = 'A'
+    m = Bits::mask(4);
+}
+
+#[test]
+entity AssocFnTest {}
+
+impl AssocFnTest {
+    let digit: uint[8]; let isd: uint[8]; let notd: uint[8]; let m: uint[8];
+    let dut: Probe = { .digit = digit, .isd = isd, .notd = notd, .m = m };
+
+    // A constant-folded associated call also seeds a local's initializer.
+    let local: uint[8] = Bits::mask(3);
+
+    assert!(digit == 55, "Ascii::char(Ascii::code(55)) round-trips");
+    assert!(isd == 1, "Ascii::is_digit(55) — '7' is a digit");
+    assert!(notd == 0, "Ascii::is_digit(65) — 'A' is not");
+    assert!(m == 15, "Bits::mask(4) == 0b1111");
+    assert!(local == 7, "assoc call in a local initializer");
+    // Callable directly from testbench expression position too.
+    assert!(Bits::mask(5) == 31, "assoc call in a testbench expression");
+}
