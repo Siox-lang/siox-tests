@@ -12,33 +12,33 @@ struct Stream {
     data: uint[8],
 }
 
-view out Source for Stream {
+view Source for Stream {
     out valid;
     in ready;
     out data;
 }
 
-view in Sink for Stream {
+view Sink for Stream {
     in valid;
     out ready;
     in data;
 }
 
-impl Source {
+impl Source Stream {
     fn publish(self, value: uint[8], enabled: Bit) {
         self.valid = enabled;
         self.data = value;
     }
 }
 
-impl Sink {
+impl Sink Stream {
     fn accept(self, enabled: Bit) {
         self.ready = enabled;
     }
 }
 
 entity Producer {
-    bus: Source;
+    bus: Source Stream;
     in value: uint[8];
     in enabled: Bit;
     out ready: Bit;
@@ -50,7 +50,7 @@ impl Producer {
 }
 
 entity Consumer {
-    bus: Sink;
+    bus: Sink Stream;
     in enabled: Bit;
     out valid: Bit;
     out value: uint[8];
@@ -87,15 +87,20 @@ impl StreamLink {
     };
 }
 
-// A small bus can be declared directly as a standalone view. Its fields carry
-// types because there is no separate backing struct.
-view out StatusBus {
-    in enabled: Bit;
-    out active: Bit;
-    out value: uint[8];
+// Small buses use the same struct-plus-view model as larger protocols.
+struct StatusSignals {
+    enabled: Bit,
+    active: Bit,
+    value: uint[8],
 }
 
-impl StatusBus {
+view StatusBus for StatusSignals {
+    in enabled;
+    out active;
+    out value;
+}
+
+impl StatusBus StatusSignals {
     fn update(self, next: uint[8]) {
         self.active = self.enabled;
         self.value = next;
@@ -103,7 +108,7 @@ impl StatusBus {
 }
 
 entity Status {
-    bus: StatusBus;
+    bus: StatusBus StatusSignals;
     in next: uint[8];
 }
 
@@ -131,7 +136,7 @@ impl ViewBusTest {
         .rx_value = rx_value,
     };
 
-    let status: StatusBus;
+    let status: StatusSignals;
     let next: uint[8];
     let status_device: Status = {
         .bus = status,
@@ -148,8 +153,8 @@ impl ViewBusTest {
     assert!(tx_ready == '1', "ready travels from Sink to Source");
     assert!(rx_valid == '1', "valid travels from Source to Sink");
     assert!(rx_value == 0xA5, "payload travels through the struct-backed views");
-    assert!(status.active == '1', "standalone view input reaches its implementation");
-    assert!(status.value == 37, "standalone view outputs reach the testbench");
+    assert!(status.active == '1', "applied view input reaches its implementation");
+    assert!(status.value == 37, "applied view outputs reach the testbench");
 
     rx_enabled = '0';
     tx_enabled = '0';

@@ -9,17 +9,17 @@ using std::bits::uint;
 
 struct Stream { valid: Bit, ready: Bit, data: uint[8], }
 
-view out Source for Stream { out valid; out data; in ready; }
-view in Sink for Stream { in valid; in data; out ready; }
+view Source for Stream { out valid; out data; in ready; }
+view Sink for Stream { in valid; in data; out ready; }
 
-entity Producer { bus: Source; in d: uint[8]; in go: Bit; out canpush: Bit; }
+entity Producer { bus: Source Stream; in d: uint[8]; in go: Bit; out canpush: Bit; }
 impl Producer {
     bus.valid = go;
     bus.data = d;
     canpush = bus.ready;     // ready flows back from the Sink
 }
 
-entity Consumer { bus: Sink; in accept: Bit; out got: uint[8]; out seen: Bit; }
+entity Consumer { bus: Sink Stream; in accept: Bit; out got: uint[8]; out seen: Bit; }
 impl Consumer {
     bus.ready = accept;      // ready flows toward the Source
     got = bus.data;
