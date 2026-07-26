@@ -1,0 +1,39 @@
+module tests::partial_range;
+
+using std::bits::uint;
+
+entity PartialRange {
+    in value: uint[7..0];
+    out upper: uint[4];
+    out lower: uint[4];
+    out whole: uint[8];
+}
+
+impl PartialRange {
+    upper = value[..4];
+    lower = value[3..];
+    whole = value[..];
+}
+
+#[test]
+entity PartialRangeTest {}
+
+impl PartialRangeTest {
+    let value: uint[8];
+    let upper: uint[4];
+    let lower: uint[4];
+    let whole: uint[8];
+
+    let dut: PartialRange = {
+        .value = value,
+        .upper = upper,
+        .lower = lower,
+        .whole = whole,
+    };
+
+    value = 0b10110110;
+    await 1ns;
+    assert!(upper == 0b1011, "`[..4]` should use the declared left bound");
+    assert!(lower == 0b0110, "`[3..]` should use the declared right bound");
+    assert!(whole == value, "`[..]` should preserve the complete declared range");
+}

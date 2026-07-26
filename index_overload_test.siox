@@ -1,0 +1,83 @@
+module tests::index_overload;
+
+using std::bits::uint;
+using std::ops::{Index, IndexAssign, Range};
+
+struct Pair {
+    first: uint[8],
+    second: uint[8],
+}
+
+impl Index<integer, uint> for Pair {
+    fn index(self, index: integer) -> uint[8] {
+        if index == 0 {
+            return self.first;
+        }
+        return self.second;
+    }
+}
+
+impl Index<Range, uint> for Pair {
+    fn index(self, index: Range) -> uint[8] {
+        if index.left == 0 and index.right == 0 {
+            return self.first;
+        }
+        return self.second;
+    }
+}
+
+impl IndexAssign<integer, uint> for Pair {
+    fn index_assign(self, index: integer, value: uint[8]) {
+        if index == 0 {
+            self.first = value;
+        } else {
+            self.second = value;
+        }
+    }
+}
+
+entity IndexedPair {
+    in first: uint[8];
+    in second: uint[8];
+    in select: uint[1];
+    out selected: uint[8];
+    out ranged: uint[8];
+}
+
+impl IndexedPair {
+    let pair: Pair;
+    pair[0] = first;
+    pair[1] = second;
+    selected = pair[integer(select)];
+    ranged = pair[0..0];
+}
+
+#[test]
+entity IndexOverloadTest {}
+
+impl IndexOverloadTest {
+    let first: uint[8];
+    let second: uint[8];
+    let select: uint[1];
+    let selected: uint[8];
+    let ranged: uint[8];
+
+    let dut: IndexedPair = {
+        .first = first,
+        .second = second,
+        .select = select,
+        .selected = selected,
+        .ranged = ranged,
+    };
+
+    first = 11;
+    second = 29;
+    select = 0;
+    await 1ns;
+    assert!(selected == 11, "integer Index overload should select first");
+    assert!(ranged == 11, "Range Index overload should receive both bounds");
+
+    select = 1;
+    await 1ns;
+    assert!(selected == 29, "integer Index overload should select second");
+}
