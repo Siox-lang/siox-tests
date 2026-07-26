@@ -1,0 +1,33 @@
+module examples::await_unmet_test;
+
+using std::bits::uint;
+using std::logic::Bit;
+using std::attrs::{test};
+
+// An `await` whose condition is satisfied proceeds normally. (The failing
+// case — a condition that never holds — is a compiler test, since a corpus
+// program must pass.) Previously an unmet `await` fell through silently, so a
+// testbench that never reached its assertions still reported `ok`.
+
+entity Counter { in clk: Bit; out n: uint[8]; }
+impl Counter {
+    let v: uint[8] = 0;
+    if clk.rising() { v = v + 1; }
+    n = v;
+}
+
+#[test]
+entity AwaitUnmetTest {}
+
+impl AwaitUnmetTest {
+    let clk: Bit = '0';
+    let n: uint[8];
+    let dut: Counter = { .clk = clk, .n = n };
+    clk = not clk after 5ns;
+
+    await clk.rising();          // an edge that does arrive
+    assert!(n == 1, "one rising edge counted");
+
+    await n == 5;                // a condition that does become true
+    assert!(n == 5, "await-condition released at the right value");
+}
