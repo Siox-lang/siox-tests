@@ -1,0 +1,39 @@
+module examples::struct_init_test;
+
+using std::bits::uint;
+using std::logic::Bit;
+using std::attrs::{test};
+
+// A struct-literal initializer seeds the field signals, in an entity exactly
+// as in a testbench. Previously only the testbench interpreter honoured it, so
+// an entity-level struct local silently powered on at 0.
+
+struct Config { mode: uint[8], enable: Bit }
+
+entity Holder {
+    out mode: uint[8];
+    out enable: Bit;
+}
+
+impl Holder {
+    let cfg: Config = { .mode = 7, .enable = '1' };
+    mode = cfg.mode;
+    enable = cfg.enable;
+}
+
+#[test]
+entity StructInitTest {}
+
+impl StructInitTest {
+    let mode: uint[8];
+    let enable: Bit;
+    let dut: Holder = { .mode = mode, .enable = enable };
+
+    // A testbench-level literal, for comparison.
+    let local: Config = { .mode = 9, .enable = '0' };
+
+    assert!(mode == 7, "entity struct field initialised");
+    assert!(enable == '1', "entity struct Bit field initialised");
+    assert!(local.mode == 9, "testbench struct field initialised");
+    assert!(local.enable == '0', "testbench struct Bit field initialised");
+}
