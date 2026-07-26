@@ -1,0 +1,32 @@
+module examples::format_test;
+
+using std::bits::uint;
+using std::logic::{Bit};
+using std::attrs::{test};
+
+// `print!`/`assert!` formatting: `{}` takes the next argument, `{{`/`}}` are
+// literal braces, and enum/Logic operands render as their symbol. The message
+// of a failing `assert!` substitutes its arguments too — the value you need is
+// exactly the one you are debugging.
+
+enum State { Idle, Run, Done }
+
+#[test]
+entity FormatTest {}
+
+impl FormatTest {
+    let n: uint[8] = 42;
+    let b: Bit = '1';
+    let s: State;
+
+    print!("plain");
+    print!("value {}", n);
+    print!("two {} and {}", n, b);
+    print!("escaped {{}} stays literal, then {}", n);
+    print!("symbols: bit {} state {}", b, s);
+
+    // The assertion holds, so this message is not printed — but it type-checks
+    // for arity, and its arguments would be substituted if it failed.
+    assert!(n == 42, "n should be 42 but was {}", n);
+    assert!(b == '1', "bit {} state {}", b, s);
+}
