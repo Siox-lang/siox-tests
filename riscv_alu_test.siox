@@ -3,7 +3,7 @@ module examples::riscv_alu_test;
 using std::bits::{uint, int};
 
 // RV32I ALU operation select (funct3 + bit30 encoding, flattened).
-enum AluOp: uint[4] {
+enum AluOp {
     Add = 0, Sub = 1, Sll = 2, Slt = 3, Sltu = 4,
     Xor = 5, Srl = 6, Sra = 7, Or = 8, And = 9,
 }
