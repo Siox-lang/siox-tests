@@ -2,7 +2,7 @@ module examples::family_test;
 
 // A user-defined Logic-vector family — behaves like unsigned with no compiler
 // knowledge of its name, purely from `struct F : Logic[]`.
-struct Word : Logic[];
+struct Word(Logic[]);
 
 entity E { in a: Word[8]; out y: Word[8]; }
 impl E { y = a; }
