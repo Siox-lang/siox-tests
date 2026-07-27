@@ -1,7 +1,7 @@
 module examples::from_test;
 using std::logic::{ULogic};
 
-struct Pair { lo: uint[8], hi: uint[8] }
+struct Pair { lo: unsigned[8], hi: unsigned[8] }
 
 impl From<integer> for Pair {
     fn from(v: integer) -> Pair {
@@ -9,7 +9,7 @@ impl From<integer> for Pair {
     }
 }
 
-entity F { in n: uint[8]; in u: ULogic; out lo: uint[8]; out hi: uint[8]; out l: Logic; }
+entity F { in n: unsigned[8]; in u: ULogic; out lo: unsigned[8]; out hi: unsigned[8]; out l: Logic; }
 impl F {
     let p: Pair;
     p = Pair(integer(n));    // From<integer> for Pair (struct-valued)
@@ -21,8 +21,8 @@ impl F {
 #[test]
 entity FromTest {}
 impl FromTest {
-    let n: uint[8] = 7; let u: ULogic = 'Z';
-    let lo: uint[8]; let hi: uint[8]; let l: Logic;
+    let n: unsigned[8] = 7; let u: ULogic = 'Z';
+    let lo: unsigned[8]; let hi: unsigned[8]; let l: Logic;
     let d: F = { .n = n, .u = u, .lo = lo, .hi = hi, .l = l };
     await 1ns;
     assert!(lo == 7, "From struct field lo");

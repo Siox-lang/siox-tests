@@ -1,6 +1,6 @@
 module examples::await_unmet_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 using std::logic::Bit;
 using std::attrs::{test};
 
@@ -9,9 +9,9 @@ using std::attrs::{test};
 // program must pass.) Previously an unmet `await` fell through silently, so a
 // testbench that never reached its assertions still reported `ok`.
 
-entity Counter { in clk: Bit; out n: uint[8]; }
+entity Counter { in clk: Bit; out n: unsigned[8]; }
 impl Counter {
-    let v: uint[8] = 0;
+    let v: unsigned[8] = 0;
     if clk.rising() { v = v + 1; }
     n = v;
 }
@@ -21,7 +21,7 @@ entity AwaitUnmetTest {}
 
 impl AwaitUnmetTest {
     let clk: Bit = '0';
-    let n: uint[8];
+    let n: unsigned[8];
     let dut: Counter = { .clk = clk, .n = n };
     clk = not clk after 5ns;
 

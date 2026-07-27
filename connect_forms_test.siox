@@ -1,14 +1,14 @@
 module examples::connect_forms_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 
 // An entity port is connected in one of three struct-style forms: explicit
 // (`.a = x`), name shorthand (`.a`), or positional (`x` by order). Ports may
 // also be wired post-declaration through the instance (`dut.a = x`, `dut.y`).
 entity Add {
-    in a: uint[8];
-    in b: uint[8];
-    out y: uint[8];
+    in a: unsigned[8];
+    in b: unsigned[8];
+    out y: unsigned[8];
 }
 
 impl Add {
@@ -19,8 +19,8 @@ impl Add {
 // chain two adders, connecting each stage's ports by position and by
 // instance-qualified assignment.
 entity Chain {
-    in x: uint[8];
-    out z: uint[8];
+    in x: unsigned[8];
+    out z: unsigned[8];
 }
 
 impl Chain {
@@ -37,9 +37,9 @@ impl Chain {
 entity ConnectFormsTest {}
 
 impl ConnectFormsTest {
-    let a: uint[8];
-    let b: uint[8];
-    let y: uint[8];
+    let a: unsigned[8];
+    let b: unsigned[8];
+    let y: unsigned[8];
 
     // Form 1: explicit named connection.
     let named: Add = { .a = a, .b = b, .y = y };
@@ -49,8 +49,8 @@ impl ConnectFormsTest {
     assert!(y == 30, "explicit named");
 
     // Form 3 + post-declaration: drive Chain's input and read its output.
-    let x: uint[8];
-    let z: uint[8];
+    let x: unsigned[8];
+    let z: unsigned[8];
     let chain: Add = { x, x, z };   // positional: a = x, b = x, y = z
     x = 7;
     assert!(z == 14, "positional a=b=x");

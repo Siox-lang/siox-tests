@@ -5,21 +5,21 @@ module examples::stream_bus_test;
 // instances to one `Stream` net wires each leaf in its own direction.
 
 using std::logic::{Bit};
-using std::bits::uint;
+using std::bits::unsigned;
 
-struct Stream { valid: Bit, ready: Bit, data: uint[8], }
+struct Stream { valid: Bit, ready: Bit, data: unsigned[8], }
 
 view Source for Stream { out valid; out data; in ready; }
 view Sink for Stream { in valid; in data; out ready; }
 
-entity Producer { bus: Source Stream; in d: uint[8]; in go: Bit; out canpush: Bit; }
+entity Producer { bus: Source Stream; in d: unsigned[8]; in go: Bit; out canpush: Bit; }
 impl Producer {
     bus.valid = go;
     bus.data = d;
     canpush = bus.ready;     // ready flows back from the Sink
 }
 
-entity Consumer { bus: Sink Stream; in accept: Bit; out got: uint[8]; out seen: Bit; }
+entity Consumer { bus: Sink Stream; in accept: Bit; out got: unsigned[8]; out seen: Bit; }
 impl Consumer {
     bus.ready = accept;      // ready flows toward the Source
     got = bus.data;
@@ -27,8 +27,8 @@ impl Consumer {
 }
 
 #[top]
-entity Link { in d: uint[8]; in go: Bit; in accept: Bit;
-              out got: uint[8]; out seen: Bit; out canpush: Bit; }
+entity Link { in d: unsigned[8]; in go: Bit; in accept: Bit;
+              out got: unsigned[8]; out seen: Bit; out canpush: Bit; }
 impl Link {
     let s: Stream;
     let p: Producer = { .bus = s, .d = d, .go = go, .canpush = canpush };
@@ -38,8 +38,8 @@ impl Link {
 #[test]
 entity StreamBusTest {}
 impl StreamBusTest {
-    let d: uint[8]; let go: Bit; let accept: Bit;
-    let got: uint[8]; let seen: Bit; let canpush: Bit;
+    let d: unsigned[8]; let go: Bit; let accept: Bit;
+    let got: unsigned[8]; let seen: Bit; let canpush: Bit;
     let dut: Link = { .d = d, .go = go, .accept = accept, .got = got, .seen = seen, .canpush = canpush };
 
     d = 0xAB; go = '1'; accept = '1';

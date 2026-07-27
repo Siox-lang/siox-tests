@@ -2,26 +2,26 @@ module examples::convert_test;
 
 // T(x) conversions: widen (zero/sign per target), narrow, cross to kernel.
 entity Conv {
-    in u8: uint[8];
-    in s8: int[8];
-    out wide: uint[16];
-    out swide: int[16];
-    out narrow: uint[4];
-    out rz: uint[16];
+    in u8: unsigned[8];
+    in s8: signed[8];
+    out wide: unsigned[16];
+    out swide: signed[16];
+    out narrow: unsigned[4];
+    out rz: unsigned[16];
 }
 impl Conv {
-    wide = uint[16](u8);
-    swide = int[16](sext(s8));   // signed widening: sext then convert
-    narrow = uint[4](u8);       // truncates
+    wide = unsigned[16](u8);
+    swide = signed[16](sext(s8));   // signed widening: sext then convert
+    narrow = unsigned[4](u8);       // truncates
     rz = resize(u8, 16);        // family-preserving spelling
 }
 
 // Signed division + arithmetic shift, from std source.
 entity SMath {
-    in a: int[8];
-    in b: int[8];
-    out q: int[8];
-    out sh: int[8];
+    in a: signed[8];
+    in b: signed[8];
+    out q: signed[8];
+    out sh: signed[8];
 }
 impl SMath {
     q = a / b;
@@ -31,13 +31,13 @@ impl SMath {
 #[test]
 entity S2Test {}
 impl S2Test {
-    let u8: uint[8] = 200; let s8: int[8] = 240;   // s8 = -16
-    let wide: uint[16]; let swide: int[16]; let narrow: uint[4]; let rz: uint[16];
+    let u8: unsigned[8] = 200; let s8: signed[8] = 240;   // s8 = -16
+    let wide: unsigned[16]; let swide: signed[16]; let narrow: unsigned[4]; let rz: unsigned[16];
     let c: Conv = { .u8 = u8, .s8 = s8, .wide = wide, .swide = swide, .narrow = narrow, .rz = rz };
 
-    let a: int[8] = 236;   // -20
-    let b: int[8] = 3;
-    let q: int[8]; let sh: int[8];
+    let a: signed[8] = 236;   // -20
+    let b: signed[8] = 3;
+    let q: signed[8]; let sh: signed[8];
     let m: SMath = { .a = a, .b = b, .q = q, .sh = sh };
 
     await 1ns;

@@ -1,15 +1,15 @@
 module tests::index_overload;
 
-using std::bits::uint;
+using std::bits::unsigned;
 using std::ops::{Index, IndexAssign, Range};
 
 struct Pair {
-    first: uint[8],
-    second: uint[8],
+    first: unsigned[8],
+    second: unsigned[8],
 }
 
-impl Index<integer, uint> for Pair {
-    fn index(self, index: integer) -> uint[8] {
+impl Index<integer, unsigned> for Pair {
+    fn index(self, index: integer) -> unsigned[8] {
         if index == 0 {
             return self.first;
         }
@@ -17,8 +17,8 @@ impl Index<integer, uint> for Pair {
     }
 }
 
-impl Index<Range, uint> for Pair {
-    fn index(self, index: Range) -> uint[8] {
+impl Index<Range, unsigned> for Pair {
+    fn index(self, index: Range) -> unsigned[8] {
         if index.left == 0 and index.right == 0 {
             return self.first;
         }
@@ -26,8 +26,8 @@ impl Index<Range, uint> for Pair {
     }
 }
 
-impl IndexAssign<integer, uint> for Pair {
-    fn index_assign(self, index: integer, value: uint[8]) {
+impl IndexAssign<integer, unsigned> for Pair {
+    fn index_assign(self, index: integer, value: unsigned[8]) {
         if index == 0 {
             self.first = value;
         } else {
@@ -37,11 +37,11 @@ impl IndexAssign<integer, uint> for Pair {
 }
 
 entity IndexedPair {
-    in first: uint[8];
-    in second: uint[8];
-    in select: uint[1];
-    out selected: uint[8];
-    out ranged: uint[8];
+    in first: unsigned[8];
+    in second: unsigned[8];
+    in select: unsigned[1];
+    out selected: unsigned[8];
+    out ranged: unsigned[8];
 }
 
 impl IndexedPair {
@@ -56,11 +56,11 @@ impl IndexedPair {
 entity IndexOverloadTest {}
 
 impl IndexOverloadTest {
-    let first: uint[8];
-    let second: uint[8];
-    let select: uint[1];
-    let selected: uint[8];
-    let ranged: uint[8];
+    let first: unsigned[8];
+    let second: unsigned[8];
+    let select: unsigned[1];
+    let selected: unsigned[8];
+    let ranged: unsigned[8];
 
     let dut: IndexedPair = {
         .first = first,

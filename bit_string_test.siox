@@ -1,7 +1,7 @@
 module examples::bit_string_test;
 
 // Bit-string prefixes are radix conversions declared by
-// `impl Prefix<"x", string> for uint` (and `"o"`) in std. The compiler names
+// `impl Prefix<"x", string> for unsigned` (and `"o"`) in std. The compiler names
 // the trait while std owns which prefixes exist:
 //   x"…" — 4 bits/hex digit, 2-value
 //   o"…" — 3 bits/octal digit, 2-value
@@ -11,17 +11,17 @@ module examples::bit_string_test;
 using std::attrs::{test};
 
 entity Probe {
-    out h: uint[16];   // x"BEEF"
-    out o: uint[6];    // o"17"  = 001_111 = 15
-    out o2: uint[9];   // o"725" = 111_010_101 = 469
-    out s: uint[4];    // bare "1010" = 10
+    out h: unsigned[16];   // x"BEEF"
+    out o: unsigned[6];    // o"17"  = 001_111 = 15
+    out o2: unsigned[9];   // o"725" = 111_010_101 = 469
+    out s: unsigned[4];    // bare "1010" = 10
 }
 
 impl Probe {
-    let hv: uint[16] = x"BEEF";
-    let ov: uint[6]  = o"17";
-    let o2v: uint[9] = o"725";
-    let sv: uint[4]  = "1010";     // no prefix
+    let hv: unsigned[16] = x"BEEF";
+    let ov: unsigned[6]  = o"17";
+    let o2v: unsigned[9] = o"725";
+    let sv: unsigned[4]  = "1010";     // no prefix
     h = hv;   o = ov;   o2 = o2v;   s = sv;
 }
 
@@ -29,7 +29,7 @@ impl Probe {
 entity BitStringTest {}
 
 impl BitStringTest {
-    let h: uint[16]; let o: uint[6]; let o2: uint[9]; let s: uint[4];
+    let h: unsigned[16]; let o: unsigned[6]; let o2: unsigned[9]; let s: unsigned[4];
     let dut: Probe = { .h = h, .o = o, .o2 = o2, .s = s };
 
     assert!(h == 0xBEEF, "x\"BEEF\" = 0xBEEF");

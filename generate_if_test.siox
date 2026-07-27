@@ -1,10 +1,10 @@
 module examples::generate_if_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 
 entity Inc {
-    in a: uint[8];
-    out y: uint[8];
+    in a: unsigned[8];
+    out y: unsigned[8];
 }
 
 impl Inc {
@@ -15,8 +15,8 @@ impl Inc {
 // inserts an `Inc` between the ports; otherwise the input passes through. The
 // condition is compile-time constant, so only the taken branch is built.
 entity Opt<EN: integer> {
-    in a: uint[8];
-    out y: uint[8];
+    in a: unsigned[8];
+    out y: unsigned[8];
 }
 
 impl Opt<EN: integer> {
@@ -31,12 +31,12 @@ impl Opt<EN: integer> {
 // stages out of 3 (the rest pass through) — instance-array elements created
 // conditionally.
 entity Chain<N: integer> {
-    in a: uint[8];
-    out y: uint[8];
+    in a: unsigned[8];
+    out y: unsigned[8];
 }
 
 impl Chain<N: integer> {
-    let w: uint[8][4];
+    let w: unsigned[8][4];
     let stage: Inc[3];
     w[0] = a;
     for i in 0..2 {
@@ -53,9 +53,9 @@ impl Chain<N: integer> {
 entity GenerateIfTest {}
 
 impl GenerateIfTest {
-    let a: uint[8];
-    let on: uint[8];
-    let off: uint[8];
+    let a: unsigned[8];
+    let on: unsigned[8];
+    let off: unsigned[8];
 
     let dut_on: Opt<EN = 1> = { .a = a, .y = on };
     let dut_off: Opt<EN = 0> = { .a = a, .y = off };
@@ -65,8 +65,8 @@ impl GenerateIfTest {
     assert!(off == 40, "EN=0: passthrough");
 
     // Chain<N=2>: two +1 stages, then hold.
-    let ci: uint[8];
-    let co: uint[8];
+    let ci: unsigned[8];
+    let co: unsigned[8];
     let chain: Chain<N = 2> = { .a = ci, .y = co };
     ci = 10;
     assert!(co == 12, "N=2: +1 +1 then passthrough");

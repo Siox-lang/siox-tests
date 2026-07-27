@@ -1,24 +1,24 @@
 module examples::chain_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 
 // DUT-to-DUT chaining through a plain testbench local: a name bound to one
 // DUT's `out` and another's `in` becomes a real feedback driver in the
 // lowered design, so values propagate on every settle — no hardware wrapper
 // needed.
-entity Inc { in x: uint[8]; out y: uint[8]; }
+entity Inc { in x: unsigned[8]; out y: unsigned[8]; }
 impl Inc { y = x + 1; }
 
-entity Dbl { in x: uint[8]; out y: uint[8]; }
+entity Dbl { in x: unsigned[8]; out y: unsigned[8]; }
 impl Dbl { y = x + x; }
 
 #[test]
 entity ChainTest {}
 
 impl ChainTest {
-    let a: uint[8];
-    let mid: uint[8];
-    let res: uint[8];
+    let a: unsigned[8];
+    let mid: unsigned[8];
+    let res: unsigned[8];
     let i: Inc = { .x = a, .y = mid };
     let d: Dbl = { .x = mid, .y = res };
 

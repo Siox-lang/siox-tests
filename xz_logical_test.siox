@@ -15,10 +15,10 @@ entity Gates {
 }
 
 impl Gates {
-    let xx: uint[2] = "XX";   // both elements X
-    let mask: uint[2] = "10"; // bit1 = 1, bit0 = 0
-    let a: uint[2];
-    let o: uint[2];
+    let xx: unsigned[2] = "XX";   // both elements X
+    let mask: unsigned[2] = "10"; // bit1 = 1, bit0 = 0
+    let a: unsigned[2];
+    let o: unsigned[2];
     a = xx and mask;           // {X and 1, X and 0} = {X, 0}
     o = xx or mask;            // {X or 1,  X or 0}  = {1, X}
     and_hi = a[1..1];

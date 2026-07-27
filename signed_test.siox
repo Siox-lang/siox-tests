@@ -1,12 +1,12 @@
 module examples::signed_test;
 using std::logic::{Bool};
-using std::bits::{int, uint};
+using std::bits::{signed, unsigned};
 
 // Signed comparison comes from std's
-// `impl Operator<"<=>", int, Ordering> for int` — not the compiler.
+// `impl Operator<"<=>", signed, Ordering> for signed` — not the compiler.
 entity Cmp {
-    in a: int[8];
-    in b: int[8];
+    in a: signed[8];
+    in b: signed[8];
     out lt: Bool;
     out ge: Bool;
 }
@@ -15,20 +15,20 @@ impl Cmp {
     ge = a >= b;
 }
 
-// Control: uint keeps the kernel's unsigned compare.
-entity UCmp { in a: uint[8]; in b: uint[8]; out lt: Bool; }
+// Control: unsigned keeps the kernel's unsigned compare.
+entity UCmp { in a: unsigned[8]; in b: unsigned[8]; out lt: Bool; }
 impl UCmp { lt = a < b; }
 
 #[test]
 entity SignedTest {}
 impl SignedTest {
-    let a: int[8]; let b: int[8];
+    let a: signed[8]; let b: signed[8];
     let lt: Bool; let ge: Bool;
     let d: Cmp = { .a = a, .b = b, .lt = lt, .ge = ge };
-    let ua: uint[8]; let ub: uint[8]; let ult: Bool;
+    let ua: unsigned[8]; let ub: unsigned[8]; let ult: Bool;
     let u: UCmp = { .a = ua, .b = ub, .lt = ult };
 
-    a = 255;   // -1 as int[8] two's complement
+    a = 255;   // -1 as signed[8] two's complement
     b = 1;
     ua = 255; ub = 1;
     await 1ns;

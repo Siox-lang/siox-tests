@@ -1,6 +1,6 @@
 module examples::rand_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 using std::attrs::{test};
 
 // std::rand is deterministic and shared by every engine: the same seed gives
@@ -15,20 +15,20 @@ entity RandTest {}
 
 impl RandTest {
     // A user nullary function is the same shape and was equally affected.
-    let k: uint[8] = answer();
+    let k: unsigned[8] = answer();
     assert!(k == 42, "a nullary user fn returns its value");
 
     seed(7);
-    let a: uint[16] = rand();
-    let b: uint[16] = rand();
+    let a: unsigned[16] = rand();
+    let b: unsigned[16] = rand();
     seed(7);
-    let c: uint[16] = rand();
+    let c: unsigned[16] = rand();
 
     assert!(a == c, "reseeding reproduces the sequence");
     assert!(a != b, "successive draws advance");
 
     // randint stays inside its inclusive bounds.
-    let r: uint[8] = randint(10, 20);
+    let r: unsigned[8] = randint(10, 20);
     assert!(r >= 10, "randint lower bound");
     assert!(r <= 20, "randint upper bound");
 

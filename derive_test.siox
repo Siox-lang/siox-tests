@@ -3,11 +3,11 @@ module examples::derive_test;
 // Structure is composition (§3.28): a struct holds the one it builds on as a
 // field rather than extending it, so `pkt.header.valid` says where the field
 // lives. Derivation (`:`) only ever makes a newtype.
-struct Header { valid: Bit, kind: uint[4] }
-struct Packet { header: Header, data: uint[8] }
+struct Header { valid: Bit, kind: unsigned[4] }
+struct Packet { header: Header, data: unsigned[8] }
 
-entity Rx { in p_valid: Bit; in p_kind: uint[4]; in p_data: uint[8];
-            out ok: Bit; out d: uint[8]; }
+entity Rx { in p_valid: Bit; in p_kind: unsigned[4]; in p_data: unsigned[8];
+            out ok: Bit; out d: unsigned[8]; }
 impl Rx {
     let pkt: Packet;
     pkt = Packet { .header = Header { .valid = p_valid, .kind = p_kind }, .data = p_data };
@@ -18,8 +18,8 @@ impl Rx {
 #[test]
 entity SD {}
 impl SD {
-    let p_valid: Bit = '1'; let p_kind: uint[4] = 3; let p_data: uint[8] = 200;
-    let ok: Bit; let d: uint[8];
+    let p_valid: Bit = '1'; let p_kind: unsigned[4] = 3; let p_data: unsigned[8] = 200;
+    let ok: Bit; let d: unsigned[8];
     let r: Rx = { .p_valid = p_valid, .p_kind = p_kind, .p_data = p_data, .ok = ok, .d = d };
     await 1ns;
     assert!(ok == '1', "composed field valid");

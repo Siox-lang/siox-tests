@@ -5,17 +5,17 @@ module examples::top_counter;
 // no testbench involved.
 
 using std::logic::{Logic};
-using std::bits::{uint};
+using std::bits::{unsigned};
 
 #[top]
 entity Counter8 {
     in clk: Bit;
     in rst: Logic;
-    out count: uint[8];
+    out count: unsigned[8];
 }
 
 impl Counter8 {
-    let value: uint[8] = 0;
+    let value: unsigned[8] = 0;
 
     if clk.rising() {
         if rst == '1' {

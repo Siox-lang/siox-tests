@@ -1,18 +1,18 @@
 module examples::instance_array_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 
 // An array of instances: `let stage: Inc[N]` declares N instances, built
 // element-wise in a generate loop and wired head-to-tail. Unlike a plain
 // generate loop, the array is named and indexable — an element's port can be
 // read from outside the loop (`stage[i].y`), and an output left unconnected at
 // construction is still readable.
-entity Inc { in x: uint[8]; out y: uint[8]; }
+entity Inc { in x: unsigned[8]; out y: unsigned[8]; }
 impl Inc { y = x + 1; }
 
-entity Pipeline { in a: uint[8]; out b: uint[8]; out probe: uint[8]; }
+entity Pipeline { in a: unsigned[8]; out b: unsigned[8]; out probe: unsigned[8]; }
 impl Pipeline {
-    let w: uint[8][4];
+    let w: unsigned[8][4];
     w[0] = a;
     let stage: Inc[3];
     for i in 0..2 {
@@ -26,7 +26,7 @@ impl Pipeline {
 entity InstanceArrayTest {}
 
 impl InstanceArrayTest {
-    let a: uint[8] = 10; let b: uint[8]; let probe: uint[8];
+    let a: unsigned[8] = 10; let b: unsigned[8]; let probe: unsigned[8];
     let d: Pipeline = { .a = a, .b = b, .probe = probe };
     await 1ns;
     assert!(b == 13, "10 through 3 incrementers = 13");

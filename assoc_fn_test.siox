@@ -1,6 +1,6 @@
 module examples::assoc_fn_test;
 
-using std::bits::{uint};
+using std::bits::{unsigned};
 using std::attrs::{test};
 
 // Static associated functions (no `self`) are callable in expressions as
@@ -27,10 +27,10 @@ impl Bits {
 }
 
 entity Probe {
-    out digit: uint[8];    // Ascii::code('7'-ish) round trip
-    out isd: uint[8];      // is_digit over a digit code
-    out notd: uint[8];     // is_digit over a letter code
-    out m: uint[8];        // Bits::mask(4)
+    out digit: unsigned[8];    // Ascii::code('7'-ish) round trip
+    out isd: unsigned[8];      // is_digit over a digit code
+    out notd: unsigned[8];     // is_digit over a letter code
+    out m: unsigned[8];        // Bits::mask(4)
 }
 
 impl Probe {
@@ -44,11 +44,11 @@ impl Probe {
 entity AssocFnTest {}
 
 impl AssocFnTest {
-    let digit: uint[8]; let isd: uint[8]; let notd: uint[8]; let m: uint[8];
+    let digit: unsigned[8]; let isd: unsigned[8]; let notd: unsigned[8]; let m: unsigned[8];
     let dut: Probe = { .digit = digit, .isd = isd, .notd = notd, .m = m };
 
     // A constant-folded associated call also seeds a local's initializer.
-    let local: uint[8] = Bits::mask(3);
+    let local: unsigned[8] = Bits::mask(3);
 
     assert!(digit == 55, "Ascii::char(Ascii::code(55)) round-trips");
     assert!(isd == 1, "Ascii::is_digit(55) — '7' is a digit");

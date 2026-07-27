@@ -1,17 +1,17 @@
 module examples::register_test;
 
 using std::logic::{Logic};
-using std::bits::uint;
+using std::bits::unsigned;
 
 // A parameterized register: `q` captures `d` on the rising clock edge.
 entity Register<W: integer> {
     in clk: Bit;
-    in d: uint[W];
-    out q: uint[W];
+    in d: unsigned[W];
+    out q: unsigned[W];
 }
 
 impl Register<W: integer> {
-    let state: uint[W] = 0;
+    let state: unsigned[W] = 0;
 
     if clk.rising() {
         state = d;
@@ -25,8 +25,8 @@ entity RegisterTest {}
 
 impl RegisterTest {
     let clk: Bit = '0';
-    let d: uint[8] = 0;
-    let q: uint[8];
+    let d: unsigned[8] = 0;
+    let q: unsigned[8];
 
     let dut: Register<W = 8> = {
         .clk = clk,

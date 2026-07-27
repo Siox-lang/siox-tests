@@ -1,13 +1,13 @@
 module examples::print_test;
 using std::math::{sqrt};
 
-entity Rt { in x: real; in n: uint[8]; out y: real; }
+entity Rt { in x: real; in n: unsigned[8]; out y: real; }
 impl Rt { y = sqrt(x); }
 
 #[test]
 entity S3Test {}
 impl S3Test {
-    let x: real = 9.0; let n: uint[8] = 42; let y: real;
+    let x: real = 9.0; let n: unsigned[8] = 42; let y: real;
     let d: Rt = { .x = x, .n = n, .y = y };
     await 1ns;
     print!("n = {} and sqrt({}) = {}", n, x, y);

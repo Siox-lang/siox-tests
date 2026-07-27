@@ -1,14 +1,14 @@
 module examples::cdc_test;
-using std::bits::uint;
+using std::bits::unsigned;
 
 // Cross-clock-domain sampling: the slow domain samples the fast domain's
 // counter VALUE on its own edge. Exercises independent clocks, coincident
 // edges, and pre-edge (next-state) ordering when a sample coincides with the
 // sampled counter's own increment.
-entity CDC { in fast: Bit; in slow: Bit; out sampled: uint[8]; out fcount: uint[8]; }
+entity CDC { in fast: Bit; in slow: Bit; out sampled: unsigned[8]; out fcount: unsigned[8]; }
 impl CDC {
-    let cnt: uint[8] = 0;
-    let s: uint[8] = 0;
+    let cnt: unsigned[8] = 0;
+    let s: unsigned[8] = 0;
     if fast.rising() { cnt = cnt + 1; }   // fast domain
     if slow.rising() { s = cnt; }         // slow domain samples the fast counter
     sampled = s;
@@ -20,8 +20,8 @@ entity CdcTest {}
 impl CdcTest {
     let fast: Bit = '0';
     let slow: Bit = '1';
-    let sampled: uint[8];
-    let fcount: uint[8];
+    let sampled: unsigned[8];
+    let fcount: unsigned[8];
     let d: CDC = { .fast = fast, .slow = slow, .sampled = sampled, .fcount = fcount };
     fast = not fast after 2ns;   // rises 2,6,10,...,38  (10 rises)
     slow = not slow after 5ns;   // slow='1' -> rises 10,20,30,40; coincides with fast at 10 and 30

@@ -17,14 +17,14 @@ impl From<Base> for Extended {
     }
 }
 
-struct Header { valid: Bit, kind: uint[4] }
-struct Packet { header: Header, data: uint[8] }
+struct Header { valid: Bit, kind: unsigned[4] }
+struct Packet { header: Header, data: unsigned[8] }
 
 entity DUT {
     in u: ULogic;
-    in v: Bit; in k: uint[4]; in dt: uint[8];
+    in v: Bit; in k: unsigned[4]; in dt: unsigned[8];
     out lg: Logic;         // ULogic -> Logic (newtype derivation, auto)
-    out hk: uint[4];       // reach into the composed Header
+    out hk: unsigned[4];       // reach into the composed Header
     out ext: Extended;     // Base -> Extended (explicit From)
 }
 impl DUT {
@@ -40,8 +40,8 @@ impl DUT {
 entity ChainTest {}
 impl ChainTest {
     let u: ULogic = 'Z';
-    let v: Bit = '1'; let k: uint[4] = 7; let dt: uint[8] = 42;
-    let lg: Logic; let hk: uint[4]; let ext: Extended;
+    let v: Bit = '1'; let k: unsigned[4] = 7; let dt: unsigned[8] = 42;
+    let lg: Logic; let hk: unsigned[4]; let ext: Extended;
     let d: DUT = { .u = u, .v = v, .k = k, .dt = dt, .lg = lg, .hk = hk, .ext = ext };
     await 1ns;
     assert!(lg == 'Z', "ULogic -> Logic keeps 'Z'");

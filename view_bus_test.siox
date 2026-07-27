@@ -1,6 +1,6 @@
 module examples::view_bus_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 using std::logic::Bit;
 
 // A reusable physical layout can have distinct producer and consumer views.
@@ -9,7 +9,7 @@ using std::logic::Bit;
 struct Stream {
     valid: Bit,
     ready: Bit,
-    data: uint[8],
+    data: unsigned[8],
 }
 
 view Source for Stream {
@@ -25,7 +25,7 @@ view Sink for Stream {
 }
 
 impl Source Stream {
-    fn publish(self, value: uint[8], enabled: Bit) {
+    fn publish(self, value: unsigned[8], enabled: Bit) {
         self.valid = enabled;
         self.data = value;
     }
@@ -39,7 +39,7 @@ impl Sink Stream {
 
 entity Producer {
     bus: Source Stream;
-    in value: uint[8];
+    in value: unsigned[8];
     in enabled: Bit;
     out ready: Bit;
 }
@@ -53,7 +53,7 @@ entity Consumer {
     bus: Sink Stream;
     in enabled: Bit;
     out valid: Bit;
-    out value: uint[8];
+    out value: unsigned[8];
 }
 
 impl Consumer {
@@ -63,12 +63,12 @@ impl Consumer {
 }
 
 entity StreamLink {
-    in tx_value: uint[8];
+    in tx_value: unsigned[8];
     in tx_enabled: Bit;
     in rx_enabled: Bit;
     out tx_ready: Bit;
     out rx_valid: Bit;
-    out rx_value: uint[8];
+    out rx_value: unsigned[8];
 }
 
 impl StreamLink {
@@ -91,7 +91,7 @@ impl StreamLink {
 struct StatusSignals {
     enabled: Bit,
     active: Bit,
-    value: uint[8],
+    value: unsigned[8],
 }
 
 view StatusBus for StatusSignals {
@@ -101,7 +101,7 @@ view StatusBus for StatusSignals {
 }
 
 impl StatusBus StatusSignals {
-    fn update(self, next: uint[8]) {
+    fn update(self, next: unsigned[8]) {
         self.active = self.enabled;
         self.value = next;
     }
@@ -109,7 +109,7 @@ impl StatusBus StatusSignals {
 
 entity Status {
     bus: StatusBus StatusSignals;
-    in next: uint[8];
+    in next: unsigned[8];
 }
 
 impl Status {
@@ -120,12 +120,12 @@ impl Status {
 entity ViewBusTest {}
 
 impl ViewBusTest {
-    let tx_value: uint[8];
+    let tx_value: unsigned[8];
     let tx_enabled: Bit;
     let rx_enabled: Bit;
     let tx_ready: Bit;
     let rx_valid: Bit;
-    let rx_value: uint[8];
+    let rx_value: unsigned[8];
 
     let stream: StreamLink = {
         .tx_value = tx_value,
@@ -137,7 +137,7 @@ impl ViewBusTest {
     };
 
     let status: StatusSignals;
-    let next: uint[8];
+    let next: unsigned[8];
     let status_device: Status = {
         .bus = status,
         .next = next,

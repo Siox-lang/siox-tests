@@ -16,15 +16,15 @@ enum Ascii { 'H', 'e', 'l', 'o', ' ', 'S', 'i', 'x' }
 enum Nibble { 'r', 'g', 'b', 'a' }
 
 entity Probe {
-    out lv: uint[4];         // from a plain binary string
+    out lv: unsigned[4];         // from a plain binary string
     out mvx: Logic;          // a metavalue bit read back
     out a0: Ascii;  out a4: Ascii;  out a5: Ascii;   // "Hello Six" indices
     out n1: Nibble; out n3: Nibble;
 }
 
 impl Probe {
-    let bits: uint[4] = "1010";      // = 10, no prefix
-    let meta: uint[4] = "1X10";      // element 2 is 'X'
+    let bits: unsigned[4] = "1010";      // = 10, no prefix
+    let meta: unsigned[4] = "1X10";      // element 2 is 'X'
     let word: Ascii[8] = "Hello Si";  // each char -> Ascii variant
     let chan: Nibble[4] = "rgba";
 
@@ -41,7 +41,7 @@ impl Probe {
 entity StringToArrayTest {}
 
 impl StringToArrayTest {
-    let lv: uint[4];  let mvx: Logic;
+    let lv: unsigned[4];  let mvx: Logic;
     let a0: Ascii;  let a4: Ascii;  let a5: Ascii;
     let n1: Nibble; let n3: Nibble;
     let dut: Probe = {

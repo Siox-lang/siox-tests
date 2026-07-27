@@ -1,16 +1,16 @@
 module examples::slice_write_test;
-using std::bits::uint;
+using std::bits::unsigned;
 // Register bit-field update + two-field combinational pack.
 entity E {
     in clk: Bit;
-    in lo_in: uint[4];
-    in hi_in: uint[4];
+    in lo_in: unsigned[4];
+    in hi_in: unsigned[4];
     in we_lo: Bit;
-    out reg: uint[8];
-    out packed: uint[8];
+    out reg: unsigned[8];
+    out packed: unsigned[8];
 }
 impl E {
-    let r: uint[8] = 0;
+    let r: unsigned[8] = 0;
     if clk.rising() {
         if we_lo {
             r[3..0] = lo_in;      // update only the low nibble; high holds
@@ -25,8 +25,8 @@ impl E {
 }
 #[test] entity T {}
 impl T {
-    let clk: Bit = '0'; let lo_in: uint[4] = 0; let hi_in: uint[4] = 0; let we_lo: Bit = '0';
-    let reg: uint[8]; let packed: uint[8];
+    let clk: Bit = '0'; let lo_in: unsigned[4] = 0; let hi_in: unsigned[4] = 0; let we_lo: Bit = '0';
+    let reg: unsigned[8]; let packed: unsigned[8];
     let d: E = { .clk = clk, .lo_in = lo_in, .hi_in = hi_in, .we_lo = we_lo, .reg = reg, .packed = packed };
     clk = not clk after 5ns;
 

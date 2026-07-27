@@ -1,15 +1,15 @@
 module examples::regfile_test;
-using std::bits::uint;
+using std::bits::unsigned;
 entity RF {
     in clk: Bit;
     in we: Bit;
-    in waddr: uint[2];
-    in wdata: uint[8];
-    in raddr: uint[2];
-    out rdata: uint[8];
+    in waddr: unsigned[2];
+    in wdata: unsigned[8];
+    in raddr: unsigned[2];
+    out rdata: unsigned[8];
 }
 impl RF {
-    let regs: uint[8][4];
+    let regs: unsigned[8][4];
     if clk.rising() {
         if we {
             regs[waddr] = wdata;   // dynamic write
@@ -19,8 +19,8 @@ impl RF {
 }
 #[test] entity T {}
 impl T {
-    let clk: Bit = '0'; let we: Bit; let waddr: uint[2]; let wdata: uint[8];
-    let raddr: uint[2]; let rdata: uint[8];
+    let clk: Bit = '0'; let we: Bit; let waddr: unsigned[2]; let wdata: unsigned[8];
+    let raddr: unsigned[2]; let rdata: unsigned[8];
     let d: RF = { .clk = clk, .we = we, .waddr = waddr, .wdata = wdata, .raddr = raddr, .rdata = rdata };
     clk = not clk after 5ns;
     we = '1'; waddr = 2; wdata = 99; await 10ns;   // write reg[2]=99

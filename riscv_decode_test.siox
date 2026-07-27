@@ -1,33 +1,33 @@
 module examples::riscv_decode_test;
 
-using std::bits::{uint};
+using std::bits::{unsigned};
 
 // RV32I instruction field decoder: split a 32-bit word into its register and
 // function fields by shift-and-mask (the R/I-type field layout).
 entity Decoder {
-    in insn: uint[32];
-    out opcode: uint[7];
-    out rd: uint[5];
-    out funct3: uint[3];
-    out rs1: uint[5];
-    out rs2: uint[5];
-    out funct7: uint[7];
+    in insn: unsigned[32];
+    out opcode: unsigned[7];
+    out rd: unsigned[5];
+    out funct3: unsigned[3];
+    out rs1: unsigned[5];
+    out rs2: unsigned[5];
+    out funct7: unsigned[7];
 }
 impl Decoder {
-    opcode = uint[7](insn and 127);            // bits  6..0
-    rd     = uint[5]((insn >> 7) and 31);      // bits 11..7
-    funct3 = uint[3]((insn >> 12) and 7);      // bits 14..12
-    rs1    = uint[5]((insn >> 15) and 31);     // bits 19..15
-    rs2    = uint[5]((insn >> 20) and 31);     // bits 24..20
-    funct7 = uint[7]((insn >> 25) and 127);    // bits 31..25
+    opcode = unsigned[7](insn and 127);            // bits  6..0
+    rd     = unsigned[5]((insn >> 7) and 31);      // bits 11..7
+    funct3 = unsigned[3]((insn >> 12) and 7);      // bits 14..12
+    rs1    = unsigned[5]((insn >> 15) and 31);     // bits 19..15
+    rs2    = unsigned[5]((insn >> 20) and 31);     // bits 24..20
+    funct7 = unsigned[7]((insn >> 25) and 127);    // bits 31..25
 }
 
 #[test]
 entity DecodeTest {}
 impl DecodeTest {
-    let insn: uint[32] = 0;
-    let opcode: uint[7]; let rd: uint[5]; let funct3: uint[3];
-    let rs1: uint[5]; let rs2: uint[5]; let funct7: uint[7];
+    let insn: unsigned[32] = 0;
+    let opcode: unsigned[7]; let rd: unsigned[5]; let funct3: unsigned[3];
+    let rs1: unsigned[5]; let rs2: unsigned[5]; let funct7: unsigned[7];
     let d: Decoder = { .insn = insn, .opcode = opcode, .rd = rd, .funct3 = funct3, .rs1 = rs1, .rs2 = rs2, .funct7 = funct7 };
 
     // addi x5, x0, 1  =  0x00100293

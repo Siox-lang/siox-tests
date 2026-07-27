@@ -1,16 +1,16 @@
 module examples::array_literal_test;
 
-using std::bits::uint;
+using std::bits::unsigned;
 
 // An array literal `[..]` fills an array-typed signal one value per element,
 // making a lookup table. A runtime index reads it back.
 entity Lut {
-    in sel: uint[8];
-    out y: uint[8];
+    in sel: unsigned[8];
+    out y: unsigned[8];
 }
 
 impl Lut {
-    let table: uint[8][4];
+    let table: unsigned[8][4];
     table = [10, 20, 30, 40];
     y = table[sel];
 }
@@ -19,8 +19,8 @@ impl Lut {
 entity LutTest {}
 
 impl LutTest {
-    let sel: uint[8];
-    let y: uint[8];
+    let sel: unsigned[8];
+    let y: unsigned[8];
 
     let dut: Lut = {
         .sel = sel,

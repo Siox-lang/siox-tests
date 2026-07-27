@@ -4,13 +4,13 @@ extern "C" {
     pub fn labs(v: integer) -> integer;
 }
 
-entity Abs { in x: int[8]; out y: uint[8]; }
-impl Abs { y = uint[8](labs(sext(x))); }
+entity Abs { in x: signed[8]; out y: unsigned[8]; }
+impl Abs { y = unsigned[8](labs(sext(x))); }
 
 #[test]
 entity FfiTest {}
 impl FfiTest {
-    let x: int[8]; let y: uint[8];
+    let x: signed[8]; let y: unsigned[8];
     let d: Abs = { .x = x, .y = y };
     x = 236;  // -20
     await 1ns;

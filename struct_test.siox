@@ -1,18 +1,18 @@
 module examples::struct_test;
 
 using std::logic::Bit;
-using std::bits::uint;
+using std::bits::unsigned;
 
 // A struct-typed signal flattens to one scalar signal per field, so each field
 // gets its own trace path in the waveform.
 struct Packet {
     valid: Bit,
-    data: uint[8],
+    data: unsigned[8],
 }
 
 entity Sink {
     in p: Packet;
-    out got: uint[8];
+    out got: unsigned[8];
 }
 
 impl Sink {
@@ -24,7 +24,7 @@ entity SinkTest {}
 
 impl SinkTest {
     let p: Packet;
-    let got: uint[8];
+    let got: unsigned[8];
 
     let dut: Sink = {
         .p = p,

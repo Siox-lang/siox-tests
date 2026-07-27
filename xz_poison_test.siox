@@ -8,14 +8,14 @@ using std::attrs::{test};
 using std::logic::{Logic};
 
 entity Alu {
-    in a: uint[4];
+    in a: unsigned[4];
     out lo: Logic;
     out hi: Logic;
 }
 
 impl Alu {
-    let mv: uint[4] = "0X00";   // element 2 is a metavalue
-    let y: uint[4];
+    let mv: unsigned[4] = "0X00";   // element 2 is a metavalue
+    let y: unsigned[4];
     y = a + mv;
     lo = y[0..0];
     hi = y[3..3];
@@ -25,7 +25,7 @@ impl Alu {
 entity XzPoisonTest {}
 
 impl XzPoisonTest {
-    let a: uint[4];
+    let a: unsigned[4];
     let lo: Logic;
     let hi: Logic;
     let dut: Alu = { .a = a, .lo = lo, .hi = hi };

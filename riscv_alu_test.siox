@@ -1,6 +1,6 @@
 module examples::riscv_alu_test;
 
-using std::bits::{uint, int};
+using std::bits::{unsigned, signed};
 
 // RV32I ALU operation select (funct3 + bit30 encoding, flattened).
 enum AluOp {
@@ -11,28 +11,28 @@ enum AluOp {
 // A single-cycle RV32I ALU: two 32-bit operands, a 4-bit op, a result, and a
 // zero flag (used by branch comparison).
 entity Alu {
-    in a: uint[32];
-    in b: uint[32];
+    in a: unsigned[32];
+    in b: unsigned[32];
     in op: AluOp;
-    out y: uint[32];
+    out y: unsigned[32];
     out zero: Logic;
 }
 
 impl Alu {
-    let sh: uint[32];
+    let sh: unsigned[32];
     sh = b and 31;                 // shift amount is the low 5 bits
-    let r: uint[32];
+    let r: unsigned[32];
     r = 0;                         // default (also covers invalid op codes)
 
     match op {
         AluOp::Add  => { r = a + b; }
         AluOp::Sub  => { r = a - b; }
         AluOp::Sll  => { r = a << sh; }
-        AluOp::Slt  => { r = if int[32](a) < int[32](b) { 1 } else { 0 }; }
+        AluOp::Slt  => { r = if signed[32](a) < signed[32](b) { 1 } else { 0 }; }
         AluOp::Sltu => { r = if a < b { 1 } else { 0 }; }
         AluOp::Xor  => { r = a xor b; }
         AluOp::Srl  => { r = a >> sh; }
-        AluOp::Sra  => { r = uint[32](int[32](a) >> int[32](sh)); }
+        AluOp::Sra  => { r = unsigned[32](signed[32](a) >> signed[32](sh)); }
         AluOp::Or   => { r = a or b; }
         AluOp::And  => { r = a and b; }
     }
@@ -44,8 +44,8 @@ impl Alu {
 #[test]
 entity AluTest {}
 impl AluTest {
-    let a: uint[32] = 0; let b: uint[32] = 0; let op: AluOp;
-    let y: uint[32]; let zero: Logic;
+    let a: unsigned[32] = 0; let b: unsigned[32] = 0; let op: AluOp;
+    let y: unsigned[32]; let zero: Logic;
     let dut: Alu = { .a = a, .b = b, .op = op, .y = y, .zero = zero };
 
     a = 100; b = 30; op = AluOp::Add;  await 1ns;
