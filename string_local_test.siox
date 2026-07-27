@@ -1,0 +1,29 @@
+module examples::string_local_test;
+
+using std::text::{string};
+using std::attrs::{test};
+
+// A string held in a *testbench-local* — one not connected to any DUT port.
+// These had no element storage at all: writes were dropped, every element read
+// back as 0, and whole-string comparison degenerated to always-true, so a
+// wrong string still compared equal. `string_test` only ever compared a
+// DUT-connected signal, which is why it passed throughout.
+
+#[test]
+entity StringLocalTest {}
+
+impl StringLocalTest {
+    // Both spellings: unconstrained (length from the literal) and sized.
+    let u: string = "hello";
+    let s: string[5] = "hello";
+    let other: string[5] = "world";
+
+    assert!(u == "hello", "unconstrained local matches its literal");
+    assert!(u != "world", "and does not match a different one");
+
+    assert!(s == "hello", "sized local matches its literal");
+    assert!(s != "world", "and does not match a different one");
+
+    assert!(s == u, "two locals holding the same text compare equal");
+    assert!(s != other, "two locals holding different text differ");
+}
