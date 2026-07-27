@@ -1,0 +1,30 @@
+module examples::compose_nested_test;
+struct A { x: Bit, y: unsigned[4] }
+struct B { a: A, z: unsigned[4] }
+
+entity E { in v: Bit; out oy: unsigned[4]; out oz: unsigned[4]; }
+impl E {
+    let base: B;
+    base = B { .a = A { .x = v, .y = 9 }, .z = 2 };
+    let upd: B;
+    upd = B { ..base, .z = 7 };      // spread over a composed struct
+    oy = upd.a.y;                    // nested field survives the spread
+    oz = upd.z;
+}
+#[test]
+entity T {}
+impl T {
+    let v: Bit = '1';
+    let oy: unsigned[4]; let oz: unsigned[4];
+    let e: E = { .v = v, .oy = oy, .oz = oz };
+    // a composed struct as a testbench local
+    let loc: B;
+    loc = B { .a = A { .x = '1', .y = 3 }, .z = 4 };
+    await 1ns;
+    // The spread must carry the nested leaf, not just the top-level field.
+    assert!(oy == 9, "spread keeps a nested field");
+    assert!(oz == 7, "and applies the override");
+    // A composed struct held in a testbench local stores its leaves too.
+    assert!(loc.a.y == 3, "nested field of a testbench-local struct");
+    assert!(loc.z == 4, "and its scalar field");
+}
