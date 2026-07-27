@@ -1,0 +1,36 @@
+module examples::rand_test;
+
+using std::bits::uint;
+using std::attrs::{test};
+
+// std::rand is deterministic and shared by every engine: the same seed gives
+// the same sequence on the JIT and the native harness. `rand()`/`uniform()`
+// are nullary calls, which the testbench evaluator used to short-circuit to 0
+// (and the native emitter refused to compile).
+
+fn answer() -> integer { return 42; }
+
+#[test]
+entity RandTest {}
+
+impl RandTest {
+    // A user nullary function is the same shape and was equally affected.
+    let k: uint[8] = answer();
+    assert!(k == 42, "a nullary user fn returns its value");
+
+    seed(7);
+    let a: uint[16] = rand();
+    let b: uint[16] = rand();
+    seed(7);
+    let c: uint[16] = rand();
+
+    assert!(a == c, "reseeding reproduces the sequence");
+    assert!(a != b, "successive draws advance");
+
+    // randint stays inside its inclusive bounds.
+    let r: uint[8] = randint(10, 20);
+    assert!(r >= 10, "randint lower bound");
+    assert!(r <= 20, "randint upper bound");
+
+    print!("seeded draws: {} {} (reseeded {}), randint {}", a, b, c, r);
+}
