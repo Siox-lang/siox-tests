@@ -1,0 +1,16 @@
+module examples::match_enum_exhaustive_test;
+enum Base { A, B, C }
+enum Mid(Base);
+
+entity E { in sel: Mid; out y: unsigned[8]; }
+impl E {
+    y = match sel { Mid::A => 1, Mid::B => 2, Mid::C => 3 };
+}
+#[test]
+entity T {}
+impl T {
+    let sel: Mid = Mid::B; let y: unsigned[8];
+    let e: E = { .sel = sel, .y = y };
+    await 1ns;
+    assert!(y == 2, "match on a newtype enum");
+}
