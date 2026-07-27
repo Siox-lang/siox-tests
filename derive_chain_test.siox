@@ -1,27 +1,37 @@
 module examples::derive_chain_test;
 using std::logic::{ULogic};
 
-// A user derivation chain of named enums, mirroring the logic hierarchy.
+// The two ways a type builds on another after extension was dropped (§3.28):
+// newtype derivation (`:`, same representation, new identity) and composition.
+// An enum that wants more cases declares its own full set and converts with an
+// explicit `From` — it cannot extend its way to values the base cannot name.
 enum Base { A, B }
-enum Extended : Base { C }
+enum Extended { A, B, C }
+
+impl From<Base> for Extended {
+    fn from(v: Base) -> Extended {
+        if v == Base::B {
+            return Extended::B;
+        }
+        return Extended::A;
+    }
+}
 
 struct Header { valid: Bit, kind: uint[4] }
-struct Packet : Header { data: uint[8] }
+struct Packet { header: Header, data: uint[8] }
 
 entity DUT {
     in u: ULogic;
     in v: Bit; in k: uint[4]; in dt: uint[8];
-    out lg: Logic;         // ULogic -> Logic (widening/same-variant, auto)
-    out hk: uint[4];       // Packet -> Header projection (auto)
-    out ext: Extended;     // Base -> Extended (widening, auto)
+    out lg: Logic;         // ULogic -> Logic (newtype derivation, auto)
+    out hk: uint[4];       // reach into the composed Header
+    out ext: Extended;     // Base -> Extended (explicit From)
 }
 impl DUT {
     lg = Logic(u);
     let pkt: Packet;
-    pkt = Packet { .valid = v, .kind = k, .data = dt };
-    let h: Header;
-    h = Header(pkt);
-    hk = h.kind;
+    pkt = Packet { .header = Header { .valid = v, .kind = k }, .data = dt };
+    hk = pkt.header.kind;
     let b: Base = Base::A;
     ext = Extended(b);
 }
@@ -35,6 +45,6 @@ impl ChainTest {
     let d: DUT = { .u = u, .v = v, .k = k, .dt = dt, .lg = lg, .hk = hk, .ext = ext };
     await 1ns;
     assert!(lg == 'Z', "ULogic -> Logic keeps 'Z'");
-    assert!(hk == 7, "Packet -> Header projection");
-    assert!(ext == Extended::A, "Base -> Extended widening keeps A");
+    assert!(hk == 7, "composed Header field");
+    assert!(ext == Extended::A, "Base -> Extended via From keeps A");
 }
