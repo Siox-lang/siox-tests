@@ -1,0 +1,31 @@
+module wide_test;
+
+using std::bits::{unsigned};
+
+entity WideAdder {
+    in a: unsigned[128];
+    in b: unsigned[128];
+    out y: unsigned[128];
+}
+
+impl WideAdder {
+    y = a + b;
+}
+
+#[test]
+entity WideTest {}
+
+impl WideTest {
+    let a: unsigned[128] = unsigned[128](x"FFFFFFFFFFFFFFFF");
+    let b: unsigned[128] = 1;
+    let y: unsigned[128];
+    let dut: WideAdder = { .a = a, .b = b, .y = y };
+
+    a = unsigned[128](x"FFFFFFFFFFFFFFFF");
+    b = 1;
+    await 1ns;
+    assert!(
+        y == (unsigned[128](1) << 64),
+        "carry reaches the next ABI word without changing the other bits"
+    );
+}
