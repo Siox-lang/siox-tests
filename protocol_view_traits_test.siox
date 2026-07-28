@@ -1,0 +1,268 @@
+module examples::protocol_view_traits_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+// Protocol behavior can be shared through traits while views describe which
+// physical signals each endpoint may drive.
+trait Readable<T> {
+    fn read(self) -> T;
+}
+
+trait Writable<T> {
+    fn write(self, value: T);
+}
+
+// SPI has one data lane in each direction. The controller owns clock and
+// select; the peripheral observes them.
+struct Spi {
+    clock: Bit,
+    select: Bit,
+    controller_data: unsigned[8],
+    peripheral_data: unsigned[8],
+}
+
+view SpiController for Spi {
+    out clock;
+    out select;
+    out controller_data;
+    in peripheral_data;
+}
+
+view SpiPeripheral for Spi {
+    in clock;
+    in select;
+    in controller_data;
+    out peripheral_data;
+}
+
+impl Writable<unsigned[8]> for SpiController Spi {
+    fn write(self, value: unsigned[8]) {
+        self.controller_data = value;
+    }
+}
+
+impl Readable<unsigned[8]> for SpiController Spi {
+    fn read(self) -> unsigned[8] {
+        return self.peripheral_data;
+    }
+}
+
+impl Writable<unsigned[8]> for SpiPeripheral Spi {
+    fn write(self, value: unsigned[8]) {
+        self.peripheral_data = value;
+    }
+}
+
+impl Readable<unsigned[8]> for SpiPeripheral Spi {
+    fn read(self) -> unsigned[8] {
+        return self.controller_data;
+    }
+}
+
+entity SpiControllerDevice {
+    bus: SpiController Spi;
+    in tx: unsigned[8];
+    in active: Bit;
+    out rx: unsigned[8];
+}
+
+impl SpiControllerDevice {
+    bus.clock = active;
+    bus.select = not active;
+    bus.write(tx);
+    rx = bus.read();
+}
+
+entity SpiPeripheralDevice {
+    bus: SpiPeripheral Spi;
+    in tx: unsigned[8];
+    out rx: unsigned[8];
+}
+
+impl SpiPeripheralDevice {
+    bus.write(tx);
+    rx = bus.read();
+}
+
+entity SpiLink {
+    in controller_tx: unsigned[8];
+    in peripheral_tx: unsigned[8];
+    in active: Bit;
+    out controller_rx: unsigned[8];
+    out peripheral_rx: unsigned[8];
+    out selected: Bit;
+}
+
+impl SpiLink {
+    let wire: Spi;
+    let controller: SpiControllerDevice = {
+        .bus = wire,
+        .tx = controller_tx,
+        .active = active,
+        .rx = controller_rx,
+    };
+    let peripheral: SpiPeripheralDevice = {
+        .bus = wire,
+        .tx = peripheral_tx,
+        .rx = peripheral_rx,
+    };
+    selected = not wire.select;
+}
+
+// I2C endpoints never drive SDA high. Each side contributes a "drive low"
+// intent; the sampled line is high only when neither endpoint pulls it low.
+struct I2c {
+    scl: Bit,
+    controller_drive_low: Bit,
+    target_drive_low: Bit,
+}
+
+view I2cController for I2c {
+    out scl;
+    out controller_drive_low;
+    in target_drive_low;
+}
+
+view I2cTarget for I2c {
+    in scl;
+    in controller_drive_low;
+    out target_drive_low;
+}
+
+impl Writable<Bit> for I2cController I2c {
+    fn write(self, drive_low: Bit) {
+        self.controller_drive_low = drive_low;
+    }
+}
+
+impl Readable<Bit> for I2cController I2c {
+    fn read(self) -> Bit {
+        return not (self.controller_drive_low or self.target_drive_low);
+    }
+}
+
+impl Writable<Bit> for I2cTarget I2c {
+    fn write(self, drive_low: Bit) {
+        self.target_drive_low = drive_low;
+    }
+}
+
+impl Readable<Bit> for I2cTarget I2c {
+    fn read(self) -> Bit {
+        return not (self.controller_drive_low or self.target_drive_low);
+    }
+}
+
+entity I2cControllerDevice {
+    bus: I2cController I2c;
+    in drive_low: Bit;
+    in clock: Bit;
+    out sampled_sda: Bit;
+}
+
+impl I2cControllerDevice {
+    bus.scl = clock;
+    bus.write(drive_low);
+    sampled_sda = bus.read();
+}
+
+entity I2cTargetDevice {
+    bus: I2cTarget I2c;
+    in drive_low: Bit;
+    out sampled_sda: Bit;
+}
+
+impl I2cTargetDevice {
+    bus.write(drive_low);
+    sampled_sda = bus.read();
+}
+
+entity I2cLink {
+    in controller_drive_low: Bit;
+    in target_drive_low: Bit;
+    in clock: Bit;
+    out controller_sample: Bit;
+    out target_sample: Bit;
+}
+
+impl I2cLink {
+    let wire: I2c;
+    let controller: I2cControllerDevice = {
+        .bus = wire,
+        .drive_low = controller_drive_low,
+        .clock = clock,
+        .sampled_sda = controller_sample,
+    };
+    let target: I2cTargetDevice = {
+        .bus = wire,
+        .drive_low = target_drive_low,
+        .sampled_sda = target_sample,
+    };
+}
+
+#[test]
+entity ProtocolViewTraitsTest {}
+
+impl ProtocolViewTraitsTest {
+    let spi_controller_tx: unsigned[8];
+    let spi_peripheral_tx: unsigned[8];
+    let spi_active: Bit;
+    let spi_controller_rx: unsigned[8];
+    let spi_peripheral_rx: unsigned[8];
+    let spi_selected: Bit;
+    let spi: SpiLink = {
+        .controller_tx = spi_controller_tx,
+        .peripheral_tx = spi_peripheral_tx,
+        .active = spi_active,
+        .controller_rx = spi_controller_rx,
+        .peripheral_rx = spi_peripheral_rx,
+        .selected = spi_selected,
+    };
+
+    let i2c_controller_drive_low: Bit;
+    let i2c_target_drive_low: Bit;
+    let i2c_clock: Bit;
+    let i2c_controller_sample: Bit;
+    let i2c_target_sample: Bit;
+    let i2c: I2cLink = {
+        .controller_drive_low = i2c_controller_drive_low,
+        .target_drive_low = i2c_target_drive_low,
+        .clock = i2c_clock,
+        .controller_sample = i2c_controller_sample,
+        .target_sample = i2c_target_sample,
+    };
+
+    spi_controller_tx = 0xA5;
+    spi_peripheral_tx = 0x3C;
+    spi_active = '1';
+    i2c_controller_drive_low = '0';
+    i2c_target_drive_low = '0';
+    i2c_clock = '1';
+    await 1ns;
+
+    assert!(spi_controller_rx == 0x3C, "SPI controller reads the peripheral lane");
+    assert!(spi_peripheral_rx == 0xA5, "SPI peripheral reads the controller lane");
+    assert!(spi_selected == '1', "SPI controller view drives select");
+    assert!(i2c_controller_sample == '1', "released I2C SDA is high at controller");
+    assert!(i2c_target_sample == '1', "released I2C SDA is high at target");
+
+    spi_controller_tx = 0x12;
+    spi_peripheral_tx = 0xE7;
+    spi_active = '0';
+    i2c_target_drive_low = '1';
+    await 1ns;
+
+    assert!(spi_controller_rx == 0xE7, "SPI Readable follows updated peripheral data");
+    assert!(spi_peripheral_rx == 0x12, "SPI Writable follows updated controller data");
+    assert!(spi_selected == '0', "SPI select follows the controller role");
+    assert!(i2c_controller_sample == '0', "I2C target can pull SDA low");
+    assert!(i2c_target_sample == '0', "all I2C endpoints observe the low line");
+
+    i2c_target_drive_low = '0';
+    i2c_controller_drive_low = '1';
+    await 1ns;
+
+    assert!(i2c_controller_sample == '0', "I2C controller can pull SDA low");
+    assert!(i2c_target_sample == '0', "target observes the controller pull-down");
+}
