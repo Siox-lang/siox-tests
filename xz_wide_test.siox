@@ -1,0 +1,38 @@
+module examples::xz_wide_test;
+
+using std::attrs::{test};
+using std::logic::{Logic};
+
+entity WideProbe {
+    out init_hi: Logic;
+    out driven_hi: Logic;
+    out driven_lo: Logic;
+}
+
+impl WideProbe {
+    let initialized: unsigned[17] = "X0000000000000000";
+    let driven: unsigned[17];
+    driven = "X000000000000000Z";
+
+    init_hi = initialized[16..16];
+    driven_hi = driven[16..16];
+    driven_lo = driven[0..0];
+}
+
+#[test]
+entity XzWideTest {}
+
+impl XzWideTest {
+    let init_hi: Logic;
+    let driven_hi: Logic;
+    let driven_lo: Logic;
+    let dut: WideProbe = {
+        .init_hi = init_hi,
+        .driven_hi = driven_hi,
+        .driven_lo = driven_lo,
+    };
+
+    assert!(init_hi == 'X', "wide initialized top metavalue survives");
+    assert!(driven_hi == 'X', "wide driven top metavalue survives");
+    assert!(driven_lo == 'Z', "wide driven low metavalue survives");
+}
