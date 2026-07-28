@@ -1,0 +1,29 @@
+module examples::time_frequency_test;
+
+// Physical quantities are nominal newtypes over their kernel representations:
+// `time(integer)` stores femtoseconds, while `frequency(real)` stores hertz.
+entity Units {
+    out delay: time;
+    out rate: frequency;
+}
+
+impl Units {
+    delay = 2ns;
+    rate = 2.5MHz;
+}
+
+#[test]
+entity UnitTest {}
+
+impl UnitTest {
+    let delay: time;
+    let rate: frequency;
+
+    let dut: Units = {
+        .delay = delay,
+        .rate = rate,
+    };
+
+    assert!(delay == 2ns, "time keeps its integer femtosecond representation");
+    assert!(rate == 2.5MHz, "frequency keeps its real hertz representation");
+}
