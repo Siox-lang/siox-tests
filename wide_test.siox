@@ -6,10 +6,18 @@ entity WideAdder {
     in a: unsigned[128];
     in b: unsigned[128];
     out y: unsigned[128];
+    out difference: unsigned[128];
+    out shifted: unsigned[128];
+    out events: unsigned[3];
 }
 
 impl WideAdder {
     y = a + b;
+    difference = a - b;
+    shifted = a << 65;
+    if a'event {
+        events = events + 1;
+    }
 }
 
 #[test]
@@ -19,13 +27,54 @@ impl WideTest {
     let a: unsigned[128] = unsigned[128](x"FFFFFFFFFFFFFFFF");
     let b: unsigned[128] = 1;
     let y: unsigned[128];
-    let dut: WideAdder = { .a = a, .b = b, .y = y };
+    let difference: unsigned[128];
+    let shifted: unsigned[128];
+    let events: unsigned[3];
+    let previous_events: unsigned[3];
+    let dut: WideAdder = {
+        .a = a,
+        .b = b,
+        .y = y,
+        .difference = difference,
+        .shifted = shifted,
+        .events = events,
+    };
 
     a = unsigned[128](x"FFFFFFFFFFFFFFFF");
     b = 1;
     await 1ns;
+    assert!(events == 1, "low-word change raises event");
     assert!(
         y == (unsigned[128](1) << 64),
         "carry reaches the next ABI word without changing the other bits"
+    );
+
+    a = 0;
+    b = 1;
+    await 1ns;
+    assert!(
+        difference == x"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        "subtraction borrows across ABI words"
+    );
+    assert!(difference > a, "wide comparison observes high words");
+
+    a = 1;
+    await 1ns;
+    assert!(events > 1, "second low-word change raises a fresh event");
+    assert!(
+        shifted == (unsigned[128](1) << 65),
+        "shift crosses an ABI-word boundary"
+    );
+
+    previous_events = events;
+    a = unsigned[128](1) << 100;
+    await 1ns;
+    assert!(
+        a == (unsigned[128](1) << 100),
+        "testbench writes preserve high words"
+    );
+    assert!(
+        events > previous_events,
+        "a high-word-only change raises a fresh event"
     );
 }
