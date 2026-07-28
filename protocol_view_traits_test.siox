@@ -13,6 +13,14 @@ trait Writable<T> {
     fn write(self, value: T);
 }
 
+fn read<Bus: Readable, Value>(bus: Bus) -> Value {
+    return bus.read();
+}
+
+fn write<Bus: Writable, Value>(bus: Bus, value: Value) {
+    bus.write(value);
+}
+
 // SPI has one data lane in each direction. The controller owns clock and
 // select; the peripheral observes them.
 struct Spi {
@@ -70,8 +78,8 @@ entity SpiControllerDevice {
 impl SpiControllerDevice {
     bus.clock = active;
     bus.select = not active;
-    bus.write(tx);
-    rx = bus.read();
+    write(bus, tx);
+    rx = read(bus);
 }
 
 entity SpiPeripheralDevice {
@@ -81,8 +89,8 @@ entity SpiPeripheralDevice {
 }
 
 impl SpiPeripheralDevice {
-    bus.write(tx);
-    rx = bus.read();
+    write(bus, tx);
+    rx = read(bus);
 }
 
 entity SpiLink {
@@ -163,8 +171,8 @@ entity I2cControllerDevice {
 
 impl I2cControllerDevice {
     bus.scl = clock;
-    bus.write(drive_low);
-    sampled_sda = bus.read();
+    write(bus, drive_low);
+    sampled_sda = read(bus);
 }
 
 entity I2cTargetDevice {
@@ -174,8 +182,8 @@ entity I2cTargetDevice {
 }
 
 impl I2cTargetDevice {
-    bus.write(drive_low);
-    sampled_sda = bus.read();
+    write(bus, drive_low);
+    sampled_sda = read(bus);
 }
 
 entity I2cLink {
