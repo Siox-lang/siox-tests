@@ -1,0 +1,23 @@
+module examples::signed_struct_field_test;
+using std::bits::{signed, unsigned};
+using std::logic::{Bit};
+// A `signed` field of a struct *connected to a DUT port*: the values live in
+// signals, but the leaves' declared types are still needed to read them back.
+// Unconnected the same field was already correct, which hid this.
+struct Pt { x: signed[8], y: signed[8] }
+entity D { in p: Pt; out sum: signed[8]; out negx: signed[8]; }
+impl D { sum = p.x + p.y; negx = 0 - p.x; }
+#[test]
+entity T {}
+impl T {
+    let p: Pt;
+    let sum: signed[8]; let negx: signed[8];
+    let d: D = { .p = p, .sum = sum, .negx = negx };
+    p = Pt { .x = 0 - 3, .y = 10 };
+    await 1ns;
+    assert!(p.x == 0 - 3, "a signed struct field keeps its value");
+    assert!(sum == p.x + p.y, "field arithmetic agrees");
+    assert!(negx == 0 - p.x, "negation agrees");
+    assert!(p.x < 0, "and it orders as signed");
+    assert!(p.x < p.y, "including against another field");
+}
