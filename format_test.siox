@@ -2,6 +2,7 @@ module examples::format_test;
 
 using std::bits::unsigned;
 using std::logic::{Bit};
+using std::text::{string};
 using std::attrs::{test};
 
 // `print!`/`assert!` formatting: `{}` takes the next argument, `{{`/`}}` are
@@ -18,15 +19,19 @@ impl FormatTest {
     let n: unsigned[8] = 42;
     let b: Bit = '1';
     let s: State;
+    let text: string = "hé🙂";
+    let empty: string = "";
 
     print!("plain");
     print!("value {}", n);
     print!("two {} and {}", n, b);
     print!("escaped {{}} stays literal, then {}", n);
     print!("symbols: bit {} state {}", b, s);
+    print!("strings: literal {} local {} empty <{}>", "hello", text, empty);
 
     // The assertion holds, so this message is not printed — but it type-checks
     // for arity, and its arguments would be substituted if it failed.
     assert!(n == 42, "n should be 42 but was {}", n);
     assert!(b == '1', "bit {} state {}", b, s);
+    warn!(true, "string {}", text);
 }
