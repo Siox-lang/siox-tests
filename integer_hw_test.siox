@@ -1,5 +1,8 @@
 module integer_hw_test;
 
+using SmallInteger = integer<-16..15>;
+using SmallAlias = SmallInteger;
+
 entity IntegerOps {
     in a: integer<-16..15>;
     in b: integer<-16..15>;
@@ -33,6 +36,16 @@ impl NaturalOps {
     greater = if value > 1 { '1' } else { '0' };
 }
 
+entity AliasIntegerOps {
+    in value: SmallAlias;
+    out copy: SmallAlias;
+    out negative: Bit;
+}
+impl AliasIntegerOps {
+    copy = value;
+    negative = if value < 0 { '1' } else { '0' };
+}
+
 #[test]
 entity IntegerHardwareTest {}
 
@@ -50,6 +63,9 @@ impl IntegerHardwareTest {
     let summed_quotient: integer<-128..127>;
     let natural: integer<0..3> = 3;
     let natural_greater: Bit;
+    let alias_value: SmallAlias = -3;
+    let alias_copy: SmallAlias;
+    let alias_negative: Bit;
     let dut: IntegerOps = {
         .a = a,
         .b = b,
@@ -64,6 +80,11 @@ impl IntegerHardwareTest {
         .summed_quotient = summed_quotient,
     };
     let natural_dut: NaturalOps = { .value = natural, .greater = natural_greater };
+    let alias_dut: AliasIntegerOps = {
+        .value = alias_value,
+        .copy = alias_copy,
+        .negative = alias_negative,
+    };
 
     await 1ns;
     assert!(less == '1', "kernel integer comparison in DUT is signed");
@@ -76,4 +97,6 @@ impl IntegerHardwareTest {
     assert!(summed_quotient == -2, "nested kernel integer addition sign-extends its operands");
     assert!(natural > 1, "nonnegative constrained integer compares by its numeric value");
     assert!(natural_greater == '1', "nonnegative constrained integer compares correctly in DUT");
+    assert!(alias_copy == -3, "chained integer alias retains its stored value");
+    assert!(alias_negative == '1', "chained integer alias retains signed comparison semantics");
 }
