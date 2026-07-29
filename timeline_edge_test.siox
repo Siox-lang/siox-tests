@@ -1,0 +1,14 @@
+module examples::timeline_edge_test;
+
+#[test]
+entity TimelineEdgeTest {}
+
+impl TimelineEdgeTest {
+    // A wait that lands exactly on the scheduler sentinel used to loop
+    // forever because `UINT64_MAX <= target` remained true with no clocks.
+    await 18446744073709551615fs;
+
+    // Further time advances saturate rather than wrapping back to time zero.
+    await 1fs;
+    assert!(true, "the native timeline saturates and the test completes");
+}

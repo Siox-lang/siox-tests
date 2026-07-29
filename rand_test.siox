@@ -3,10 +3,9 @@ module examples::rand_test;
 using std::bits::unsigned;
 using std::attrs::{test};
 
-// std::rand is deterministic and shared by every engine: the same seed gives
-// the same sequence on the JIT and the native harness. `rand()`/`uniform()`
-// are nullary calls, which the testbench evaluator used to short-circuit to 0
-// (and the native emitter refused to compile).
+// std::rand is deterministic: the same seed gives the same sequence in every
+// generated native test executable. `rand()`/`uniform()` are nullary calls,
+// which the testbench evaluator used to short-circuit to 0.
 
 fn answer() -> integer { return 42; }
 
@@ -31,6 +30,19 @@ impl RandTest {
     let r: unsigned[8] = randint(10, 20);
     assert!(r >= 10, "randint lower bound");
     assert!(r <= 20, "randint upper bound");
+
+    // The inclusive full-u64 span used to wrap `(right - left) + 1` to zero
+    // and crash in the generated C modulo. It is exactly one raw draw.
+    seed(9);
+    let full: unsigned[64] = randint(0, 18446744073709551615);
+    seed(9);
+    let raw: unsigned[64] = rand();
+    assert!(full == raw, "full-domain randint avoids a zero modulo");
+
+    // Bounds are left/right, so a descending pair names the same value set.
+    let descending: unsigned[8] = randint(20, 10);
+    assert!(descending >= 10, "descending randint lower bound");
+    assert!(descending <= 20, "descending randint upper bound");
 
     print!("seeded draws: {} {} (reseeded {}), randint {}", a, b, c, r);
 }
