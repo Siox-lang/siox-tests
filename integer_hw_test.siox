@@ -3,15 +3,26 @@ module integer_hw_test;
 entity IntegerOps {
     in a: integer<-16..15>;
     in b: integer<-16..15>;
+    in choose_a: Bit;
     out less: Bit;
+    out nested_less: Bit;
     out quotient: integer<-16..15>;
     out shifted: integer<-16..15>;
+    out nested_quotient: integer<-128..127>;
+    out widened: integer<-128..127>;
+    out negated_quotient: integer<-128..127>;
+    out summed_quotient: integer<-128..127>;
 }
 
 impl IntegerOps {
     less = if a < b { '1' } else { '0' };
+    nested_less = if (if choose_a == '1' { a } else { -100 }) < 0 { '1' } else { '0' };
     quotient = a / b;
     shifted = a >> 1;
+    nested_quotient = (if choose_a == '1' { a } else { -100 }) / 3;
+    widened = a;
+    negated_quotient = (-a) / 1;
+    summed_quotient = (a + 1) / 3;
 }
 
 #[test]
@@ -20,19 +31,36 @@ entity IntegerHardwareTest {}
 impl IntegerHardwareTest {
     let a: integer<-16..15> = -8;
     let b: integer<-16..15> = 3;
+    let choose_a: Bit = '1';
     let less: Bit;
+    let nested_less: Bit;
     let quotient: integer<-16..15>;
     let shifted: integer<-16..15>;
+    let nested_quotient: integer<-128..127>;
+    let widened: integer<-128..127>;
+    let negated_quotient: integer<-128..127>;
+    let summed_quotient: integer<-128..127>;
     let dut: IntegerOps = {
         .a = a,
         .b = b,
+        .choose_a = choose_a,
         .less = less,
+        .nested_less = nested_less,
         .quotient = quotient,
         .shifted = shifted,
+        .nested_quotient = nested_quotient,
+        .widened = widened,
+        .negated_quotient = negated_quotient,
+        .summed_quotient = summed_quotient,
     };
 
     await 1ns;
     assert!(less == '1', "kernel integer comparison in DUT is signed");
+    assert!(nested_less == '1', "nested kernel integer comparison sign-extends selected values");
     assert!(quotient == -2, "kernel integer division in DUT is signed");
     assert!(shifted == -4, "kernel integer right shift in DUT is arithmetic");
+    assert!(nested_quotient == -2, "nested kernel integer division sign-extends selected values");
+    assert!(widened == -8, "widening a constrained kernel integer sign-extends");
+    assert!(negated_quotient == 8, "nested kernel integer negation sign-extends its operand");
+    assert!(summed_quotient == -2, "nested kernel integer addition sign-extends its operands");
 }
