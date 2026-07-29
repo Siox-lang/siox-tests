@@ -1,0 +1,34 @@
+module examples::division_zero_test;
+
+entity Divider {
+    in numerator: unsigned[16];
+    in denominator: unsigned[16];
+    out quotient: unsigned[16];
+}
+
+impl Divider {
+    quotient = numerator / denominator;
+}
+
+#[test]
+entity DivisionZeroTest {}
+
+impl DivisionZeroTest {
+    let numerator: unsigned[16];
+    let denominator: unsigned[16];
+    let quotient: unsigned[16];
+    let dut: Divider = {
+        .numerator = numerator,
+        .denominator = denominator,
+        .quotient = quotient,
+    };
+
+    numerator = 42;
+    denominator = 0;
+    await 1ns;
+
+    assert!(quotient == 0,
+        "division by zero in a compiled design yields zero");
+    assert!((numerator / denominator) == 0,
+        "division by zero in a native testbench yields zero");
+}
