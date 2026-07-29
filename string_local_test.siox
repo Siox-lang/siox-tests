@@ -17,6 +17,9 @@ impl StringLocalTest {
     let u: string = "hello";
     let s: string[5] = "hello";
     let other: string[5] = "world";
+    let copy: string = u;
+    let empty: string = "";
+    let other_empty: string = "";
 
     assert!(u == "hello", "unconstrained local matches its literal");
     assert!(u != "world", "and does not match a different one");
@@ -26,4 +29,15 @@ impl StringLocalTest {
 
     assert!(s == u, "two locals holding the same text compare equal");
     assert!(s != other, "two locals holding different text differ");
+    assert!(copy == "hello", "a local can initialize from another string");
+
+    copy = other;
+    assert!(copy == "world", "a local can copy another string");
+    copy = "again";
+    assert!(copy == "again", "a local literal assignment updates its elements");
+
+    assert!(empty == "", "an empty local equals an empty literal");
+    assert!(empty == other_empty, "two empty locals compare equal");
+    assert!("same" == "same", "equal string literals compare as constants");
+    assert!("left" != "right", "different string literals compare as constants");
 }
