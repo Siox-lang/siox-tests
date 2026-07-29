@@ -1,18 +1,41 @@
 module examples::ffi_test;
 
+using CWord = integer;
+using CInteger = CWord;
+
 extern "C" {
-    pub fn labs(v: integer) -> integer;
+    pub fn labs(v: CInteger) -> CInteger;
 }
 
 entity Abs { in x: signed[8]; out y: unsigned[8]; }
 impl Abs { y = unsigned[8](labs(sext(x))); }
+
+entity ClockedAbs {
+    in clk: Bit;
+    in x: integer<-128..127>;
+    out y: integer<-128..127>;
+}
+impl ClockedAbs {
+    if clk.rising() {
+        y = labs(x);
+    }
+}
 
 #[test]
 entity FfiTest {}
 impl FfiTest {
     let x: signed[8]; let y: unsigned[8];
     let d: Abs = { .x = x, .y = y };
+    let clk: Bit = '0';
+    let ix: integer<-128..127> = -20;
+    let direct: CInteger = labs(ix);
+    let iy: integer<-128..127>;
+    let clocked: ClockedAbs = { .clk = clk, .x = ix, .y = iy };
     x = 236;  // -20
     await 1ns;
     assert!(y == 20, "labs(-20) == 20 via libc in hardware");
+    assert!(direct == 20, "aliased integer C ABI in the native testbench");
+    clk = '1';
+    await 1ns;
+    assert!(iy == 20, "constrained integer C return in a clocked update");
 }
