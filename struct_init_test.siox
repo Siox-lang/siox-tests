@@ -29,11 +29,21 @@ impl StructInitTest {
     let enable: Bit;
     let dut: Holder = { .mode = mode, .enable = enable };
 
-    // A testbench-level literal, for comparison.
-    let local: Config = { .mode = 9, .enable = '0' };
+    // Testbench positional and spread forms use the same field layout for
+    // initialization and reassignment.
+    let base: Config = { .mode = 4, .enable = '0' };
+    let local: Config = { 9, '0' };
 
     assert!(mode == 7, "entity struct field initialised");
     assert!(enable == '1', "entity struct Bit field initialised");
     assert!(local.mode == 9, "testbench struct field initialised");
     assert!(local.enable == '0', "testbench struct Bit field initialised");
+
+    local = Config { 10, '1' };
+    assert!(local.mode == 10, "typed positional struct reassignment");
+    assert!(local.enable == '1', "typed positional Bit reassignment");
+
+    local = { ..base, .mode = 11 };
+    assert!(local.mode == 11, "spread override on reassignment");
+    assert!(local.enable == '0', "spread base on reassignment");
 }
