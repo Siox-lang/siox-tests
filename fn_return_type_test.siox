@@ -19,6 +19,10 @@ impl T {
     let ns: signed[8] = neg(s);
     assert!(ns < 0, "a signed return is negative through a local");
     assert!(neg(s) == ns, "and the direct call agrees");
+    // Ordering, not just equality: the result wraps to its declared width, so
+    // signed's Ord sees a sign bit where one was declared.
+    assert!(neg(s) < 0, "a signed return orders as signed");
+    assert!(neg(s) < ns + 1, "and orders against another signed value");
     assert!(pick() == Color::Green, "an enum return compares to its variant");
     assert!(lg() == 'Z', "a Logic return compares to its symbol");
 }
