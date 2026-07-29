@@ -40,6 +40,11 @@ impl WideTest {
     let narrow_box: NarrowWideBox = {
         .value = 1208925819614629174706175
     };
+    let local_words: unsigned[128][2] = [
+        340282366920938463463374607431768211455,
+        1
+    ];
+    let copied_words: unsigned[128][2] = local_words;
     let dut: WideAdder = {
         .a = a,
         .b = b,
@@ -96,4 +101,11 @@ impl WideTest {
         narrow_box.value == 0,
         "an 80-bit field wraps even when the harness value is 128 bits"
     );
+    assert!(
+        local_words[0] == 340282366920938463463374607431768211455,
+        "an unconnected wide array preserves each element"
+    );
+    assert!(copied_words[0] == local_words[0], "wide arrays copy element-wise");
+    local_words = [3, 4];
+    assert!(local_words[1] == 4, "wide array literals can be reassigned");
 }
