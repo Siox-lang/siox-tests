@@ -1,0 +1,53 @@
+module examples::shift_edge_test;
+
+entity Shifter {
+    in value: unsigned[16];
+    in amount: unsigned[16];
+    out left: unsigned[16];
+    out right: unsigned[16];
+}
+
+impl Shifter {
+    left = value << amount;
+    right = value >> amount;
+}
+
+#[test]
+entity ShiftEdgeTest {}
+
+impl ShiftEdgeTest {
+    let value: unsigned[16];
+    let amount: unsigned[16];
+    let left: unsigned[16];
+    let right: unsigned[16];
+    let dut: Shifter = {
+        .value = value,
+        .amount = amount,
+        .left = left,
+        .right = right,
+    };
+
+    value = 1;
+    amount = 16;
+    await 1ns;
+    assert!(left == 0, "left shift by the operand width is zero");
+
+    value = 32768;
+    assert!(right == 0, "right shift by the operand width is zero");
+    assert!((value << amount) == 0,
+        "native left shift by the operand width is zero");
+    assert!((value >> amount) == 0,
+        "native right shift by the operand width is zero");
+
+    amount = 64;
+    await 1ns;
+    assert!(left == 0, "oversized left shift is zero");
+    assert!(right == 0, "oversized right shift is zero");
+    assert!((value << amount) == 0,
+        "native oversized left shift avoids C undefined behavior");
+    assert!((value >> amount) == 0,
+        "native oversized right shift avoids C undefined behavior");
+
+    assert!((18446744073709551616 + 1) != 1,
+        "a wide literal used only by a testbench widens the native value type");
+}
