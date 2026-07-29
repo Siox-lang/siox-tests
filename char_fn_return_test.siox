@@ -1,0 +1,20 @@
+module examples::char_fn_return_test;
+// A function's declared return type applies at the call site, not only once
+// the value is bound to a typed local: `char_of` returns `Char`, so its result
+// displays as a character and compares against a character literal.
+using std::text::{unicode, char_of, ascii};
+using std::bits::{unsigned};
+#[test]
+entity T {}
+impl T {
+    let a: Char = 'A';
+    await 1ns;
+    print!("unicode(A)={} ascii(A)={} char_of(66)={}", unicode(a), ascii(a), char_of(66));
+    assert!(unicode(a) == 65, "unicode('A') == 65");
+    assert!(ascii(a) == 65, "ascii('A') == 65");
+    assert!(char_of(66) == 'B', "char_of(66) == 'B'");
+    // out of the 7-bit table
+    let e: Char = 'é';
+    assert!(ascii(e) == 0 - 1, "a non-ASCII char is out of table");
+    assert!(unicode(e) == 233, "but has a unicode code point");
+}
