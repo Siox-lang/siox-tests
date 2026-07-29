@@ -1,5 +1,15 @@
 module loop_shadow_test;
 
+const NEGATIVE: integer = -8;
+
+entity SignedSource {
+    out value: integer<-10..10>;
+}
+
+impl SignedSource {
+    value = -3;
+}
+
 #[test]
 entity LoopShadowTest {}
 
@@ -9,6 +19,8 @@ impl LoopShadowTest {
     let visits: unsigned[4] = 0;
     let ones: unsigned[4] = 0;
     let signed_value: integer = -8;
+    let connected_value: integer<-10..10>;
+    let source: SignedSource = { .value = connected_value };
 
     for item in 0..1 {
         assert!(item >= 0 and item <= 1, "range loop uses integer metadata");
@@ -29,6 +41,12 @@ impl LoopShadowTest {
     assert!(signed_value < 0, "signed integer comparison");
     assert!(signed_value / 3 == -2, "signed integer division");
     assert!(signed_value >> 2 == -2, "signed integer arithmetic shift");
+    assert!(NEGATIVE < 0, "signed integer constant comparison");
+    assert!(NEGATIVE / 3 == -2, "signed integer constant division");
+    assert!(connected_value < 0, "connected signed integer comparison");
+    assert!(connected_value / 2 == -1, "connected signed integer division");
+    assert!(-3 < 0, "negative literal comparison");
+    assert!((if true { -3 } else { 3 }) < 0, "signed conditional comparison");
 
     for signed_index in -1..1 {
         assert!(signed_index >= -1, "negative range lower comparison");
