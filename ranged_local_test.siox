@@ -1,0 +1,45 @@
+module ranged_local_test;
+
+const BYTE_RANGE: range = 7..0;
+
+#[test]
+entity RangedLocalTest {}
+
+impl RangedLocalTest {
+    let wide: unsigned[127..0] = 340282366920938463463374607431768211455;
+    let descending: Bit[3..0] = "1010";
+    let ascending: Bit[0..3] = "0110";
+    let named: Bit[BYTE_RANGE] = "11001010";
+    let signed_bounds: Bit[1..-1] = "101";
+    let ones: unsigned[4] = 0;
+
+    assert!(wide'length == 128, "wide range length");
+    assert!(wide'left == 127, "wide range left");
+    assert!(wide'right == 0, "wide range right");
+    assert!(wide'ascending == false, "wide range direction");
+
+    assert!(descending[3] == '1', "descending left element");
+    assert!(descending[0] == '0', "descending right element");
+    assert!(descending'left == 3, "descending left bound");
+    assert!(descending'right == 0, "descending right bound");
+    assert!(descending'ascending == false, "descending direction");
+
+    assert!(ascending[0] == '0', "ascending left element");
+    assert!(ascending[3] == '0', "ascending right element");
+    assert!(ascending'left == 0, "ascending left bound");
+    assert!(ascending'right == 3, "ascending right bound");
+    assert!(ascending'ascending == true, "ascending direction");
+
+    assert!(named[7] == '1', "named range left element");
+    assert!(named[0] == '0', "named range right element");
+    assert!(signed_bounds[1] == '1', "signed range left element");
+    assert!(signed_bounds[-1] == '1', "signed range right element");
+    assert!(signed_bounds'low == -1, "signed range low bound");
+
+    for bit in descending {
+        if bit == '1' {
+            ones = ones + 1;
+        }
+    }
+    assert!(ones == 2, "ranged array iteration");
+}
