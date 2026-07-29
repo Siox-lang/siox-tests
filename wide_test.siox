@@ -20,6 +20,9 @@ impl WideAdder {
     }
 }
 
+struct WideBox { value: unsigned[128] }
+struct NarrowWideBox { value: unsigned[80] }
+
 #[test]
 entity WideTest {}
 
@@ -31,6 +34,12 @@ impl WideTest {
     let shifted: unsigned[128];
     let events: unsigned[3];
     let previous_events: unsigned[3];
+    let wide_box: WideBox = {
+        .value = 340282366920938463463374607431768211455
+    };
+    let narrow_box: NarrowWideBox = {
+        .value = 1208925819614629174706175
+    };
     let dut: WideAdder = {
         .a = a,
         .b = b,
@@ -76,5 +85,15 @@ impl WideTest {
     assert!(
         events > previous_events,
         "a high-word-only change raises a fresh event"
+    );
+
+    assert!(
+        wide_box.value == 340282366920938463463374607431768211455,
+        "a local struct field preserves all 128 bits"
+    );
+    narrow_box.value = narrow_box.value + 1;
+    assert!(
+        narrow_box.value == 0,
+        "an 80-bit field wraps even when the harness value is 128 bits"
     );
 }
