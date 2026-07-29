@@ -1,0 +1,17 @@
+module examples::signed_print_test;
+using std::bits::{signed};
+// `signed` prints as its value, not its bit pattern: the family is recovered
+// from the declared type, since the compiler itself tracks no signedness.
+entity Neg { in a: signed[8]; out y: signed[8]; }
+impl Neg { y = 0 - a; }
+#[test]
+entity T {}
+impl T {
+    let a: signed[8] = 5; let y: signed[8];
+    let d: Neg = { .a = a, .y = y };
+    await 1ns;
+    assert!(y < 0, "the value really is negative");
+    // Both a connected name and a plain local must agree.
+    let local: signed[8] = -5;
+    assert!(local < 0, "a plain signed local is negative too");
+}
