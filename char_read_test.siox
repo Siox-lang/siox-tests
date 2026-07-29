@@ -3,6 +3,8 @@ module examples::char_read_test;
 using std::text::{string, unicode};
 using std::attrs::{test};
 
+struct CharacterBox { value: Char }
+
 // A string is a `Char` array; each element reads as its Unicode code point.
 // Exercised on all three engines, including the native binary.
 entity Echo {
@@ -20,6 +22,9 @@ entity CharReadTest {}
 impl CharReadTest {
     let s: string = "Hi!";
     let o: string[3];
+    let scratch: string = "abc";
+    let local: Char = 'λ';
+    let boxed: CharacterBox = { .value = 'λ' };
 
     let dut: Echo = { .s = s, .o = o };
 
@@ -28,4 +33,15 @@ impl CharReadTest {
     assert!(unicode(o[1]) == 105, "'i' is code point 105");
     assert!(o[2] == '!', "a char element compares to a char literal");
     assert!(o == "Hi!", "and the whole string matches");
+
+    assert!(local == 'λ', "an unconnected Char local retains Unicode context");
+    local = 'β';
+    assert!(local == 'β', "a Char local assignment uses the code point");
+
+    scratch[0] = 'λ';
+    assert!(scratch[0] == 'λ', "a local string element keeps Char context");
+
+    assert!(boxed.value == 'λ', "a local struct Char field initializes by code point");
+    boxed.value = 'β';
+    assert!(boxed.value == 'β', "a local struct Char field assigns by code point");
 }
