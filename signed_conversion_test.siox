@@ -1,0 +1,18 @@
+module examples::signed_conversion_test;
+using std::bits::{signed, unsigned};
+// `signed[8](x)` reinterprets bits as a signed value. Hardware did this and
+// the testbench did not, so the two engines disagreed: -56 against 200.
+entity D { in a: unsigned[8]; out c: signed[8]; out neg: unsigned[8]; }
+impl D { c = signed[8](a); neg = if signed[8](a) < 0 { 1 } else { 0 }; }
+#[test]
+entity T {}
+impl T {
+    let a: unsigned[8] = 200;
+    let c: signed[8]; let neg: unsigned[8];
+    let d: D = { .a = a, .c = c, .neg = neg };
+    await 1ns;
+    assert!(c == signed[8](a), "conversion value agrees across engines");
+    assert!(signed[8](a) == 0 - 56, "and is the signed reinterpretation");
+    assert!(neg == 1, "hardware sees it as negative");
+    assert!(signed[8](a) < 0, "and so does the testbench");
+}
