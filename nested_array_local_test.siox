@@ -1,0 +1,52 @@
+module examples::nested_array_local_test;
+
+using std::attrs::{test};
+using std::text::{string};
+
+struct WidePair {
+    value: unsigned[128],
+    character: Char,
+}
+
+#[test]
+entity NestedArrayLocalTest {}
+
+impl NestedArrayLocalTest {
+    let matrix: unsigned[128][2][2] = [
+        [1, 2],
+        [3, 340282366920938463463374607431768211455]
+    ];
+    let copied_matrix: unsigned[128][2][2] = matrix;
+    let pairs: WidePair[2] = [
+        { .value = 5, .character = 'λ' },
+        {
+            .value = 340282366920938463463374607431768211455,
+            .character = 'β'
+        }
+    ];
+    let words: string[3][2] = ["abc", "def"];
+    let copied_words: string[3][2] = words;
+
+    assert!(
+        matrix[1][1] == 340282366920938463463374607431768211455,
+        "nested arrays preserve wide leaves"
+    );
+    assert!(
+        copied_matrix[1][1] == matrix[1][1],
+        "nested arrays copy by matching scalar leaves"
+    );
+    matrix[0][1] = 9;
+    assert!(matrix[0][1] == 9, "a nested leaf is mutable");
+
+    assert!(
+        pairs[1].value == 340282366920938463463374607431768211455,
+        "arrays of structs preserve wide fields"
+    );
+    assert!(pairs[0].character == 'λ', "array struct fields retain Char context");
+
+    assert!(words[0] == "abc", "first inner string");
+    assert!(copied_words[1] == words[1], "arrays of strings copy recursively");
+    words[1] = "xyz";
+    assert!(words[1] == "xyz", "an inner string is assignable");
+    print!("nested strings {} {}", words[0], words[1]);
+}
