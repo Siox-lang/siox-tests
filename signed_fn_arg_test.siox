@@ -13,4 +13,7 @@ impl T {
     let d: Ab = { .s = s, .y = y };
     await 1ns;
     assert!(y == 5, "abs in hardware");
+    // The testbench evaluator inlines the same call and must agree.
+    assert!(abs(s) == 5, "abs in the testbench");
+    assert!(abs(s) == y, "the two engines agree");
 }
