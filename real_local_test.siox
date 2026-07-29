@@ -1,6 +1,7 @@
 module examples::real_local_test;
 
 using std::attrs::{test};
+using std::math::{sqrt, pow, floor};
 
 // Unconnected real-valued testbench storage still uses the simulator's
 // bit-pattern representation. Operations must decode it to floating point and
@@ -13,6 +14,7 @@ entity RealLocalTest {}
 impl RealLocalTest {
     let value: real = 1.5;
     let sample: Sample = { .value = 3.5 };
+    let math_result: real = sqrt(9.0);
 
     assert!(value == 1.5, "real local initialization");
     print!("real local {} field {}", value, sample.value);
@@ -29,4 +31,9 @@ impl RealLocalTest {
 
     sample.value = sample.value + 0.5;
     assert!(sample.value == 4.0, "real struct field arithmetic");
+
+    assert!(math_result == 3.0, "extern sqrt in native testbench");
+    math_result = pow(2.0, 3.0);
+    assert!(math_result == 8.0, "extern pow in native testbench");
+    print!("extern floor {}", floor(3.75));
 }
