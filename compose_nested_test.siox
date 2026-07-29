@@ -1,6 +1,8 @@
 module examples::compose_nested_test;
 struct A { x: Bit, y: unsigned[4] }
 struct B { a: A, z: unsigned[4] }
+struct C { items: A[2], tag: unsigned[4] }
+struct D { label: string[3], code: unsigned[4] }
 
 entity E { in v: Bit; out oy: unsigned[4]; out oz: unsigned[4]; }
 impl E {
@@ -20,6 +22,23 @@ impl T {
     // a composed struct as a testbench local
     let loc: B;
     loc = B { .a = A { .x = '1', .y = 3 }, .z = 4 };
+    let initialized: B = B { .a = A { .x = '1', .y = 6 }, .z = 5 };
+    let copied: B = initialized;
+    let nested_spread: B = B {
+        .a = A { ..initialized.a, .y = 7 },
+        .z = 8
+    };
+    let aggregate_field: C = C {
+        .items = [
+            A { .x = '0', .y = 10 },
+            A { .x = '1', .y = 11 }
+        ],
+        .tag = 12
+    };
+    let aggregate_copy: C = aggregate_field;
+    let aggregate_spread: C = C { ..aggregate_field, .tag = 13 };
+    let string_field: D = D { .label = "abc", .code = 14 };
+    let string_spread: D = D { ..string_field, .code = 15 };
     await 1ns;
     // The spread must carry the nested leaf, not just the top-level field.
     assert!(oy == 9, "spread keeps a nested field");
@@ -27,4 +46,26 @@ impl T {
     // A composed struct held in a testbench local stores its leaves too.
     assert!(loc.a.y == 3, "nested field of a testbench-local struct");
     assert!(loc.z == 4, "and its scalar field");
+    assert!(initialized.a.x == '1', "nested initializer keeps enum leaf");
+    assert!(initialized.a.y == 6, "nested initializer keeps numeric leaf");
+    assert!(initialized.z == 5, "nested initializer keeps scalar sibling");
+    assert!(copied.a.x == initialized.a.x, "nested copy initializer enum leaf");
+    assert!(copied.a.y == initialized.a.y, "nested copy initializer numeric leaf");
+    assert!(copied.z == initialized.z, "nested copy initializer sibling");
+    assert!(nested_spread.a.x == '1', "nested spread initializer keeps base leaf");
+    assert!(nested_spread.a.y == 7, "nested spread initializer overrides leaf");
+    assert!(nested_spread.z == 8, "nested spread initializer sibling");
+    assert!(aggregate_field.items[0].x == '0', "array field first enum leaf");
+    assert!(aggregate_field.items[0].y == 10, "array field first numeric leaf");
+    assert!(aggregate_field.items[1].x == '1', "array field second enum leaf");
+    assert!(aggregate_field.items[1].y == 11, "array field second numeric leaf");
+    assert!(aggregate_field.tag == 12, "array field scalar sibling");
+    assert!(aggregate_copy.items[1].y == 11, "array field copy initializer");
+    assert!(aggregate_copy.tag == 12, "array field copy sibling");
+    assert!(aggregate_spread.items[0].y == 10, "array field spread initializer");
+    assert!(aggregate_spread.tag == 13, "array field spread override");
+    assert!(string_field.label == "abc", "fixed string struct field initializer");
+    assert!(string_field.code == 14, "fixed string field sibling");
+    assert!(string_spread.label == "abc", "fixed string field spread");
+    assert!(string_spread.code == 15, "fixed string field spread override");
 }
