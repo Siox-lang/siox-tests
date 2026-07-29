@@ -1,8 +1,9 @@
 module examples::family_test;
 
 // A user-defined Logic-vector family — behaves like unsigned with no compiler
-// knowledge of its name, purely from `struct F : Logic[]`.
+// knowledge of its name. `Vector` explicitly selects packed numeric storage.
 struct Word(Logic[]);
+impl Vector for Word {}
 
 entity E { in a: Word[8]; out y: Word[8]; }
 impl E { y = a; }
