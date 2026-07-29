@@ -25,6 +25,14 @@ impl IntegerOps {
     summed_quotient = (a + 1) / 3;
 }
 
+entity NaturalOps {
+    in value: integer<0..3>;
+    out greater: Bit;
+}
+impl NaturalOps {
+    greater = if value > 1 { '1' } else { '0' };
+}
+
 #[test]
 entity IntegerHardwareTest {}
 
@@ -40,6 +48,8 @@ impl IntegerHardwareTest {
     let widened: integer<-128..127>;
     let negated_quotient: integer<-128..127>;
     let summed_quotient: integer<-128..127>;
+    let natural: integer<0..3> = 3;
+    let natural_greater: Bit;
     let dut: IntegerOps = {
         .a = a,
         .b = b,
@@ -53,6 +63,7 @@ impl IntegerHardwareTest {
         .negated_quotient = negated_quotient,
         .summed_quotient = summed_quotient,
     };
+    let natural_dut: NaturalOps = { .value = natural, .greater = natural_greater };
 
     await 1ns;
     assert!(less == '1', "kernel integer comparison in DUT is signed");
@@ -63,4 +74,6 @@ impl IntegerHardwareTest {
     assert!(widened == -8, "widening a constrained kernel integer sign-extends");
     assert!(negated_quotient == 8, "nested kernel integer negation sign-extends its operand");
     assert!(summed_quotient == -2, "nested kernel integer addition sign-extends its operands");
+    assert!(natural > 1, "nonnegative constrained integer compares by its numeric value");
+    assert!(natural_greater == '1', "nonnegative constrained integer compares correctly in DUT");
 }
