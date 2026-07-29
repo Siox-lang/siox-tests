@@ -7,6 +7,11 @@ fn neg(v: signed[8]) -> signed[8] { return 0 - v; }
 fn pick() -> Color { return Color::Green; }
 fn lg() -> Logic { return 'Z'; }
 
+// The same call in hardware: the DUT compares a call result, so both engines
+// exercise the return type's width and family.
+entity Cmp { in v: signed[8]; out lt: unsigned[8]; }
+impl Cmp { lt = if neg(v) < 0 { 1 } else { 0 }; }
+
 #[test]
 entity T {}
 impl T {
@@ -16,6 +21,8 @@ impl T {
     // A call's declared return type applies at the call site: a signed result
     // is a value not a bit pattern, and an enum result is its symbol. Bound to
     // a typed local these were already right; used directly they were not.
+    let lt: unsigned[8];
+    let c: Cmp = { .v = s, .lt = lt };
     let ns: signed[8] = neg(s);
     assert!(ns < 0, "a signed return is negative through a local");
     assert!(neg(s) == ns, "and the direct call agrees");
@@ -25,4 +32,5 @@ impl T {
     assert!(neg(s) < ns + 1, "and orders against another signed value");
     assert!(pick() == Color::Green, "an enum return compares to its variant");
     assert!(lg() == 'Z', "a Logic return compares to its symbol");
+    assert!(lt == 1, "hardware orders a call result as signed too");
 }
