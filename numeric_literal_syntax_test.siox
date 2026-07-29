@@ -1,0 +1,25 @@
+module numeric_literal_syntax_test;
+
+const WIDTH: integer = 1_28;
+const LEFT: integer = 0x3;
+const REAL_VALUE: real = 1_000.25_5;
+
+#[test]
+entity NumericLiteralSyntaxTest {}
+
+impl NumericLiteralSyntaxTest {
+    let wide: unsigned[1_28] = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff;
+    let based_range: Bit[0x3..0x0] = "1010";
+    let named_width: unsigned[WIDTH] = 0;
+    let based_width: unsigned[0x80] = 0;
+    let real_value: real = REAL_VALUE;
+
+    assert!(wide'length == 128, "underscored width");
+    assert!(wide == 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff, "underscored wide value");
+    assert!(based_range'length == 4, "based range length");
+    assert!(based_range'left == LEFT, "based range left");
+    assert!(based_range[0x3] == '1', "based logical index");
+    assert!(named_width'length == 128, "named underscored width");
+    assert!(based_width'length == 128, "based width");
+    assert!(real_value == 1000.255, "underscored real literal");
+}
