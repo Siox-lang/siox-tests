@@ -1,0 +1,24 @@
+module examples::fn_return_type_test;
+using std::bits::{signed, unsigned};
+using std::logic::{Logic};
+enum Color { Red, Green, Blue }
+
+fn neg(v: signed[8]) -> signed[8] { return 0 - v; }
+fn pick() -> Color { return Color::Green; }
+fn lg() -> Logic { return 'Z'; }
+
+#[test]
+entity T {}
+impl T {
+    let s: signed[8] = 5;
+    await 1ns;
+    // Each call's declared return type should apply at the call site.
+    // A call's declared return type applies at the call site: a signed result
+    // is a value not a bit pattern, and an enum result is its symbol. Bound to
+    // a typed local these were already right; used directly they were not.
+    let ns: signed[8] = neg(s);
+    assert!(ns < 0, "a signed return is negative through a local");
+    assert!(neg(s) == ns, "and the direct call agrees");
+    assert!(pick() == Color::Green, "an enum return compares to its variant");
+    assert!(lg() == 'Z', "a Logic return compares to its symbol");
+}
