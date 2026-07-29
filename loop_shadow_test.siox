@@ -1,0 +1,38 @@
+module loop_shadow_test;
+
+#[test]
+entity LoopShadowTest {}
+
+impl LoopShadowTest {
+    let item: real = 3.5;
+    let bits: Bit[2] = "10";
+    let visits: unsigned[4] = 0;
+    let ones: unsigned[4] = 0;
+    let signed_value: integer = -8;
+
+    for item in 0..1 {
+        assert!(item >= 0 and item <= 1, "range loop uses integer metadata");
+        visits = visits + 1;
+
+        for item in bits {
+            if item == '1' {
+                ones = ones + 1;
+            }
+        }
+
+        assert!(item >= 0 and item <= 1, "range metadata restored after nested loop");
+    }
+
+    assert!(visits == 2, "range loop iteration count");
+    assert!(ones == 2, "array loop iteration count");
+    assert!(item == 3.5, "outer real metadata and value restored");
+    assert!(signed_value < 0, "signed integer comparison");
+    assert!(signed_value / 3 == -2, "signed integer division");
+    assert!(signed_value >> 2 == -2, "signed integer arithmetic shift");
+
+    for signed_index in -1..1 {
+        assert!(signed_index >= -1, "negative range lower comparison");
+        assert!(signed_index <= 1, "negative range upper comparison");
+        assert!(signed_index / 1 == signed_index, "signed range division");
+    }
+}

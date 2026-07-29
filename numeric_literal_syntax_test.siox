@@ -22,4 +22,6 @@ impl NumericLiteralSyntaxTest {
     assert!(named_width'length == 128, "named underscored width");
     assert!(based_width'length == 128, "based width");
     assert!(real_value == 1000.255, "underscored real literal");
+    real_value = 2_000.12_5;
+    assert!(real_value == 2_000.12_5, "underscored real reassignment");
 }
