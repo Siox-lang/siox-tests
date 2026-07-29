@@ -1,0 +1,38 @@
+module integer_hw_test;
+
+entity IntegerOps {
+    in a: integer<-16..15>;
+    in b: integer<-16..15>;
+    out less: Bit;
+    out quotient: integer<-16..15>;
+    out shifted: integer<-16..15>;
+}
+
+impl IntegerOps {
+    less = if a < b { '1' } else { '0' };
+    quotient = a / b;
+    shifted = a >> 1;
+}
+
+#[test]
+entity IntegerHardwareTest {}
+
+impl IntegerHardwareTest {
+    let a: integer<-16..15> = -8;
+    let b: integer<-16..15> = 3;
+    let less: Bit;
+    let quotient: integer<-16..15>;
+    let shifted: integer<-16..15>;
+    let dut: IntegerOps = {
+        .a = a,
+        .b = b,
+        .less = less,
+        .quotient = quotient,
+        .shifted = shifted,
+    };
+
+    await 1ns;
+    assert!(less == '1', "kernel integer comparison in DUT is signed");
+    assert!(quotient == -2, "kernel integer division in DUT is signed");
+    assert!(shifted == -4, "kernel integer right shift in DUT is arithmetic");
+}
