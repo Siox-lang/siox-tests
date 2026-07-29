@@ -1,12 +1,21 @@
 module examples::real_local_test;
 
 using std::attrs::{test};
-using std::math::{sqrt, pow, floor};
+using std::math::{sqrt, pow, floor, PI};
 
 // Unconnected real-valued testbench storage still uses the simulator's
 // bit-pattern representation. Operations must decode it to floating point and
 // encode their result again, just like connected real signals.
 struct Sample { value: real }
+
+const HALF_PI: real = PI / 2.0;
+
+fn half(value: real) -> real { return value / 2.0; }
+fn one() -> real { return 1; }
+
+impl Sample {
+    fn half(self) -> real { return self.value / 2.0; }
+}
 
 #[test]
 entity RealLocalTest {}
@@ -36,4 +45,9 @@ impl RealLocalTest {
     math_result = pow(2.0, 3.0);
     assert!(math_result == 8.0, "extern pow in native testbench");
     print!("extern floor {}", floor(3.75));
+
+    assert!(HALF_PI > 1.5, "named real constant");
+    assert!(half(8.0) == 4.0, "real function parameter and return");
+    assert!(one() == 1.0, "integer literal coerces in a real return");
+    assert!(sample.half() == 2.0, "real method return");
 }
