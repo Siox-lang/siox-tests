@@ -1,0 +1,16 @@
+module examples::signed_fn_arg_test;
+using std::bits::{signed, unsigned};
+using std::math::{abs};
+// A `signed` argument keeps its width through a call: the inlined body of
+// `abs` dispatches signed's Ord, whose sign test needs `self'length`. With the
+// width lost the test shifted by 0 and abs(-5) came back as 251.
+entity Ab { in s: signed[8]; out y: signed[8]; }
+impl Ab { y = abs(s); }
+#[test]
+entity T {}
+impl T {
+    let s: signed[8] = -5; let y: signed[8];
+    let d: Ab = { .s = s, .y = y };
+    await 1ns;
+    assert!(y == 5, "abs in hardware");
+}
