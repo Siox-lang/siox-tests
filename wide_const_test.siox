@@ -1,0 +1,68 @@
+module examples::wide_const_test;
+
+const TOP_BIT: unsigned[128] = 18446744073709551616;
+const MIXED: unsigned[128] = 18446744073709551621;
+const FORWARD: unsigned[128] = LATER;
+const LATER: unsigned[128] = 18446744073709551623;
+const COMPOSED: unsigned[128] = TOP_BIT + 9;
+const ABOVE_U128: unsigned[192] = 340282366920938463463374607431768211456;
+const ABOVE_U128_PLUS: unsigned[192] = ABOVE_U128 + 3;
+
+entity WideConst {
+    out top: unsigned[128];
+    out mixed: unsigned[128];
+    out forward: unsigned[128];
+    out composed: unsigned[128];
+    out above_u128: unsigned[192];
+    out above_u128_plus: unsigned[192];
+}
+
+impl WideConst {
+    top = TOP_BIT;
+    mixed = MIXED;
+    forward = FORWARD;
+    composed = COMPOSED;
+    above_u128 = ABOVE_U128;
+    above_u128_plus = ABOVE_U128_PLUS;
+}
+
+#[test]
+entity WideConstTest {}
+
+impl WideConstTest {
+    let top: unsigned[128];
+    let mixed: unsigned[128];
+    let forward: unsigned[128];
+    let composed: unsigned[128];
+    let above_u128: unsigned[192];
+    let above_u128_plus: unsigned[192];
+    let dut: WideConst = {
+        .top = top,
+        .mixed = mixed,
+        .forward = forward,
+        .composed = composed,
+        .above_u128 = above_u128,
+        .above_u128_plus = above_u128_plus,
+    };
+
+    assert!(top == (unsigned[128](1) << 64),
+        "a module const preserves its high ABI word");
+    assert!(mixed == ((unsigned[128](1) << 64) + 5),
+        "a module const preserves high and low ABI words");
+    assert!(forward == ((unsigned[128](1) << 64) + 7),
+        "wide module constants resolve independently of declaration order");
+    assert!(composed == ((unsigned[128](1) << 64) + 9),
+        "wide module constant expressions preserve all words");
+    assert!(TOP_BIT == (unsigned[128](1) << 64),
+        "native testbench expressions preserve a wide module const");
+    assert!(COMPOSED == ((unsigned[128](1) << 64) + 9),
+        "native testbench expressions preserve a composed wide const");
+    assert!(above_u128 == (unsigned[192](1) << 128),
+        "IR module constants have no u128 ceiling");
+    assert!(ABOVE_U128 == (unsigned[192](1) << 128),
+        "native testbench module constants have no u128 ceiling");
+    assert!(above_u128_plus == ((unsigned[192](1) << 128) + 3),
+        "IR composes constants above u128");
+    assert!(ABOVE_U128_PLUS == ((unsigned[192](1) << 128) + 3),
+        "native testbench composes constants above u128");
+}
