@@ -1,0 +1,76 @@
+module examples::vector_resolve_test;
+
+// `Word` receives element-wise Resolve/and/or/not from the constrained T[]
+// implementations because its packed representation is Logic[].
+struct Word(Logic[]);
+impl Vector for Word {}
+
+entity VectorBus {
+    in en_a: Bit;
+    in a: Word[4];
+    in en_b: Bit;
+    in b: Word[4];
+    out bus: Word[4];
+    out b3: Logic;
+    out b2: Logic;
+    out b1: Logic;
+    out b0: Logic;
+}
+
+impl VectorBus {
+    bus = "ZZZZ";
+    if en_a { bus = a; }
+}
+
+impl VectorBus {
+    bus = "ZZZZ";
+    if en_b { bus = b; }
+}
+
+impl VectorBus {
+    b3 = bus[3..3];
+    b2 = bus[2..2];
+    b1 = bus[1..1];
+    b0 = bus[0..0];
+}
+
+#[test]
+entity VectorResolveTest {}
+
+impl VectorResolveTest {
+    let en_a: Bit = '0';
+    let en_b: Bit = '0';
+    let a: Word[4] = 10;
+    let b: Word[4] = 12;
+    let bus: Word[4];
+    let b3: Logic;
+    let b2: Logic;
+    let b1: Logic;
+    let b0: Logic;
+    let dut: VectorBus = {
+        .en_a = en_a,
+        .a = a,
+        .en_b = en_b,
+        .b = b,
+        .bus = bus,
+        .b3 = b3,
+        .b2 = b2,
+        .b1 = b1,
+        .b0 = b0,
+    };
+
+    await 1ns;
+    assert!(b3 == 'Z' and b2 == 'Z' and b1 == 'Z' and b0 == 'Z',
+        "idle vector resolves to Z");
+    en_a = '1';
+    await 1ns;
+    assert!(bus == 10, "one vector source passes through");
+    en_b = '1';
+    await 1ns;
+    assert!(b3 == '1' and b2 == 'X' and b1 == 'X' and b0 == '0',
+        "resolution is element-wise");
+
+    assert!((a and b) == 8, "and is forwarded from Logic[]");
+    assert!((a or b) == 14, "or is forwarded from Logic[]");
+    assert!((not a) == 5, "not is forwarded from Logic[]");
+}
