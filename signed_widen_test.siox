@@ -1,0 +1,47 @@
+module examples::signed_widen_test;
+
+using std::bits::{unsigned, signed, sext};
+
+// A conversion is a raw resize — zero-extend or truncate — because the
+// compiler tracks no signedness (spec 3.10). Sign extension is the library
+// function `std::bits::sext`, so a signed value widens through it. Both
+// engines must agree on all of it.
+
+entity W {
+    a: signed[8] in,
+    raw: signed[16] out,
+    signed_wide: signed[16] out,
+    value: integer out
+}
+impl W {
+    raw = signed[16](a);            // raw resize: the bit pattern, zero-extended
+    signed_wide = signed[16](sext(a));  // the signed value, widened
+    value = sext(a);                // the signed value as a kernel integer
+}
+
+#[test]
+entity SignedWidenTest {}
+impl SignedWidenTest {
+    let a: signed[8] = 0 - 56;
+    let raw: signed[16];
+    let signed_wide: signed[16];
+    let value: integer;
+    let dut: W = { .a = a, .raw = raw, .signed_wide = signed_wide, .value = value };
+
+    await 1ns;
+    assert!(raw == 200, "a bare conversion zero-extends the bit pattern");
+    assert!(signed_wide == 0 - 56, "sext widens the value");
+    assert!(value == 0 - 56, "and reads it as a kernel integer");
+
+    // The same in the testbench, and for argument shapes that are not a plain
+    // name: the width has to travel with the argument either way.
+    assert!(signed[16](a) == 200, "testbench agrees on the raw conversion");
+    assert!(sext(a) == 0 - 56, "testbench agrees on sext");
+    assert!(sext(a + 0) == 0 - 56, "an expression argument keeps its width");
+    assert!(sext(signed[8](56)) == 56, "a conversion argument states its width");
+    assert!(signed[16](sext(a)) == 0 - 56, "and the pair composes");
+
+    // Same width is a pure reinterpretation, and narrowing truncates.
+    assert!(unsigned[8](a) == 200, "same width reinterprets");
+    assert!(unsigned[4](a) == 8, "narrowing truncates: 0xC8 -> 0x8");
+}
