@@ -1,0 +1,54 @@
+module examples::slice_direction_test;
+
+using std::bits::{unsigned};
+
+// A written range keeps its direction (spec 3.13): `w[7..4]` extracts
+// MSB-first, `w[4..7]` names the same bits with their significance reversed.
+// A partial range takes its missing bound from the declared range. Both
+// engines must agree — the testbench could not slice a packed local at all,
+// so a design could compute a nibble and its test could not check it.
+
+entity S {
+    w: unsigned[8] in,
+    hi: unsigned[4] out,
+    rev: unsigned[4] out,
+    lo: unsigned[4] out,
+    top: Logic out
+}
+impl S {
+    hi = w[7..4];
+    rev = w[4..7];
+    lo = w[3..0];
+    top = w[7];
+}
+
+#[test]
+entity SliceDirectionTest {}
+impl SliceDirectionTest {
+    let w: unsigned[8] = 0b1011_0010;      // 0xB2
+    let hi: unsigned[4];
+    let rev: unsigned[4];
+    let lo: unsigned[4];
+    let top: Logic;
+    let dut: S = { .w = w, .hi = hi, .rev = rev, .lo = lo, .top = top };
+
+    // Testbench side.
+    assert!(w[7..4] == 0xB, "descending extracts MSB-first");
+    assert!(w[4..7] == 0xD, "ascending reverses the bit order");
+    assert!(w[3..0] == 0x2, "the low nibble");
+    assert!(w[7] == '1', "a single bit reads without a range");
+    assert!(w[0] == '0', "and at the other end");
+
+    // A partial range fills the missing bound from the declaration.
+    let down: unsigned[7..0] = 0b1011_0010;
+    assert!(down[..4] == 0xB, "omitted left bound is the declared left");
+    assert!(down[3..] == 0x2, "omitted right bound is the declared right");
+    assert!(down[..] == 0xB2, "both omitted is the whole value");
+
+    // Hardware agrees on every one of them.
+    await 1ns;
+    assert!(hi == 0xB, "hardware descending");
+    assert!(rev == 0xD, "hardware ascending");
+    assert!(lo == 0x2, "hardware low nibble");
+    assert!(top == '1', "hardware single bit");
+}
