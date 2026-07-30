@@ -25,6 +25,10 @@ impl FsTest {
     assert!(data == 17, "rom.bin[0] = 0x11, baked at compile time");
     assert!(unicode(s[0]) == 72, "banner 'H'");
     assert!(unicode(s[1]) == 105, "banner 'i'");
+    // The file is read at build time, so its length is a compile-time
+    // constant like any other array's — it used to be computed, used to lay
+    // out the storage, and then thrown away.
+    assert!(s'length == 2, "banner.txt is 2 chars");
     assert!(exists("rom.bin") == true, "exists");
     assert!(exists("nope.bin") == false, "not exists");
 }
