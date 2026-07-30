@@ -1,0 +1,43 @@
+module examples::array_init_rom_test;
+
+// An array-literal initializer seeds each element, in hardware as well as in
+// a testbench — a lookup table written this way used to power on at 0 in
+// every element and read back as zeros with no diagnostic. Indexing it at a
+// runtime index works in both places.
+
+entity Rom {
+    addr: unsigned[2] in,
+    q: unsigned[8] out,
+    fixed: unsigned[8] out
+}
+impl Rom {
+    let cells: unsigned[8][4] = [11, 22, 33, 44];
+    q = cells[addr];
+    fixed = cells[2];
+}
+
+#[test]
+entity ArrayInitRomTest {}
+impl ArrayInitRomTest {
+    let addr: unsigned[2] = 0;
+    let q: unsigned[8];
+    let fixed: unsigned[8];
+    let dut: Rom = { .addr = addr, .q = q, .fixed = fixed };
+
+    // The same table as a testbench local, read at a runtime index.
+    let table: unsigned[8][4] = [11, 22, 33, 44];
+    let s: string = "hello";
+    let i: integer = 2;
+
+    assert!(table[i] == 33, "a runtime index into a testbench array");
+    assert!(table[0] == 11, "and a constant one");
+    print!("s[i] = {}   (a Char element, not its code point)", s[i]);
+
+    await 1ns;
+    assert!(fixed == 33, "a constant index into an initialized hardware array");
+    assert!(q == 11, "a runtime index, addr = 0");
+
+    addr = 3;
+    await 1ns;
+    assert!(q == 44, "a runtime index, addr = 3");
+}
