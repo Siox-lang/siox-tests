@@ -1,5 +1,7 @@
 module examples::signed_branch_expr_test;
 using std::bits::{signed, unsigned};
+using std::logic::{Logic};
+enum Color { Red, Green, Blue }
 #[test]
 entity T {}
 impl T {
@@ -14,4 +16,14 @@ impl T {
     assert!(arr[0] < 0, "an array element orders as signed");
     assert!((if c == 1 { a } else { b }) < 0, "an if expression does too");
     assert!((match c { 1 => a, _ => b }) < 0, "and a match expression");
+
+    // The same shapes for the other types: a branch-valued expression is
+    // whatever its branches are, whichever type that is.
+    let g: Color = Color::Green; let bl: Color = Color::Blue;
+    let l1: Logic = 'Z'; let l2: Logic = 'X';
+    let c1: Char = 'A'; let c2: Char = 'B';
+    assert!((if c == 1 { g } else { bl }) == Color::Green, "enum through if");
+    assert!((if c == 1 { l1 } else { l2 }) == 'Z', "Logic through if");
+    assert!((if c == 1 { c1 } else { c2 }) == 'A', "Char through if");
+    assert!((match c { 1 => c1, _ => c2 }) == 'A', "Char through match");
 }
