@@ -1,0 +1,55 @@
+module examples::default_construction_test;
+
+using std::bits::{unsigned, signed};
+
+// Every signal holds a value: a declaration with no initializer takes its
+// type's default (spec 3.29), and `T()` / `T::new()` are the explicit
+// spellings of the same thing. Hardware built all of them; the testbench had
+// no case for a zero-argument type call, so only the implicit form worked
+// there, and `Enum::new()` resolved as a variant lookup and failed.
+
+enum Phase { Idle, Run, Done }
+struct Pair { a: unsigned[8], b: signed[8] }
+
+entity Defaults { e: Phase out, u: unsigned[8] out, s: signed[8] out }
+impl Defaults {
+    e = Phase();
+    u = unsigned[8]();
+    s = signed[8]();
+}
+
+#[test]
+entity DefaultConstructionTest {}
+impl DefaultConstructionTest {
+    let e: Phase;
+    let u: unsigned[8];
+    let s: signed[8];
+    let dut: Defaults = { .e = e, .u = u, .s = s };
+
+    // Implicit: the declaration alone.
+    let ie: Phase;
+    let iu: unsigned[8];
+    let ip: Pair;
+    assert!(ie == Phase::Idle, "an enum defaults to its first variant");
+    assert!(iu == 0, "a vector defaults to zero");
+    assert!(ip.a == 0, "and so does each field of a struct");
+
+    // Explicit, both spellings, same values.
+    let xe: Phase = Phase();
+    let ne: Phase = Phase::new();
+    let xu: unsigned[8] = unsigned[8]();
+    let xs: signed[8] = signed[8]();
+    let xp: Pair = Pair();
+    let np: Pair = Pair::new();
+    assert!(xe == Phase::Idle, "T() builds the default");
+    assert!(ne == Phase::Idle, "T::new() is the same default");
+    assert!(xe == ie, "explicit and implicit agree");
+    assert!(xu == 0, "unsigned[8]() is 0");
+    assert!(xs == 0, "signed[8]() is 0");
+    assert!(xp.a == 0 and np.b == 0, "struct defaults, both spellings");
+
+    await 1ns;
+    assert!(e == Phase::Idle, "hardware agrees on the enum default");
+    assert!(u == 0, "hardware agrees on the unsigned default");
+    assert!(s == 0, "hardware agrees on the signed default");
+}
