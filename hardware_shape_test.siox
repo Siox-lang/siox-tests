@@ -1,0 +1,29 @@
+module examples::hardware_shape_test;
+using std::bits::{signed, unsigned};
+// The shapes an operand can take, all in hardware: a struct field, a
+// conversion, and the two branch-valued expressions. Each must resolve to the
+// same `signed` family a plain name would, or the comparison runs unsigned.
+struct Pt { x: signed[8], y: signed[8] }
+entity D {
+    in p: Pt; in u: unsigned[8]; in c: unsigned[8];
+    out fld: unsigned[8]; out cvt: unsigned[8]; out brif: unsigned[8]; out brm: unsigned[8];
+}
+impl D {
+    fld  = if p.x < 0 { 1 } else { 0 };              // struct field
+    cvt  = if signed[8](u) < 0 { 1 } else { 0 };     // conversion
+    brif = if (if c == 1 { p.x } else { p.y }) < 0 { 1 } else { 0 };   // if-expr
+    brm  = if (match c { 1 => p.x, _ => p.y }) < 0 { 1 } else { 0 };   // match-expr
+}
+#[test]
+entity T {}
+impl T {
+    let p: Pt; let u: unsigned[8] = 200; let c: unsigned[8] = 1;
+    let fld: unsigned[8]; let cvt: unsigned[8]; let brif: unsigned[8]; let brm: unsigned[8];
+    let d: D = { .p = p, .u = u, .c = c, .fld = fld, .cvt = cvt, .brif = brif, .brm = brm };
+    p = Pt { .x = 0 - 3, .y = 10 };
+    await 1ns;
+    assert!(fld == 1,  "hardware: struct field orders as signed");
+    assert!(cvt == 1,  "hardware: conversion orders as signed");
+    assert!(brif == 1, "hardware: if-expression orders as signed");
+    assert!(brm == 1,  "hardware: match-expression orders as signed");
+}
