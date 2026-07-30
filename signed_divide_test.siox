@@ -1,0 +1,43 @@
+module examples::signed_divide_test;
+
+using std::bits::{signed};
+
+// Signed division is a library impl that negates, divides, then restores the
+// sign, choosing its branch by testing each operand's top bit. A bare literal
+// has no width of its own — `2` is two bits and its top bit is set — so the
+// divisor tested as negative and the both-negative branch returned |a| / |b|
+// with the sign dropped: -56 / 2 came out as 28 in hardware while the
+// testbench said -28.
+
+entity D {
+    a: signed[8] in,
+    half: signed[8] out,
+    quarter: signed[8] out,
+    eighth: signed[8] out
+}
+impl D {
+    half = a / 2;
+    quarter = a / 4;
+    eighth = a / 8;
+}
+
+#[test]
+entity SignedDivideTest {}
+impl SignedDivideTest {
+    let a: signed[8] = 0 - 56;
+    let half: signed[8];
+    let quarter: signed[8];
+    let eighth: signed[8];
+    let dut: D = { .a = a, .half = half, .quarter = quarter, .eighth = eighth };
+
+    // Testbench side.
+    assert!(a / 2 == 0 - 28, "negative divided by a positive literal");
+    assert!(a / 4 == 0 - 14, "and by a wider one");
+    assert!(a / 8 == 0 - 7, "and again");
+
+    // Hardware must agree on every one.
+    await 1ns;
+    assert!(half == 0 - 28, "hardware halves a negative");
+    assert!(quarter == 0 - 14, "hardware quarters it");
+    assert!(eighth == 0 - 7, "hardware divides by eight");
+}
