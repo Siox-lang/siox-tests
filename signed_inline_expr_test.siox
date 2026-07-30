@@ -1,0 +1,39 @@
+module examples::signed_inline_expr_test;
+
+// A `signed` expression carries its family whether or not it is bound to a
+// name first. Arithmetic keeps its operands' family, so `(a - b) < 0` must
+// dispatch the same signed `Ord` that `d < 0` does after `let d = a - b`,
+// and must render as a signed value rather than the raw bit pattern.
+
+entity Neg { a: signed[8] in, b: signed[8] in, neg: Bit out }
+impl Neg {
+    neg = if (a - b) < 0 { '1' } else { '0' };
+}
+
+#[test]
+entity SignedInlineExprTest {}
+impl SignedInlineExprTest {
+    let a: signed[8] = -7;
+    let b: signed[8] = 2;
+    let d: signed[8] = a - b;
+
+    let na: signed[8] = -7;
+    let nb: signed[8] = 2;
+    let neg: Bit;
+    let dut: Neg = { .a = na, .b = nb, .neg = neg };
+
+    assert!(d == -9, "the bound difference is -9");
+    assert!(d < 0, "a bound signed value compares signed");
+    assert!((a - b) < 0, "an inline signed expression compares signed too");
+    assert!((a - b) == -9, "and equals the same value");
+    assert!(0 - (a - b) == 9, "negating it keeps the family");
+
+    // Division truncates toward zero, and its 8-bit overflow wraps.
+    let s: signed[8] = -128;
+    let t: signed[8] = -1;
+    assert!(a / b == -3, "signed division truncates toward zero");
+    assert!(s / t == -128, "-128 / -1 overflows and wraps");
+
+    await 1ns;
+    assert!(neg == '1', "the same comparison in hardware");
+}
