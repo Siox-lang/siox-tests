@@ -1,0 +1,17 @@
+module examples::signed_branch_expr_test;
+using std::bits::{signed, unsigned};
+#[test]
+entity T {}
+impl T {
+    // A branch-valued expression is as signed as its branches. Array indexing
+    // already resolved through the path; `if` and `match` did not, and read
+    // their result back as a bit pattern.
+    let arr: signed[8][3] = [0 - 3, 5, 0 - 7];
+    let a: signed[8] = 0 - 3;
+    let b: signed[8] = 5;
+    let c: unsigned[8] = 1;
+    await 1ns;
+    assert!(arr[0] < 0, "an array element orders as signed");
+    assert!((if c == 1 { a } else { b }) < 0, "an if expression does too");
+    assert!((match c { 1 => a, _ => b }) < 0, "and a match expression");
+}
