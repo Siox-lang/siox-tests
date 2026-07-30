@@ -1,0 +1,62 @@
+module examples::slice_assign_test;
+
+using std::bits::{unsigned};
+
+// Partial (slice) assignment is a read-modify-write: the written bits change
+// and the rest hold (spec 3.13). A single constant index is the one-bit case
+// — `status[7] = err` — which the spec documents and which used to be
+// rejected, though `status[7..7] = err` and reading `status[7]` both worked.
+
+entity S {
+    a: unsigned[4] in,
+    e: Logic in,
+    clk: Bit in,
+    low: unsigned[8] out,
+    high: unsigned[8] out,
+    merged: unsigned[8] out,
+    one: unsigned[8] out,
+    reg: unsigned[8] out
+}
+impl S {
+    low = 0;
+    low[3..0] = a;              // low nibble set, high nibble stays 0
+
+    high = 0;
+    high[7..4] = a;             // the other end
+
+    merged = 0xF0;              // a prior driver in the same context
+    merged[3..0] = a;           // merges with it rather than replacing
+
+    one = 0;
+    one[7] = e;                 // a single bit, spelled without a range
+
+    // In a clocked block the untouched bits come from the register.
+    let r: unsigned[8] = 0xAA;
+    if clk.rising() { r[3..0] = a; }
+    reg = r;
+}
+
+#[test]
+entity SliceAssignTest {}
+impl SliceAssignTest {
+    let a: unsigned[4] = 5;
+    let e: Logic = '1';
+    let clk: Bit = '0';
+    let low: unsigned[8];
+    let high: unsigned[8];
+    let merged: unsigned[8];
+    let one: unsigned[8];
+    let reg: unsigned[8];
+    let dut: S = { .a = a, .e = e, .clk = clk, .low = low, .high = high,
+                   .merged = merged, .one = one, .reg = reg };
+
+    await 1ns;
+    assert!(low == 5, "low nibble written, high held at 0");
+    assert!(high == 0x50, "high nibble written");
+    assert!(merged == 0xF5, "merges with the prior driver");
+    assert!(one == 0x80, "a single-bit write sets just that bit");
+
+    clk = '1';
+    await 1ns;
+    assert!(reg == 0xA5, "a clocked partial write keeps the untouched bits");
+}
