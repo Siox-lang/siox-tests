@@ -4,7 +4,7 @@ struct B { a: A, z: unsigned[4] }
 struct C { items: A[2], tag: unsigned[4] }
 struct D { label: string[3], code: unsigned[4] }
 
-entity E { in v: Bit; out oy: unsigned[4]; out oz: unsigned[4]; }
+entity E { v: Bit in, oy: unsigned[4] out, oz: unsigned[4] out }
 impl E {
     let base: B;
     base = B { .a = A { .x = v, .y = 9 }, .z = 2 };

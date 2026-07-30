@@ -3,10 +3,10 @@ module tests::partial_range;
 using std::bits::unsigned;
 
 entity PartialRange {
-    in value: unsigned[7..0];
-    out upper: unsigned[4];
-    out lower: unsigned[4];
-    out whole: unsigned[8];
+    value: unsigned[7..0] in,
+    upper: unsigned[4] out,
+    lower: unsigned[4] out,
+    whole: unsigned[8] out
 }
 
 impl PartialRange {

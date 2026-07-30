@@ -2,12 +2,12 @@ module examples::slice_write_test;
 using std::bits::unsigned;
 // Register bit-field update + two-field combinational pack.
 entity E {
-    in clk: Bit;
-    in lo_in: unsigned[4];
-    in hi_in: unsigned[4];
-    in we_lo: Bit;
-    out reg: unsigned[8];
-    out packed: unsigned[8];
+    clk: Bit in,
+    lo_in: unsigned[4] in,
+    hi_in: unsigned[4] in,
+    we_lo: Bit in,
+    reg: unsigned[8] out,
+    packed: unsigned[8] out
 }
 impl E {
     let r: unsigned[8] = 0;

@@ -5,7 +5,7 @@ module examples::family_test;
 struct Word(Logic[]);
 impl Vector for Word {}
 
-entity E { in a: Word[8]; out y: Word[8]; }
+entity E { a: Word[8] in, y: Word[8] out }
 impl E { y = a; }
 
 #[test]

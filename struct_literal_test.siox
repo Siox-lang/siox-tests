@@ -6,7 +6,7 @@ using std::bits::unsigned;
 // a connected struct port — on the interpreter, JIT, and native binary alike.
 struct Pt { x: unsigned[8], y: unsigned[8] }
 
-entity Sum { in p: Pt; out s: unsigned[8]; }
+entity Sum { p: Pt in, s: unsigned[8] out }
 impl Sum { s = p.x + p.y; }
 
 #[test]

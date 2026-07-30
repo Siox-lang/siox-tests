@@ -9,7 +9,7 @@ fn lg() -> Logic { return 'Z'; }
 
 // The same call in hardware: the DUT compares a call result, so both engines
 // exercise the return type's width and family.
-entity Cmp { in v: signed[8]; out lt: unsigned[8]; }
+entity Cmp { v: signed[8] in, lt: unsigned[8] out }
 impl Cmp { lt = if neg(v) < 0 { 1 } else { 0 }; }
 
 #[test]

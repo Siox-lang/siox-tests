@@ -8,10 +8,10 @@ using std::logic::Logic;
 // pads fold through `impl Resolve for Logic` — a driven '0'/'1' wins over 'Z',
 // two disagreeing drivers give 'X'.
 entity Pad {
-    in drive: Logic;
-    in en: Logic;
-    inout pin: Logic;
-    out sensed: Logic;
+    drive: Logic in,
+    en: Logic in,
+    pin: Logic inout,
+    sensed: Logic out
 }
 
 impl Pad {
@@ -21,9 +21,9 @@ impl Pad {
 
 // Two pads sharing one wire — the classic tristate bus.
 entity Bus {
-    in da: Logic; in ea: Logic;
-    in db: Logic; in eb: Logic;
-    out sa: Logic; out sb: Logic;
+    da: Logic in, ea: Logic in,
+    db: Logic in, eb: Logic in,
+    sa: Logic out, sb: Logic out
 }
 
 impl Bus {

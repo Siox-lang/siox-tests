@@ -3,8 +3,8 @@ module examples::time_frequency_test;
 // Physical quantities are nominal newtypes over their kernel representations:
 // `time(integer)` stores femtoseconds, while `frequency(real)` stores hertz.
 entity Units {
-    out delay: time;
-    out rate: frequency;
+    delay: time out,
+    rate: frequency out
 }
 
 impl Units {

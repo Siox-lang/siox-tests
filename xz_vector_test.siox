@@ -9,10 +9,10 @@ using std::attrs::{test};
 using std::logic::{Logic};
 
 entity Probe {
-    out b3: Logic;
-    out b2: Logic;
-    out b1: Logic;
-    out b0: Logic;
+    b3: Logic out,
+    b2: Logic out,
+    b1: Logic out,
+    b0: Logic out
 }
 
 impl Probe {

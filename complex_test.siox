@@ -7,9 +7,9 @@ using std::math::{Complex};
 using std::attrs::{test};
 
 entity Adder {
-    in a: Complex;
-    in b: Complex;
-    out z: Complex;
+    a: Complex in,
+    b: Complex in,
+    z: Complex out
 }
 
 impl Adder {
@@ -20,7 +20,7 @@ impl Adder {
 // std::math; the mixed-input `Operator<"+", Complex, Complex>` implementation
 // on integer makes the literal form work.
 entity Imag {
-    out z: Complex;
+    z: Complex out
 }
 
 impl Imag {

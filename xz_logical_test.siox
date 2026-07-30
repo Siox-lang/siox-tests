@@ -8,10 +8,10 @@ using std::attrs::{test};
 using std::logic::{Logic};
 
 entity Gates {
-    out and_hi: Logic;   // element 1: X and 1 = X
-    out and_lo: Logic;   // element 0: X and 0 = 0
-    out or_hi: Logic;    // element 1: X or 1 = 1
-    out or_lo: Logic;    // element 0: X or 0 = X
+    and_hi: Logic out,   // element 1: X and 1 = X
+    and_lo: Logic out,   // element 0: X and 0 = 0
+    or_hi: Logic out,    // element 1: X or 1 = 1
+    or_lo: Logic out,    // element 0: X or 0 = X
 }
 
 impl Gates {

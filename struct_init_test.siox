@@ -11,8 +11,8 @@ using std::attrs::{test};
 struct Config { mode: unsigned[8], enable: Bit }
 
 entity Holder {
-    out mode: unsigned[8];
-    out enable: Bit;
+    mode: unsigned[8] out,
+    enable: Bit out
 }
 
 impl Holder {

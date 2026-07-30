@@ -2,7 +2,7 @@ module examples::signed_print_test;
 using std::bits::{signed};
 // `signed` prints as its value, not its bit pattern: the family is recovered
 // from the declared type, since the compiler itself tracks no signedness.
-entity Neg { in a: signed[8]; out y: signed[8]; }
+entity Neg { a: signed[8] in, y: signed[8] out }
 impl Neg { y = 0 - a; }
 #[test]
 entity T {}

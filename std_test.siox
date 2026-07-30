@@ -8,8 +8,8 @@ using std::logic::{Bit, LOW, HIGH};
 using std::attrs::{test};
 
 entity Buf {
-    in a: Bit;
-    out y: Bit;
+    a: Bit in,
+    y: Bit out
 }
 
 impl Buf {

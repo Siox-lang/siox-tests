@@ -7,13 +7,13 @@ using std::logic::{Bit};
 // binding was dropped, leaving each instance with a private copy. The same
 // design wired inside an entity always worked.
 struct Stream { valid: Bit, ready: Bit, data: signed[8] }
-view Source for Stream { out valid; in ready; out data; }
-view Sink   for Stream { in valid; out ready; in data; }
+view Source for Stream { valid out, ready in, data out }
+view Sink   for Stream { valid in, ready out, data in }
 
-entity Prod { bus: Source Stream; in go: Bit; }
+entity Prod { bus: Stream Source, go: Bit in }
 impl Prod { bus.valid = go; bus.data = 0 - 7; }
 
-entity Cons { bus: Sink Stream; out got: signed[8]; out saw: Bit; }
+entity Cons { bus: Stream Sink, got: signed[8] out, saw: Bit out }
 impl Cons { bus.ready = '1'; got = bus.data; saw = bus.valid; }
 
 #[test]

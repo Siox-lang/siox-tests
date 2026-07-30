@@ -5,7 +5,7 @@ using std::bits::unsigned;
 // counter VALUE on its own edge. Exercises independent clocks, coincident
 // edges, and pre-edge (next-state) ordering when a sample coincides with the
 // sampled counter's own increment.
-entity CDC { in fast: Bit; in slow: Bit; out sampled: unsigned[8]; out fcount: unsigned[8]; }
+entity CDC { fast: Bit in, slow: Bit in, sampled: unsigned[8] out, fcount: unsigned[8] out }
 impl CDC {
     let cnt: unsigned[8] = 0;
     let s: unsigned[8] = 0;

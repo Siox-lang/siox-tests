@@ -7,7 +7,7 @@ module examples::instances_test;
 using std::logic::{Logic};
 using std::bits::unsigned;
 
-entity Ctr { in clk: Bit; out n: unsigned[8]; }
+entity Ctr { clk: Bit in, n: unsigned[8] out }
 impl Ctr { let v: unsigned[8] = 0; if clk.rising() { v = v + 1; } n = v; }
 
 #[test]

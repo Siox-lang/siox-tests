@@ -5,8 +5,8 @@ using std::bits::{signed, unsigned};
 // same `signed` family a plain name would, or the comparison runs unsigned.
 struct Pt { x: signed[8], y: signed[8] }
 entity D {
-    in p: Pt; in u: unsigned[8]; in c: unsigned[8];
-    out fld: unsigned[8]; out cvt: unsigned[8]; out brif: unsigned[8]; out brm: unsigned[8];
+    p: Pt in, u: unsigned[8] in, c: unsigned[8] in,
+    fld: unsigned[8] out, cvt: unsigned[8] out, brif: unsigned[8] out, brm: unsigned[8] out
 }
 impl D {
     fld  = if p.x < 0 { 1 } else { 0 };              // struct field

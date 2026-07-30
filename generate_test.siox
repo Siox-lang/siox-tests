@@ -2,7 +2,7 @@ module m;
 using std::bits::unsigned;
 
 // A single-stage incrementer.
-entity Inc { in x: unsigned[8]; out y: unsigned[8]; }
+entity Inc { x: unsigned[8] in, y: unsigned[8] out }
 impl Inc { y = x + 1; }
 
 // A chain of three incrementers built by a generate loop. Each iteration
@@ -10,7 +10,7 @@ impl Inc { y = x + 1; }
 // through a flattened wire array (`wires[i] -> wires[i+1]`). The loop index is
 // substituted and folded at elaboration, so `wires[i+1]` resolves to a concrete
 // element signal. Net effect: out = in + 3.
-entity Chain { in a: unsigned[8]; out b: unsigned[8]; }
+entity Chain { a: unsigned[8] in, b: unsigned[8] out }
 impl Chain {
     let wires: unsigned[8][4];
     wires[0] = a;

@@ -6,10 +6,10 @@ using std::bits::unsigned;
 // DUT's `out` and another's `in` becomes a real feedback driver in the
 // lowered design, so values propagate on every settle — no hardware wrapper
 // needed.
-entity Inc { in x: unsigned[8]; out y: unsigned[8]; }
+entity Inc { x: unsigned[8] in, y: unsigned[8] out }
 impl Inc { y = x + 1; }
 
-entity Dbl { in x: unsigned[8]; out y: unsigned[8]; }
+entity Dbl { x: unsigned[8] in, y: unsigned[8] out }
 impl Dbl { y = x + x; }
 
 #[test]

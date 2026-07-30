@@ -6,7 +6,7 @@ using std::text::{unicode};
 // nothing to close. In initializer position the COMPILER reads the file
 // (include_bytes! style) — the contents bake into the design, so the native
 // binary carries its ROM even if the file disappears.
-entity Rom { in addr: unsigned[2]; out data: unsigned[8]; }
+entity Rom { addr: unsigned[2] in, data: unsigned[8] out }
 impl Rom {
     let mem: unsigned[8][4] = read("rom.bin");
     data = mem[0];

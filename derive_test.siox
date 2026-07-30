@@ -6,8 +6,8 @@ module examples::derive_test;
 struct Header { valid: Bit, kind: unsigned[4] }
 struct Packet { header: Header, data: unsigned[8] }
 
-entity Rx { in p_valid: Bit; in p_kind: unsigned[4]; in p_data: unsigned[8];
-            out ok: Bit; out d: unsigned[8]; }
+entity Rx { p_valid: Bit in, p_kind: unsigned[4] in, p_data: unsigned[8] in,
+            ok: Bit out, d: unsigned[8] out }
 impl Rx {
     let pkt: Packet;
     pkt = Packet { .header = Header { .valid = p_valid, .kind = p_kind }, .data = p_data };

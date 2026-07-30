@@ -8,20 +8,20 @@ using std::bits::unsigned;
 // producer drives `link.valid`/`link.data`, the consumer reads them.
 struct Stream { valid: Logic, data: unsigned[8] }
 
-entity Producer { out s: Stream; }
+entity Producer { s: Stream out }
 impl Producer {
     s.valid = '1';
     s.data = 42;
 }
 
-entity Consumer { in s: Stream; out got: unsigned[8]; }
+entity Consumer { s: Stream in, got: unsigned[8] out }
 impl Consumer {
     got = if s.valid == '1' { s.data } else { 0 };
 }
 
 // The two blocks wire together through one `Stream` net — the pattern real
 // ready/valid pipelines are built from.
-entity Link { out got: unsigned[8]; }
+entity Link { got: unsigned[8] out }
 impl Link {
     let wire: Stream;
     let p: Producer = { .s = wire };

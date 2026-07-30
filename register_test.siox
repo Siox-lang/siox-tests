@@ -5,9 +5,9 @@ using std::bits::unsigned;
 
 // A parameterized register: `q` captures `d` on the rising clock edge.
 entity Register<W: integer> {
-    in clk: Bit;
-    in d: unsigned[W];
-    out q: unsigned[W];
+    clk: Bit in,
+    d: unsigned[W] in,
+    q: unsigned[W] out
 }
 
 impl Register<W: integer> {

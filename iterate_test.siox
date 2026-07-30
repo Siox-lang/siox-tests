@@ -1,6 +1,6 @@
 module examples::iterate_test;
 using std::bits::unsigned;
-entity Sum { in xs: unsigned[8][4]; out total: unsigned[8]; }
+entity Sum { xs: unsigned[8][4] in, total: unsigned[8] out }
 impl Sum {
     total = xs[0] + xs[1] + xs[2] + xs[3];
 }

@@ -2,7 +2,7 @@ module examples::bus_test;
 
 // Two drivers on one Logic bus, each in its own impl block (parallel
 // contexts): the tristate idiom — drive or 'Z' — folds via Resolve.
-entity Bus { in en_a: Bit; in a: Logic; in en_b: Bit; in b: Logic; out bus: Logic; }
+entity Bus { en_a: Bit in, a: Logic in, en_b: Bit in, b: Logic in, bus: Logic out }
 impl Bus {
     bus = 'Z';
     if en_a { bus = a; }

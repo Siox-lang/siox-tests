@@ -5,7 +5,7 @@ using std::text::{string};
 
 struct WidePair {
     value: unsigned[128],
-    character: Char,
+    character: Char
 }
 
 #[test]

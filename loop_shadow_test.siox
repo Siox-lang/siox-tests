@@ -3,7 +3,7 @@ module loop_shadow_test;
 const NEGATIVE: integer = -8;
 
 entity SignedSource {
-    out value: integer<-10..10>;
+    value: integer<-10..10> out
 }
 
 impl SignedSource {

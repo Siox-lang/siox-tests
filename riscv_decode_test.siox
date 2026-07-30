@@ -5,13 +5,13 @@ using std::bits::{unsigned};
 // RV32I instruction field decoder: split a 32-bit word into its register and
 // function fields by shift-and-mask (the R/I-type field layout).
 entity Decoder {
-    in insn: unsigned[32];
-    out opcode: unsigned[7];
-    out rd: unsigned[5];
-    out funct3: unsigned[3];
-    out rs1: unsigned[5];
-    out rs2: unsigned[5];
-    out funct7: unsigned[7];
+    insn: unsigned[32] in,
+    opcode: unsigned[7] out,
+    rd: unsigned[5] out,
+    funct3: unsigned[3] out,
+    rs1: unsigned[5] out,
+    rs2: unsigned[5] out,
+    funct7: unsigned[7] out
 }
 impl Decoder {
     opcode = unsigned[7](insn and 127);            // bits  6..0

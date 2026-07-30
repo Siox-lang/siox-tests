@@ -6,9 +6,9 @@ using std::bits::unsigned;
 // cannot simulate. Plus a 2-bit ripple counter (clk -> b0 -> b1), a two-level
 // cascade.
 entity Derived {
-    in clk: Bit;
-    out cnt: unsigned[8];
-    out ripple: unsigned[2];
+    clk: Bit in,
+    cnt: unsigned[8] out,
+    ripple: unsigned[2] out
 }
 impl Derived {
     let h: Bit = '0';

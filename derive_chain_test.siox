@@ -21,11 +21,11 @@ struct Header { valid: Bit, kind: unsigned[4] }
 struct Packet { header: Header, data: unsigned[8] }
 
 entity DUT {
-    in u: ULogic;
-    in v: Bit; in k: unsigned[4]; in dt: unsigned[8];
-    out lg: Logic;         // ULogic -> Logic (newtype derivation, auto)
-    out hk: unsigned[4];       // reach into the composed Header
-    out ext: Extended;     // Base -> Extended (explicit From)
+    u: ULogic in,
+    v: Bit in, k: unsigned[4] in, dt: unsigned[8] in,
+    lg: Logic out,         // ULogic -> Logic (newtype derivation, auto)
+    hk: unsigned[4] out,       // reach into the composed Header
+    ext: Extended out,     // Base -> Extended (explicit From)
 }
 impl DUT {
     lg = Logic(u);

@@ -8,10 +8,10 @@ module examples::real_compare_test;
 using std::attrs::{test};
 
 entity Cmp {
-    out lt: Bool;
-    out ge: Bool;
-    out eq: Bool;
-    out ne: Bool;
+    lt: Bool out,
+    ge: Bool out,
+    eq: Bool out,
+    ne: Bool out
 }
 
 impl Cmp {

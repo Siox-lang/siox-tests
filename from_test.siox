@@ -9,7 +9,7 @@ impl From<integer> for Pair {
     }
 }
 
-entity F { in n: unsigned[8]; in u: ULogic; out lo: unsigned[8]; out hi: unsigned[8]; out l: Logic; }
+entity F { n: unsigned[8] in, u: ULogic in, lo: unsigned[8] out, hi: unsigned[8] out, l: Logic out }
 impl F {
     let p: Pair;
     p = Pair(integer(n));    // From<integer> for Pair (struct-valued)

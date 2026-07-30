@@ -5,7 +5,7 @@ using std::numeric::{clog2};
 const DEPTH: integer = 300;
 
 // clog2 in a width position: unsigned[clog2(300)] = unsigned[9].
-entity Pick { in a: unsigned[8]; in b: unsigned[8]; out hi: unsigned[8]; out addr: unsigned[clog2(DEPTH)]; }
+entity Pick { a: unsigned[8] in, b: unsigned[8] in, hi: unsigned[8] out, addr: unsigned[clog2(DEPTH)] out }
 impl Pick {
     hi = max(a, b);          // free fn inlined in hardware
     addr = 300 - 1;          // just to have a driver; width must be 9

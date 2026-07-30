@@ -7,13 +7,13 @@ extern "C" {
     pub fn labs(v: CInteger) -> CInteger;
 }
 
-entity Abs { in x: signed[8]; out y: unsigned[8]; }
+entity Abs { x: signed[8] in, y: unsigned[8] out }
 impl Abs { y = unsigned[8](labs(sext(x))); }
 
 entity ClockedAbs {
-    in clk: Bit;
-    in x: integer<-128..127>;
-    out y: integer<-128..127>;
+    clk: Bit in,
+    x: integer<-128..127> in,
+    y: integer<-128..127> out
 }
 impl ClockedAbs {
     if clk.rising() {

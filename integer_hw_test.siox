@@ -4,17 +4,17 @@ using SmallInteger = integer<-16..15>;
 using SmallAlias = SmallInteger;
 
 entity IntegerOps {
-    in a: integer<-16..15>;
-    in b: integer<-16..15>;
-    in choose_a: Bit;
-    out less: Bit;
-    out nested_less: Bit;
-    out quotient: integer<-16..15>;
-    out shifted: integer<-16..15>;
-    out nested_quotient: integer<-128..127>;
-    out widened: integer<-128..127>;
-    out negated_quotient: integer<-128..127>;
-    out summed_quotient: integer<-128..127>;
+    a: integer<-16..15> in,
+    b: integer<-16..15> in,
+    choose_a: Bit in,
+    less: Bit out,
+    nested_less: Bit out,
+    quotient: integer<-16..15> out,
+    shifted: integer<-16..15> out,
+    nested_quotient: integer<-128..127> out,
+    widened: integer<-128..127> out,
+    negated_quotient: integer<-128..127> out,
+    summed_quotient: integer<-128..127> out
 }
 
 impl IntegerOps {
@@ -29,17 +29,17 @@ impl IntegerOps {
 }
 
 entity NaturalOps {
-    in value: integer<0..3>;
-    out greater: Bit;
+    value: integer<0..3> in,
+    greater: Bit out
 }
 impl NaturalOps {
     greater = if value > 1 { '1' } else { '0' };
 }
 
 entity AliasIntegerOps {
-    in value: SmallAlias;
-    out copy: SmallAlias;
-    out negative: Bit;
+    value: SmallAlias in,
+    copy: SmallAlias out,
+    negative: Bit out
 }
 impl AliasIntegerOps {
     copy = value;

@@ -12,7 +12,7 @@ fn maxi<T: Operator>(a: T, b: T) -> T {
     return b;
 }
 
-entity Pick { in x: signed[8]; in y: signed[8]; out m: signed[8]; }
+entity Pick { x: signed[8] in, y: signed[8] in, m: signed[8] out }
 impl Pick { m = maxi(x, y); }
 
 #[test]

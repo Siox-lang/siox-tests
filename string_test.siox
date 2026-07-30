@@ -8,8 +8,8 @@ using std::text::{string};
 using std::attrs::{test};
 
 entity Echo {
-    in s: string[5];
-    out o: string[5];
+    s: string[5] in,
+    o: string[5] out
 }
 
 impl Echo {

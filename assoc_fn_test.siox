@@ -27,10 +27,10 @@ impl Bits {
 }
 
 entity Probe {
-    out digit: unsigned[8];    // Ascii::code('7'-ish) round trip
-    out isd: unsigned[8];      // is_digit over a digit code
-    out notd: unsigned[8];     // is_digit over a letter code
-    out m: unsigned[8];        // Bits::mask(4)
+    digit: unsigned[8] out,    // Ascii::code('7'-ish) round trip
+    isd: unsigned[8] out,      // is_digit over a digit code
+    notd: unsigned[8] out,     // is_digit over a letter code
+    m: unsigned[8] out,        // Bits::mask(4)
 }
 
 impl Probe {

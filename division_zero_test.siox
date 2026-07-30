@@ -1,9 +1,9 @@
 module examples::division_zero_test;
 
 entity Divider {
-    in numerator: unsigned[16];
-    in denominator: unsigned[16];
-    out quotient: unsigned[16];
+    numerator: unsigned[16] in,
+    denominator: unsigned[16] in,
+    quotient: unsigned[16] out
 }
 
 impl Divider {

@@ -5,11 +5,11 @@ using std::logic::Bit;
 // A 2:1 mux, written both ways: default-then-override drivers (spec 3.14),
 // and the equivalent Rust-style if-expression — both lower to one select.
 entity Mux {
-    in sel: Bit;
-    in a: Bit;
-    in b: Bit;
-    out y: Bit;
-    out z: Bit;
+    sel: Bit in,
+    a: Bit in,
+    b: Bit in,
+    y: Bit out,
+    z: Bit out
 }
 
 impl Mux {

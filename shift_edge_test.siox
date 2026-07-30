@@ -1,10 +1,10 @@
 module examples::shift_edge_test;
 
 entity Shifter {
-    in value: unsigned[16];
-    in amount: unsigned[16];
-    out left: unsigned[16];
-    out right: unsigned[16];
+    value: unsigned[16] in,
+    amount: unsigned[16] in,
+    left: unsigned[16] out,
+    right: unsigned[16] out
 }
 
 impl Shifter {

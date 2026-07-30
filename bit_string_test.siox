@@ -11,10 +11,10 @@ module examples::bit_string_test;
 using std::attrs::{test};
 
 entity Probe {
-    out h: unsigned[16];   // x"BEEF"
-    out o: unsigned[6];    // o"17"  = 001_111 = 15
-    out o2: unsigned[9];   // o"725" = 111_010_101 = 469
-    out s: unsigned[4];    // bare "1010" = 10
+    h: unsigned[16] out,   // x"BEEF"
+    o: unsigned[6] out,    // o"17"  = 001_111 = 15
+    o2: unsigned[9] out,   // o"725" = 111_010_101 = 469
+    s: unsigned[4] out,    // bare "1010" = 10
 }
 
 impl Probe {

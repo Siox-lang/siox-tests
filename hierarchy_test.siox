@@ -6,10 +6,10 @@ module examples::hierarchy_test;
 
 using std::bits::unsigned;
 
-entity Add1 { in a: unsigned[8]; out y: unsigned[8]; }
+entity Add1 { a: unsigned[8] in, y: unsigned[8] out }
 impl Add1 { y = a + 1; }
 
-entity Add2 { in a: unsigned[8]; out y: unsigned[8]; }
+entity Add2 { a: unsigned[8] in, y: unsigned[8] out }
 impl Add2 {
     let mid: unsigned[8];
     let s1: Add1 = { .a = a, .y = mid };

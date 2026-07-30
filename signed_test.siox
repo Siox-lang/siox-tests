@@ -5,10 +5,10 @@ using std::bits::{signed, unsigned};
 // Signed comparison comes from std's
 // `impl Operator<"<=>", signed, Ordering> for signed` — not the compiler.
 entity Cmp {
-    in a: signed[8];
-    in b: signed[8];
-    out lt: Bool;
-    out ge: Bool;
+    a: signed[8] in,
+    b: signed[8] in,
+    lt: Bool out,
+    ge: Bool out
 }
 impl Cmp {
     lt = a < b;
@@ -16,7 +16,7 @@ impl Cmp {
 }
 
 // Control: unsigned keeps the kernel's unsigned compare.
-entity UCmp { in a: unsigned[8]; in b: unsigned[8]; out lt: Bool; }
+entity UCmp { a: unsigned[8] in, b: unsigned[8] in, lt: Bool out }
 impl UCmp { lt = a < b; }
 
 #[test]

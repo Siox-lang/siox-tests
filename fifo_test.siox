@@ -6,13 +6,13 @@ using std::bits::unsigned;
 // full, `pop` dequeues when not empty; head/tail pointers wrap and `count`
 // tracks occupancy. Exercises dynamic array read AND write.
 entity Fifo {
-    in clk: Bit;
-    in push: Bit;
-    in pop: Bit;
-    in din: unsigned[8];
-    out dout: unsigned[8];
-    out full: Logic;
-    out empty: Logic;
+    clk: Bit in,
+    push: Bit in,
+    pop: Bit in,
+    din: unsigned[8] in,
+    dout: unsigned[8] out,
+    full: Logic out,
+    empty: Logic out
 }
 impl Fifo {
     let mem: unsigned[8][4];

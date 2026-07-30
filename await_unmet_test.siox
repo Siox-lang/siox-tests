@@ -9,7 +9,7 @@ using std::attrs::{test};
 // program must pass.) Previously an unmet `await` fell through silently, so a
 // testbench that never reached its assertions still reported `ok`.
 
-entity Counter { in clk: Bit; out n: unsigned[8]; }
+entity Counter { clk: Bit in, n: unsigned[8] out }
 impl Counter {
     let v: unsigned[8] = 0;
     if clk.rising() { v = v + 1; }

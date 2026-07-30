@@ -4,9 +4,9 @@ using std::attrs::{test};
 using std::logic::{Logic};
 
 entity WideProbe {
-    out init_hi: Logic;
-    out driven_hi: Logic;
-    out driven_lo: Logic;
+    init_hi: Logic out,
+    driven_hi: Logic out,
+    driven_lo: Logic out
 }
 
 impl WideProbe {

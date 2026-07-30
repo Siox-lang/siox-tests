@@ -6,9 +6,9 @@ using std::bits::unsigned;
 // (`.a = x`), name shorthand (`.a`), or positional (`x` by order). Ports may
 // also be wired post-declaration through the instance (`dut.a = x`, `dut.y`).
 entity Add {
-    in a: unsigned[8];
-    in b: unsigned[8];
-    out y: unsigned[8];
+    a: unsigned[8] in,
+    b: unsigned[8] in,
+    y: unsigned[8] out
 }
 
 impl Add {
@@ -19,8 +19,8 @@ impl Add {
 // chain two adders, connecting each stage's ports by position and by
 // instance-qualified assignment.
 entity Chain {
-    in x: unsigned[8];
-    out z: unsigned[8];
+    x: unsigned[8] in,
+    z: unsigned[8] out
 }
 
 impl Chain {

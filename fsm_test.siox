@@ -6,14 +6,14 @@ using std::bits::unsigned;
 enum State {
     Idle = 0,
     Run = 1,
-    Done = 2,
+    Done = 2
 }
 
 // A 3-state FSM: Idle --(start)--> Run --> Done --> Idle.
 entity Fsm {
-    in clk: Bit;
-    in start: Bit;
-    out st: State;
+    clk: Bit in,
+    start: Bit in,
+    st: State out
 }
 
 impl Fsm {

@@ -5,10 +5,10 @@ using std::bits::unsigned;
 
 // The device under test: a parameterized counter.
 entity Counter<W: integer> {
-    in clk: Bit;
-    in rst: Logic;
-    in en: Bit;
-    out count: unsigned[W];
+    clk: Bit in,
+    rst: Logic in,
+    en: Bit in,
+    count: unsigned[W] out
 }
 
 impl Counter<W: integer> {

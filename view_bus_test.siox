@@ -9,39 +9,39 @@ using std::logic::Bit;
 struct Stream {
     valid: Bit,
     ready: Bit,
-    data: unsigned[8],
+    data: unsigned[8]
 }
 
 view Source for Stream {
-    out valid;
-    in ready;
-    out data;
+    valid out,
+    ready in,
+    data out
 }
 
 view Sink for Stream {
-    in valid;
-    out ready;
-    in data;
+    valid in,
+    ready out,
+    data in
 }
 
-impl Source Stream {
+impl Stream Source {
     fn publish(self, value: unsigned[8], enabled: Bit) {
         self.valid = enabled;
         self.data = value;
     }
 }
 
-impl Sink Stream {
+impl Stream Sink {
     fn accept(self, enabled: Bit) {
         self.ready = enabled;
     }
 }
 
 entity Producer {
-    bus: Source Stream;
-    in value: unsigned[8];
-    in enabled: Bit;
-    out ready: Bit;
+    bus: Stream Source,
+    value: unsigned[8] in,
+    enabled: Bit in,
+    ready: Bit out
 }
 
 impl Producer {
@@ -50,10 +50,10 @@ impl Producer {
 }
 
 entity Consumer {
-    bus: Sink Stream;
-    in enabled: Bit;
-    out valid: Bit;
-    out value: unsigned[8];
+    bus: Stream Sink,
+    enabled: Bit in,
+    valid: Bit out,
+    value: unsigned[8] out
 }
 
 impl Consumer {
@@ -63,12 +63,12 @@ impl Consumer {
 }
 
 entity StreamLink {
-    in tx_value: unsigned[8];
-    in tx_enabled: Bit;
-    in rx_enabled: Bit;
-    out tx_ready: Bit;
-    out rx_valid: Bit;
-    out rx_value: unsigned[8];
+    tx_value: unsigned[8] in,
+    tx_enabled: Bit in,
+    rx_enabled: Bit in,
+    tx_ready: Bit out,
+    rx_valid: Bit out,
+    rx_value: unsigned[8] out
 }
 
 impl StreamLink {
@@ -91,16 +91,16 @@ impl StreamLink {
 struct StatusSignals {
     enabled: Bit,
     active: Bit,
-    value: unsigned[8],
+    value: unsigned[8]
 }
 
 view StatusBus for StatusSignals {
-    in enabled;
-    out active;
-    out value;
+    enabled in,
+    active out,
+    value out
 }
 
-impl StatusBus StatusSignals {
+impl StatusSignals StatusBus {
     fn update(self, next: unsigned[8]) {
         self.active = self.enabled;
         self.value = next;
@@ -108,8 +108,8 @@ impl StatusBus StatusSignals {
 }
 
 entity Status {
-    bus: StatusBus StatusSignals;
-    in next: unsigned[8];
+    bus: StatusSignals StatusBus,
+    next: unsigned[8] in
 }
 
 impl Status {

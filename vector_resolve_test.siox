@@ -6,15 +6,15 @@ struct Word(Logic[]);
 impl Vector for Word {}
 
 entity VectorBus {
-    in en_a: Bit;
-    in a: Word[4];
-    in en_b: Bit;
-    in b: Word[4];
-    out bus: Word[4];
-    out b3: Logic;
-    out b2: Logic;
-    out b1: Logic;
-    out b0: Logic;
+    en_a: Bit in,
+    a: Word[4] in,
+    en_b: Bit in,
+    b: Word[4] in,
+    bus: Word[4] out,
+    b3: Logic out,
+    b2: Logic out,
+    b1: Logic out,
+    b0: Logic out
 }
 
 impl VectorBus {

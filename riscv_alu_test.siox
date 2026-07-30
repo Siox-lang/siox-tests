@@ -5,17 +5,17 @@ using std::bits::{unsigned, signed};
 // RV32I ALU operation select (funct3 + bit30 encoding, flattened).
 enum AluOp {
     Add = 0, Sub = 1, Sll = 2, Slt = 3, Sltu = 4,
-    Xor = 5, Srl = 6, Sra = 7, Or = 8, And = 9,
+    Xor = 5, Srl = 6, Sra = 7, Or = 8, And = 9
 }
 
 // A single-cycle RV32I ALU: two 32-bit operands, a 4-bit op, a result, and a
 // zero flag (used by branch comparison).
 entity Alu {
-    in a: unsigned[32];
-    in b: unsigned[32];
-    in op: AluOp;
-    out y: unsigned[32];
-    out zero: Logic;
+    a: unsigned[32] in,
+    b: unsigned[32] in,
+    op: AluOp in,
+    y: unsigned[32] out,
+    zero: Logic out
 }
 
 impl Alu {

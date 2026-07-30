@@ -3,8 +3,8 @@ module examples::generate_if_test;
 using std::bits::unsigned;
 
 entity Inc {
-    in a: unsigned[8];
-    out y: unsigned[8];
+    a: unsigned[8] in,
+    y: unsigned[8] out
 }
 
 impl Inc {
@@ -15,8 +15,8 @@ impl Inc {
 // inserts an `Inc` between the ports; otherwise the input passes through. The
 // condition is compile-time constant, so only the taken branch is built.
 entity Opt<EN: integer> {
-    in a: unsigned[8];
-    out y: unsigned[8];
+    a: unsigned[8] in,
+    y: unsigned[8] out
 }
 
 impl Opt<EN: integer> {
@@ -31,8 +31,8 @@ impl Opt<EN: integer> {
 // stages out of 3 (the rest pass through) — instance-array elements created
 // conditionally.
 entity Chain<N: integer> {
-    in a: unsigned[8];
-    out y: unsigned[8];
+    a: unsigned[8] in,
+    y: unsigned[8] out
 }
 
 impl Chain<N: integer> {

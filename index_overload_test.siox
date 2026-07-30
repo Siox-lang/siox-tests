@@ -5,7 +5,7 @@ using std::ops::{Index, IndexAssign, Range};
 
 struct Pair {
     first: unsigned[8],
-    second: unsigned[8],
+    second: unsigned[8]
 }
 
 impl Index<integer, unsigned> for Pair {
@@ -37,11 +37,11 @@ impl IndexAssign<integer, unsigned> for Pair {
 }
 
 entity IndexedPair {
-    in first: unsigned[8];
-    in second: unsigned[8];
-    in select: unsigned[1];
-    out selected: unsigned[8];
-    out ranged: unsigned[8];
+    first: unsigned[8] in,
+    second: unsigned[8] in,
+    select: unsigned[1] in,
+    selected: unsigned[8] out,
+    ranged: unsigned[8] out
 }
 
 impl IndexedPair {

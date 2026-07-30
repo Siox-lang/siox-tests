@@ -7,12 +7,12 @@ using std::bits::unsigned;
 // gets its own trace path in the waveform.
 struct Packet {
     valid: Bit,
-    data: unsigned[8],
+    data: unsigned[8]
 }
 
 entity Sink {
-    in p: Packet;
-    out got: unsigned[8];
+    p: Packet in,
+    got: unsigned[8] out
 }
 
 impl Sink {

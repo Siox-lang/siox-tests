@@ -1,12 +1,12 @@
 module examples::regfile_test;
 using std::bits::unsigned;
 entity RF {
-    in clk: Bit;
-    in we: Bit;
-    in waddr: unsigned[2];
-    in wdata: unsigned[8];
-    in raddr: unsigned[2];
-    out rdata: unsigned[8];
+    clk: Bit in,
+    we: Bit in,
+    waddr: unsigned[2] in,
+    wdata: unsigned[8] in,
+    raddr: unsigned[2] in,
+    rdata: unsigned[8] out
 }
 impl RF {
     let regs: unsigned[8][4];

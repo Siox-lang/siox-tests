@@ -2,7 +2,7 @@ module examples::signed_conversion_test;
 using std::bits::{signed, unsigned};
 // `signed[8](x)` reinterprets bits as a signed value. Hardware did this and
 // the testbench did not, so the two engines disagreed: -56 against 200.
-entity D { in a: unsigned[8]; out c: signed[8]; out neg: unsigned[8]; }
+entity D { a: unsigned[8] in, c: signed[8] out, neg: unsigned[8] out }
 impl D { c = signed[8](a); neg = if signed[8](a) < 0 { 1 } else { 0 }; }
 #[test]
 entity T {}

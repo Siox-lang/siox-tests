@@ -5,8 +5,8 @@ using std::logic::Bit;
 // An array-typed signal flattens to one scalar signal per element, so each
 // element gets its own trace path in the waveform.
 entity Bank {
-    in a: Bit[4];
-    out y: Bit;
+    a: Bit[4] in,
+    y: Bit out
 }
 
 impl Bank {

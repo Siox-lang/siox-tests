@@ -8,8 +8,8 @@ struct CharacterBox { value: Char }
 // A string is a `Char` array; each element reads as its Unicode code point.
 // Exercised on all three engines, including the native binary.
 entity Echo {
-    in s: string[3];
-    out o: string[3];
+    s: string[3] in,
+    o: string[3] out
 }
 
 impl Echo {

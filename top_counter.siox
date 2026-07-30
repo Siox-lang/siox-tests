@@ -9,9 +9,9 @@ using std::bits::{unsigned};
 
 #[top]
 entity Counter8 {
-    in clk: Bit;
-    in rst: Logic;
-    out count: unsigned[8];
+    clk: Bit in,
+    rst: Logic in,
+    count: unsigned[8] out
 }
 
 impl Counter8 {

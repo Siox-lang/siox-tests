@@ -16,10 +16,10 @@ enum Ascii { 'H', 'e', 'l', 'o', ' ', 'S', 'i', 'x' }
 enum Nibble { 'r', 'g', 'b', 'a' }
 
 entity Probe {
-    out lv: unsigned[4];         // from a plain binary string
-    out mvx: Logic;          // a metavalue bit read back
-    out a0: Ascii;  out a4: Ascii;  out a5: Ascii;   // "Hello Six" indices
-    out n1: Nibble; out n3: Nibble;
+    lv: unsigned[4] out,         // from a plain binary string
+    mvx: Logic out,          // a metavalue bit read back
+    a0: Ascii out,  a4: Ascii out,  a5: Ascii out,   // "Hello Six" indices
+    n1: Nibble out, n3: Nibble out
 }
 
 impl Probe {

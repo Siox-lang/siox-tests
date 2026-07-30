@@ -8,7 +8,7 @@ using std::logic::{Bit, Logic, LOW, HIGH};
 const WIDTH: integer = 8;
 const MASK: integer = 255;
 
-entity Buf { in a: Bit; out y: Bit; }
+entity Buf { a: Bit in, y: Bit out }
 impl Buf { y = a; }
 
 #[test]

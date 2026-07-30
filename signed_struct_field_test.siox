@@ -5,7 +5,7 @@ using std::logic::{Bit};
 // signals, but the leaves' declared types are still needed to read them back.
 // Unconnected the same field was already correct, which hid this.
 struct Pt { x: signed[8], y: signed[8] }
-entity D { in p: Pt; out sum: signed[8]; out negx: signed[8]; }
+entity D { p: Pt in, sum: signed[8] out, negx: signed[8] out }
 impl D { sum = p.x + p.y; negx = 0 - p.x; }
 #[test]
 entity T {}

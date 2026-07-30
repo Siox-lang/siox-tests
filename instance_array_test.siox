@@ -7,10 +7,10 @@ using std::bits::unsigned;
 // generate loop, the array is named and indexable — an element's port can be
 // read from outside the loop (`stage[i].y`), and an output left unconnected at
 // construction is still readable.
-entity Inc { in x: unsigned[8]; out y: unsigned[8]; }
+entity Inc { x: unsigned[8] in, y: unsigned[8] out }
 impl Inc { y = x + 1; }
 
-entity Pipeline { in a: unsigned[8]; out b: unsigned[8]; out probe: unsigned[8]; }
+entity Pipeline { a: unsigned[8] in, b: unsigned[8] out, probe: unsigned[8] out }
 impl Pipeline {
     let w: unsigned[8][4];
     w[0] = a;

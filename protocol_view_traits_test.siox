@@ -27,52 +27,52 @@ struct Spi {
     clock: Bit,
     select: Bit,
     controller_data: unsigned[8],
-    peripheral_data: unsigned[8],
+    peripheral_data: unsigned[8]
 }
 
 view SpiController for Spi {
-    out clock;
-    out select;
-    out controller_data;
-    in peripheral_data;
+    clock out,
+    select out,
+    controller_data out,
+    peripheral_data in
 }
 
 view SpiPeripheral for Spi {
-    in clock;
-    in select;
-    in controller_data;
-    out peripheral_data;
+    clock in,
+    select in,
+    controller_data in,
+    peripheral_data out
 }
 
-impl Writable<unsigned[8]> for SpiController Spi {
+impl Writable<unsigned[8]> for Spi SpiController {
     fn write(self, value: unsigned[8]) {
         self.controller_data = value;
     }
 }
 
-impl Readable<unsigned[8]> for SpiController Spi {
+impl Readable<unsigned[8]> for Spi SpiController {
     fn read(self) -> unsigned[8] {
         return self.peripheral_data;
     }
 }
 
-impl Writable<unsigned[8]> for SpiPeripheral Spi {
+impl Writable<unsigned[8]> for Spi SpiPeripheral {
     fn write(self, value: unsigned[8]) {
         self.peripheral_data = value;
     }
 }
 
-impl Readable<unsigned[8]> for SpiPeripheral Spi {
+impl Readable<unsigned[8]> for Spi SpiPeripheral {
     fn read(self) -> unsigned[8] {
         return self.controller_data;
     }
 }
 
 entity SpiControllerDevice {
-    bus: SpiController Spi;
-    in tx: unsigned[8];
-    in active: Bit;
-    out rx: unsigned[8];
+    bus: Spi SpiController,
+    tx: unsigned[8] in,
+    active: Bit in,
+    rx: unsigned[8] out
 }
 
 impl SpiControllerDevice {
@@ -83,9 +83,9 @@ impl SpiControllerDevice {
 }
 
 entity SpiPeripheralDevice {
-    bus: SpiPeripheral Spi;
-    in tx: unsigned[8];
-    out rx: unsigned[8];
+    bus: Spi SpiPeripheral,
+    tx: unsigned[8] in,
+    rx: unsigned[8] out
 }
 
 impl SpiPeripheralDevice {
@@ -94,12 +94,12 @@ impl SpiPeripheralDevice {
 }
 
 entity SpiLink {
-    in controller_tx: unsigned[8];
-    in peripheral_tx: unsigned[8];
-    in active: Bit;
-    out controller_rx: unsigned[8];
-    out peripheral_rx: unsigned[8];
-    out selected: Bit;
+    controller_tx: unsigned[8] in,
+    peripheral_tx: unsigned[8] in,
+    active: Bit in,
+    controller_rx: unsigned[8] out,
+    peripheral_rx: unsigned[8] out,
+    selected: Bit out
 }
 
 impl SpiLink {
@@ -123,50 +123,50 @@ impl SpiLink {
 struct I2c {
     scl: Bit,
     controller_drive_low: Bit,
-    target_drive_low: Bit,
+    target_drive_low: Bit
 }
 
 view I2cController for I2c {
-    out scl;
-    out controller_drive_low;
-    in target_drive_low;
+    scl out,
+    controller_drive_low out,
+    target_drive_low in
 }
 
 view I2cTarget for I2c {
-    in scl;
-    in controller_drive_low;
-    out target_drive_low;
+    scl in,
+    controller_drive_low in,
+    target_drive_low out
 }
 
-impl Writable<Bit> for I2cController I2c {
+impl Writable<Bit> for I2c I2cController {
     fn write(self, drive_low: Bit) {
         self.controller_drive_low = drive_low;
     }
 }
 
-impl Readable<Bit> for I2cController I2c {
+impl Readable<Bit> for I2c I2cController {
     fn read(self) -> Bit {
         return not (self.controller_drive_low or self.target_drive_low);
     }
 }
 
-impl Writable<Bit> for I2cTarget I2c {
+impl Writable<Bit> for I2c I2cTarget {
     fn write(self, drive_low: Bit) {
         self.target_drive_low = drive_low;
     }
 }
 
-impl Readable<Bit> for I2cTarget I2c {
+impl Readable<Bit> for I2c I2cTarget {
     fn read(self) -> Bit {
         return not (self.controller_drive_low or self.target_drive_low);
     }
 }
 
 entity I2cControllerDevice {
-    bus: I2cController I2c;
-    in drive_low: Bit;
-    in clock: Bit;
-    out sampled_sda: Bit;
+    bus: I2c I2cController,
+    drive_low: Bit in,
+    clock: Bit in,
+    sampled_sda: Bit out
 }
 
 impl I2cControllerDevice {
@@ -176,9 +176,9 @@ impl I2cControllerDevice {
 }
 
 entity I2cTargetDevice {
-    bus: I2cTarget I2c;
-    in drive_low: Bit;
-    out sampled_sda: Bit;
+    bus: I2c I2cTarget,
+    drive_low: Bit in,
+    sampled_sda: Bit out
 }
 
 impl I2cTargetDevice {
@@ -187,11 +187,11 @@ impl I2cTargetDevice {
 }
 
 entity I2cLink {
-    in controller_drive_low: Bit;
-    in target_drive_low: Bit;
-    in clock: Bit;
-    out controller_sample: Bit;
-    out target_sample: Bit;
+    controller_drive_low: Bit in,
+    target_drive_low: Bit in,
+    clock: Bit in,
+    controller_sample: Bit out,
+    target_sample: Bit out
 }
 
 impl I2cLink {

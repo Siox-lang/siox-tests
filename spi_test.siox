@@ -6,13 +6,13 @@ using std::bits::unsigned;
 // one bit per clock while sampling `miso` into a receive register. Eight bits,
 // then the byte sits in `rx`. Serial wires are unsigned[1].
 entity SpiMaster {
-    in clk: Bit;
-    in start: Bit;
-    in tx: unsigned[8];
-    in miso: unsigned[1];
-    out mosi: unsigned[1];
-    out rx: unsigned[8];
-    out busy: Logic;
+    clk: Bit in,
+    start: Bit in,
+    tx: unsigned[8] in,
+    miso: unsigned[1] in,
+    mosi: unsigned[1] out,
+    rx: unsigned[8] out,
+    busy: Logic out
 }
 impl SpiMaster {
     let shift_tx: unsigned[8] = 0;
@@ -45,11 +45,11 @@ impl SpiMaster {
 // Loopback harness: miso <- mosi wired in hardware (a testbench local can't
 // carry a DUT output back into a DUT input, but instance wiring can).
 entity SpiLoopback {
-    in clk: Bit;
-    in start: Bit;
-    in tx: unsigned[8];
-    out rx: unsigned[8];
-    out busy: Logic;
+    clk: Bit in,
+    start: Bit in,
+    tx: unsigned[8] in,
+    rx: unsigned[8] out,
+    busy: Logic out
 }
 impl SpiLoopback {
     let wire: unsigned[1];

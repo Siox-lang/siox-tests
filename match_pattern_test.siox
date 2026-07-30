@@ -7,7 +7,7 @@ using std::bits::unsigned;
 // separator, and a hex `?` masks its whole nibble. Each arm lowers to
 // `(scrutinee & mask) == value` with first-match priority — the natural shape
 // of an instruction decoder.
-entity Decode { in op: unsigned[8]; out cls: unsigned[2]; }
+entity Decode { op: unsigned[8] in, cls: unsigned[2] out }
 impl Decode {
     match op {
         "00------" => { cls = 0; }   // top quarter of the space
@@ -18,7 +18,7 @@ impl Decode {
 }
 
 // The same patterns clock through a register (the sequential match path).
-entity DecodeReg { in clk: Bit; in op: unsigned[8]; out cls: unsigned[2]; }
+entity DecodeReg { clk: Bit in, op: unsigned[8] in, cls: unsigned[2] out }
 impl DecodeReg {
     let r: unsigned[2] = 0;
     if clk.rising() {

@@ -8,9 +8,9 @@ using std::attrs::{test};
 using std::logic::{Logic};
 
 entity Alu {
-    in a: unsigned[4];
-    out lo: Logic;
-    out hi: Logic;
+    a: unsigned[4] in,
+    lo: Logic out,
+    hi: Logic out
 }
 
 impl Alu {

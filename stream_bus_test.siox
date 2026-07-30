@@ -7,19 +7,19 @@ module examples::stream_bus_test;
 using std::logic::{Bit};
 using std::bits::unsigned;
 
-struct Stream { valid: Bit, ready: Bit, data: unsigned[8], }
+struct Stream { valid: Bit, ready: Bit, data: unsigned[8] }
 
-view Source for Stream { out valid; out data; in ready; }
-view Sink for Stream { in valid; in data; out ready; }
+view Source for Stream { valid out, data out, ready in }
+view Sink for Stream { valid in, data in, ready out }
 
-entity Producer { bus: Source Stream; in d: unsigned[8]; in go: Bit; out canpush: Bit; }
+entity Producer { bus: Stream Source, d: unsigned[8] in, go: Bit in, canpush: Bit out }
 impl Producer {
     bus.valid = go;
     bus.data = d;
     canpush = bus.ready;     // ready flows back from the Sink
 }
 
-entity Consumer { bus: Sink Stream; in accept: Bit; out got: unsigned[8]; out seen: Bit; }
+entity Consumer { bus: Stream Sink, accept: Bit in, got: unsigned[8] out, seen: Bit out }
 impl Consumer {
     bus.ready = accept;      // ready flows toward the Source
     got = bus.data;
@@ -27,8 +27,8 @@ impl Consumer {
 }
 
 #[top]
-entity Link { in d: unsigned[8]; in go: Bit; in accept: Bit;
-              out got: unsigned[8]; out seen: Bit; out canpush: Bit; }
+entity Link { d: unsigned[8] in, go: Bit in, accept: Bit in,
+              got: unsigned[8] out, seen: Bit out, canpush: Bit out }
 impl Link {
     let s: Stream;
     let p: Producer = { .bus = s, .d = d, .go = go, .canpush = canpush };

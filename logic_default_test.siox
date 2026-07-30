@@ -4,8 +4,8 @@ using std::logic::{Logic, Bit};
 // `impl New` uninitialized defaults (IEEE 1076-2019): an undriven `Logic`
 // powers on to `'U'` (uninitialized), an undriven `Bit` to `'0'`.
 entity D {
-    out yl: Logic;
-    out yb: Bit;
+    yl: Logic out,
+    yb: Bit out
 }
 impl D {
     let lg: Logic;    // undriven -> 'U'

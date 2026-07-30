@@ -5,8 +5,8 @@ using std::bits::unsigned;
 // An array literal `[..]` fills an array-typed signal one value per element,
 // making a lookup table. A runtime index reads it back.
 entity Lut {
-    in sel: unsigned[8];
-    out y: unsigned[8];
+    sel: unsigned[8] in,
+    y: unsigned[8] out
 }
 
 impl Lut {

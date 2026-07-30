@@ -1,7 +1,7 @@
 module examples::print_test;
 using std::math::{sqrt};
 
-entity Rt { in x: real; in n: unsigned[8]; out y: real; }
+entity Rt { x: real in, n: unsigned[8] in, y: real out }
 impl Rt { y = sqrt(x); }
 
 #[test]

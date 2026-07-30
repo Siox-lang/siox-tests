@@ -3,12 +3,12 @@ module wide_test;
 using std::bits::{unsigned};
 
 entity WideAdder {
-    in a: unsigned[128];
-    in b: unsigned[128];
-    out y: unsigned[128];
-    out difference: unsigned[128];
-    out shifted: unsigned[128];
-    out events: unsigned[3];
+    a: unsigned[128] in,
+    b: unsigned[128] in,
+    y: unsigned[128] out,
+    difference: unsigned[128] out,
+    shifted: unsigned[128] out,
+    events: unsigned[3] out
 }
 
 impl WideAdder {

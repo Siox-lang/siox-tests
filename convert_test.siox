@@ -2,12 +2,12 @@ module examples::convert_test;
 
 // T(x) conversions: widen (zero/sign per target), narrow, cross to kernel.
 entity Conv {
-    in u8: unsigned[8];
-    in s8: signed[8];
-    out wide: unsigned[16];
-    out swide: signed[16];
-    out narrow: unsigned[4];
-    out rz: unsigned[16];
+    u8: unsigned[8] in,
+    s8: signed[8] in,
+    wide: unsigned[16] out,
+    swide: signed[16] out,
+    narrow: unsigned[4] out,
+    rz: unsigned[16] out
 }
 impl Conv {
     wide = unsigned[16](u8);
@@ -18,10 +18,10 @@ impl Conv {
 
 // Signed division + arithmetic shift, from std source.
 entity SMath {
-    in a: signed[8];
-    in b: signed[8];
-    out q: signed[8];
-    out sh: signed[8];
+    a: signed[8] in,
+    b: signed[8] in,
+    q: signed[8] out,
+    sh: signed[8] out
 }
 impl SMath {
     q = a / b;

@@ -2,7 +2,7 @@ module examples::match_enum_exhaustive_test;
 enum Base { A, B, C }
 enum Mid(Base);
 
-entity E { in sel: Mid; out y: unsigned[8]; }
+entity E { sel: Mid in, y: unsigned[8] out }
 impl E {
     y = match sel { Mid::A => 1, Mid::B => 2, Mid::C => 3 };
 }

@@ -8,11 +8,11 @@ using std::logic::{Logic};
 using std::attrs::{test};
 
 entity Gates {
-    in a: Logic;
-    in b: Logic;
-    out y_and: Logic;
-    out y_or: Logic;
-    out y_not: Logic;
+    a: Logic in,
+    b: Logic in,
+    y_and: Logic out,
+    y_or: Logic out,
+    y_not: Logic out
 }
 
 impl Gates {
