@@ -1,0 +1,47 @@
+module examples::match_numeric_exhaustive_test;
+
+// A numeric match that covers its scrutinee's whole domain needs no `_`, the
+// same way an enum match naming every variant does. Lowering used to build a
+// chain that bottomed out in an unlowered `Unknown` unless a wildcard was
+// present, so the exhaustive spelling produced a design that could not run.
+
+entity Decode {
+    s: unsigned[2] in,
+    alt: unsigned[8] out,
+    span: unsigned[8] out,
+    whole: unsigned[8] out
+}
+impl Decode {
+    // Alternation and range arms, together covering 0..3.
+    alt = match s { 0 | 1 => 5, 2..3 => 7 };
+    // Every value spelled out.
+    span = match s { 0 => 10, 1 => 20, 2 => 30, 3 => 40 };
+    // A single range over the whole domain.
+    whole = match s { 0..3 => 99 };
+}
+
+#[test]
+entity MatchNumericExhaustiveTest {}
+impl MatchNumericExhaustiveTest {
+    let s: unsigned[2] = 0;
+    let alt: unsigned[8];
+    let span: unsigned[8];
+    let whole: unsigned[8];
+    let dut: Decode = { .s = s, .alt = alt, .span = span, .whole = whole };
+
+    await 1ns;
+    assert!(alt == 5, "s=0 takes the alternation arm");
+    assert!(span == 10, "s=0 takes its own arm");
+    assert!(whole == 99, "a full-domain range arm");
+
+    s = 2;
+    await 1ns;
+    assert!(alt == 7, "s=2 takes the range arm");
+    assert!(span == 30, "s=2 takes its own arm");
+
+    s = 3;
+    await 1ns;
+    assert!(alt == 7, "s=3 is still in the range arm");
+    assert!(span == 40, "s=3 takes the last arm");
+    assert!(whole == 99, "and the full-domain range still holds");
+}
