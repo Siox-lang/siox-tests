@@ -1,0 +1,45 @@
+module examples::const_array_test;
+
+// A `const` lookup table is readable at a constant index and at a runtime
+// one, in hardware and in a testbench. Constants are stored one scalar per
+// name, so a const array used to miss that table entirely: the hardware read
+// lowered to an unlowered `Unknown` and the testbench read was reported as
+// untranslatable.
+
+const TAB: unsigned[8][4] = [5, 6, 7, 8];
+const WIDTH: integer = 8;
+const SCALED: unsigned[8][2] = [WIDTH, WIDTH * 2];
+
+entity Lookup {
+    addr: unsigned[2] in,
+    fixed: unsigned[8] out,
+    dynamic: unsigned[8] out,
+    scaled: unsigned[8] out
+}
+impl Lookup {
+    fixed = TAB[2];
+    dynamic = TAB[addr];
+    scaled = SCALED[1];
+}
+
+#[test]
+entity ConstArrayTest {}
+impl ConstArrayTest {
+    let addr: unsigned[2] = 1;
+    let fixed: unsigned[8];
+    let dynamic: unsigned[8];
+    let scaled: unsigned[8];
+    let dut: Lookup = { .addr = addr, .fixed = fixed, .dynamic = dynamic, .scaled = scaled };
+
+    assert!(TAB[0] == 5, "a const table reads in a testbench");
+    assert!(TAB[3] == 8, "at its last index");
+
+    await 1ns;
+    assert!(fixed == 7, "a constant index in hardware");
+    assert!(dynamic == 6, "a runtime index in hardware, addr = 1");
+    assert!(scaled == 16, "elements fold through other constants");
+
+    addr = 3;
+    await 1ns;
+    assert!(dynamic == 8, "a runtime index, addr = 3");
+}
