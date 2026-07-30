@@ -1,0 +1,30 @@
+module examples::testbench_bus_link_test;
+using std::bits::{signed, unsigned};
+using std::logic::{Bit};
+// Two DUTs wired to each other through a struct local *in the testbench*.
+// A scalar local linked them and a struct one did not: a struct port is
+// flattened into leaves, so the scalar port lookup found nothing and the
+// binding was dropped, leaving each instance with a private copy. The same
+// design wired inside an entity always worked.
+struct Stream { valid: Bit, ready: Bit, data: signed[8] }
+view Source for Stream { out valid; in ready; out data; }
+view Sink   for Stream { in valid; out ready; in data; }
+
+entity Prod { bus: Source Stream; in go: Bit; }
+impl Prod { bus.valid = go; bus.data = 0 - 7; }
+
+entity Cons { bus: Sink Stream; out got: signed[8]; out saw: Bit; }
+impl Cons { bus.ready = '1'; got = bus.data; saw = bus.valid; }
+
+#[test]
+entity T {}
+impl T {
+    let s: Stream; let go: Bit = '1';
+    let got: signed[8]; let saw: Bit;
+    let p: Prod = { .bus = s, .go = go };
+    let c: Cons = { .bus = s, .got = got, .saw = saw };
+    await 1ns;
+    assert!(saw == '1', "valid crossed the bus");
+    assert!(got == 0 - 7, "a signed payload crossed intact");
+    assert!(s.ready == '1', "the reverse direction crossed too");
+}
