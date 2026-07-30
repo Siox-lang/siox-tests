@@ -1,0 +1,26 @@
+module examples::enum_inline_display_test;
+
+// An enum-valued expression renders as a symbol however it is written, not
+// only when it is reached through a name. `and`/`or` are overloaded per type
+// (`Operator<"and", Logic, Logic> for Logic`), so they return what they were
+// given and their result prints like their operands.
+
+enum State { Idle, Run, Done }
+
+#[test]
+entity EnumInlineDisplayTest {}
+impl EnumInlineDisplayTest {
+    let x: Logic = 'X';
+    let one: Logic = '1';
+    let zero: Logic = '0';
+    let s: State = State::Run;
+
+    // Truth tables per IEEE 1076 std_logic_1164: `0` forces, `X` propagates.
+    assert!((one and x) == 'X', "1 and X is X");
+    assert!((zero and x) == '0', "0 forces and");
+    assert!((one or x) == '1', "1 forces or");
+    assert!((not x) == 'X', "not X is X");
+
+    print!("{} {} {} {}", one and x, zero and x, one or x, not x);
+    print!("{} {} {}", s, State::Done, if true { s } else { State::Idle });
+}
