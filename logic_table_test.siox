@@ -40,4 +40,11 @@ impl LogicTableTest {
     assert!(((not x) and one) == 'X', "a unary operand keeps its type");
     assert!((one and (x or zero)) == 'X', "and so does a nested expression");
     assert!((not (x and one)) == 'X', "not applied to an expression");
+
+    // `not` on a *vector* is every bit inverted, not a bitwise complement of
+    // a wider word — and it has to stay that way inside a conversion, where
+    // a second lowering path used to build the raw form and read 0.
+    let v: unsigned[8] = 200;
+    assert!((not v) == 55, "not over a vector inverts its bits");
+    assert!(unsigned[8](not v) == 55, "and keeps that meaning in a conversion");
 }
