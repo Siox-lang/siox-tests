@@ -1,0 +1,40 @@
+// A struct-typed port connected to a struct literal rather than to a signal.
+// A scalar port has always accepted a value there; a composite one needed a
+// parent signal to wire leaf-by-leaf, and dropped the connection in silence
+// when given a literal — in both engines.
+module struct_port_literal_test;
+
+using std::bits::{unsigned};
+
+struct Inner { lo: unsigned[8], hi: unsigned[8] }
+struct Outer { tag: Bit, body: Inner }
+
+entity Pick {
+    o: Outer in,
+    y: unsigned[8] out
+}
+impl Pick {
+    y = if o.tag == '1' { o.body.hi } else { o.body.lo };
+}
+
+// The same connection written in hardware rather than in a testbench.
+entity Wrapped {
+    y: unsigned[8] out
+}
+impl Wrapped {
+    let inner: Pick = { .o = { .tag = '0', .body = { .lo = 11, .hi = 22 } } };
+    y = inner.y;
+}
+
+#[test]
+entity StructPortLiteralTest {}
+impl StructPortLiteralTest {
+    let picksHigh: Pick = { .o = { .tag = '1', .body = { .lo = 11, .hi = 22 } } };
+    let picksLow: Pick = { .o = { .tag = '0', .body = { .lo = 11, .hi = 22 } } };
+    let inHardware: Wrapped = {};
+    await 1ns;
+
+    assert!(picksHigh.y == 22, "nested literal reaches the high leaf");
+    assert!(picksLow.y == 11, "and the tag leaf selects between them");
+    assert!(inHardware.y == picksLow.y, "parity with the same connection in hardware");
+}
