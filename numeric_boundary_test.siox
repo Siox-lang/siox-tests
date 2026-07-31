@@ -1,0 +1,79 @@
+module examples::numeric_boundary_test;
+
+using std::bits::{unsigned, signed};
+
+// Boundary values for the numeric types, checked against arithmetic worked
+// out independently rather than against the other engine — two engines
+// agreeing is not correctness, and `s / (0 - 2)` was 0 in both until it was
+// not. Distilled from a generated sweep of ~1600 cases over widths 4/8/16.
+
+entity Alu {
+    a: signed[8] in,
+    b: signed[8] in,
+    sum: signed[8] out,
+    prod: signed[8] out,
+    quot: signed[8] out
+}
+impl Alu {
+    sum = a + b;
+    prod = a * b;
+    quot = a / b;
+}
+
+#[test]
+entity NumericBoundaryTest {}
+impl NumericBoundaryTest {
+    let a: signed[8] = 0 - 128;
+    let b: signed[8] = 0 - 1;
+    let sum: signed[8];
+    let prod: signed[8];
+    let quot: signed[8];
+    let dut: Alu = { .a = a, .b = b, .sum = sum, .prod = prod, .quot = quot };
+
+    // The extremes of signed[8]: everything here wraps.
+    let min: signed[8] = 0 - 128;
+    let max: signed[8] = 127;
+    assert!(min - 1 == 127, "one below the minimum wraps to the maximum");
+    assert!(max + 1 == 0 - 128, "one above the maximum wraps to the minimum");
+    assert!(min * (0 - 1) == 0 - 128, "negating the minimum has no positive form");
+    assert!(min / (0 - 1) == 0 - 128, "and neither does dividing it by -1");
+    assert!(0 - min == 0 - 128, "unary negation agrees");
+
+    // Division truncates toward zero, in every sign combination — for a
+    // typed value and for a pure-literal expression, which is a kernel
+    // integer and used to divide as unsigned: `(0 - 7) / 2` gave
+    // 9223372036854775804.
+    let sv: signed[8] = 0 - 7;
+    assert!(sv / 2 == 0 - 3, "typed: negative by positive");
+    assert!(sv / (0 - 2) == 3, "typed: negative by negative");
+    assert!(7 / 2 == 3, "literal: positive by positive");
+    assert!((0 - 7) / 2 == 0 - 3, "literal: negative by positive");
+    assert!(7 / (0 - 2) == 0 - 3, "literal: positive by negative");
+    assert!((0 - 7) / (0 - 2) == 3, "literal: negative by negative");
+
+    // Unsigned wraps at its own width, and shifts clear rather than wrap.
+    let u4: unsigned[4] = 15;
+    assert!(u4 + 1 == 0, "unsigned[4] wraps at 16");
+    assert!(u4 * 2 == 14, "and on multiplication");
+    assert!(u4 << 4 == 0, "a shift by the full width is zero");
+    assert!(u4 >> 4 == 0, "in both directions");
+    assert!(u4 << 1 == 14, "and shifts drop the bits that leave");
+
+    // An arithmetic shift keeps the sign; a logical one does not.
+    let neg: signed[8] = 0 - 8;
+    assert!(neg >> 1 == 0 - 4, "signed shift-right is arithmetic");
+    assert!(neg >> 7 == 0 - 1, "shifting a negative out leaves all ones");
+    assert!(unsigned[8](neg) >> 7 == 1, "the same bits read unsigned give 1");
+
+    // Hardware must reach the same answers at the same boundaries.
+    await 1ns;
+    assert!(sum == 127, "hw: -128 + -1 wraps");
+    assert!(prod == 0 - 128, "hw: -128 * -1 has no positive form");
+    assert!(quot == 0 - 128, "hw: -128 / -1 likewise");
+
+    a = 0 - 7;
+    b = 2;
+    await 1ns;
+    assert!(quot == 0 - 3, "hw: division truncates toward zero");
+    assert!(prod == 0 - 14, "hw: and multiplication keeps the sign");
+}
