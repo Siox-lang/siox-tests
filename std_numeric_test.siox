@@ -1,0 +1,55 @@
+// `clog2` had no corpus coverage, and it is the function a design uses to
+// size an address bus from a depth — an off-by-one there mis-sizes the
+// hardware silently. `min`/`max` were untested too. Values checked against
+// ceil(log2(n)) computed separately, not read back from the compiler.
+module std_numeric_test;
+
+using std::bits::{unsigned};
+using std::numeric::{clog2};
+using std::math::{min, max};
+
+// The usual reason to call it: an address width from a memory depth.
+entity Memory<DEPTH: integer> {
+    addr: unsigned[clog2(DEPTH)] in,
+    q: unsigned[8] out
+}
+impl Memory {
+    q = unsigned[8](addr);
+}
+
+#[test]
+entity StdNumericTest {}
+impl StdNumericTest {
+    // Exact powers of two and the values either side of them, where an
+    // off-by-one would hide.
+    assert!(clog2(1) == 0, "one element needs no address bits");
+    assert!(clog2(2) == 1, "two");
+    assert!(clog2(3) == 2, "three rounds up");
+    assert!(clog2(4) == 2, "four is exact");
+    assert!(clog2(5) == 3, "five rounds up");
+    assert!(clog2(8) == 3, "eight is exact");
+    assert!(clog2(9) == 4, "nine rounds up");
+    assert!(clog2(16) == 4, "sixteen is exact");
+    assert!(clog2(17) == 5, "seventeen rounds up");
+    assert!(clog2(1024) == 10, "a kilobyte of entries");
+    assert!(clog2(65536) == 16, "and sixty-four kilo");
+
+    // It recurses once per bit, so a large argument also checks that the
+    // inliner's depth guard is not reached by ordinary use.
+    assert!(clog2(1000000) == 20, "twenty bits, twenty levels of recursion");
+
+    // Degenerate inputs return zero rather than looping.
+    assert!(clog2(0) == 0, "zero elements");
+    assert!(clog2(0 - 5) == 0, "a negative depth is not a width");
+
+    assert!(min(3, 7) == 3 and max(3, 7) == 7, "ordered pair");
+    assert!(min(0 - 4, 2) == 0 - 4, "min across zero");
+    assert!(max(0 - 4, 0 - 9) == 0 - 4, "max of two negatives");
+    assert!(min(5, 5) == 5 and max(5, 5) == 5, "equal operands");
+
+    // The width actually applied to a port, not just the number returned.
+    let addr: unsigned[4] = 9;
+    let m: Memory<DEPTH = 10> = { .addr = addr };
+    await 1ns;
+    assert!(m.q == 9, "clog2(10) = 4 bits carries the value");
+}
