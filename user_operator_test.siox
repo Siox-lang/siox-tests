@@ -1,0 +1,79 @@
+// Operators are one generic trait parameterized by the symbol:
+// `impl Operator<"sym", Rhs, Out> for T` with `fn apply`. Nothing in the
+// corpus defined one on a user type, and in particular nothing checked the
+// claim that a single `"<=>"` returning `Ordering` drives all six
+// comparisons rather than each needing its own impl.
+module user_operator_test;
+
+using std::bits::{unsigned};
+using std::ops::{Operator, Ordering};
+
+// A newtype, so a value is one word and carries its own ordering.
+struct Money(unsigned[8]);
+
+impl Operator<"+", Money, Money> for Money {
+    fn apply(self, rhs: Money) -> Money {
+        return Money(unsigned[8](self) + unsigned[8](rhs));
+    }
+}
+
+impl Operator<"<=>", Money, Ordering> for Money {
+    fn apply(self, rhs: Money) -> Ordering {
+        if unsigned[8](self) < unsigned[8](rhs) { return Ordering::Less; }
+        if unsigned[8](self) > unsigned[8](rhs) { return Ordering::Greater; }
+        return Ordering::Equal;
+    }
+}
+
+entity Compare {
+    a: Money in,
+    b: Money in,
+    sum: Money out,
+    lt: Bit out,
+    gt: Bit out,
+    eq: Bit out,
+    le: Bit out,
+    ge: Bit out,
+    ne: Bit out
+}
+impl Compare {
+    sum = a + b;
+    lt = if a < b { '1' } else { '0' };
+    gt = if a > b { '1' } else { '0' };
+    eq = if a == b { '1' } else { '0' };
+    le = if a <= b { '1' } else { '0' };
+    ge = if a >= b { '1' } else { '0' };
+    ne = if a != b { '1' } else { '0' };
+}
+
+#[test]
+entity UserOperatorTest {}
+impl UserOperatorTest {
+    let lo: Money = Money(3);
+    let hi: Money = Money(9);
+    let same: Money = Money(3);
+
+    let less: Compare = { .a = lo, .b = hi };
+    let greater: Compare = { .a = hi, .b = lo };
+    let equal: Compare = { .a = lo, .b = same };
+    await 1ns;
+
+    assert!(less.sum == Money(12), "the `+` impl is dispatched");
+
+    // Less
+    assert!(less.lt == '1' and less.le == '1' and less.ne == '1', "less: < <= !=");
+    assert!(less.gt == '0' and less.ge == '0' and less.eq == '0', "less: not > >= ==");
+    // Greater
+    assert!(greater.gt == '1' and greater.ge == '1' and greater.ne == '1', "greater: > >= !=");
+    assert!(greater.lt == '0' and greater.le == '0' and greater.eq == '0', "greater: not < <= ==");
+    // Equal — the branch the other two never reach
+    assert!(equal.eq == '1' and equal.le == '1' and equal.ge == '1', "equal: == <= >=");
+    assert!(equal.lt == '0' and equal.gt == '0' and equal.ne == '0', "equal: not < > !=");
+
+    // The same operators evaluated in the testbench must agree with the
+    // hardware that computed them.
+    let tbsum: Money = lo + hi;
+    assert!(tbsum == less.sum, "`+` agrees across the engines");
+    assert!((lo < hi) == true and (lo > hi) == false, "comparisons agree too");
+    assert!((lo == same) == true, "and equality");
+}

@@ -2,9 +2,16 @@ module examples::connect_forms_test;
 
 using std::bits::unsigned;
 
-// An entity port is connected in one of three struct-style forms: explicit
-// (`.a = x`), name shorthand (`.a`), or positional (`x` by order). Ports may
-// also be wired post-declaration through the instance (`dut.a = x`, `dut.y`).
+// An entity port is connected in one of two struct-style block forms:
+// explicit (`.a = x`) or positional (`x` by order) — spec 3.12 has no bare
+// `.port` shorthand, and a block is all of one form or all of the other.
+// Ports may also be wired post-declaration through the instance
+// (`dut.a = x`, `dut.y`).
+//
+// Either block form may carry a *value* rather than a name. Elaboration binds
+// a connection by the name it references and has nothing to bind for a value,
+// so those used to leave the port at its default and read zero, while
+// hardware lowered the same connection to a constant driver.
 entity Add {
     a: unsigned[8] in,
     b: unsigned[8] in,
@@ -31,6 +38,17 @@ impl Chain {
     s2.a = s1.y;          // s1 output feeds s2 input
     s2.b = 2;
     z = s2.y;
+}
+
+// The same value-carrying connection written in hardware rather than in a
+// testbench, as a control for the testbench results below.
+entity WrapValues {
+    z: unsigned[8] out
+}
+
+impl WrapValues {
+    let inner: Add = { .a = 5, .b = 6 };
+    z = inner.y;
 }
 
 #[test]
@@ -60,4 +78,20 @@ impl ConnectFormsTest {
     dut.a = 3;
     dut.b = 4;
     assert!(dut.y == 7, "post-declaration dut.a / dut.y");
+
+    // Either block form may carry a value instead of a name.
+    let litNamed: Add = { .a = 5, .b = 6 };
+    assert!(litNamed.y == 11, "explicit connection carries a literal");
+
+    let litPositional: Add = { 5, 6 };
+    assert!(litPositional.y == 11, "positional connection carries a literal");
+
+    let mixedNamed: Add = { .a = a, .b = 4 };
+    assert!(mixedNamed.y == 14, "a name and a value in one block");
+
+    let expr: Add = { .a = a + 1, .b = 4 };
+    assert!(expr.y == 15, "a connection may be an expression");
+
+    let inHardware: WrapValues = {};
+    assert!(inHardware.z == litNamed.y, "parity with the same connection in hardware");
 }
