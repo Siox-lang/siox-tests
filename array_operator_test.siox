@@ -13,6 +13,8 @@ using std::ops::{Operator};
 // and not just the ones std defines for Logic.
 enum Tri { Lo, Hi, Unk }
 
+enum Mode { Copy, Other, Combine }
+
 impl Operator<"and", Tri, Tri> for Tri {
     fn apply(self, rhs: Tri) -> Tri {
         if self == Tri::Lo { return Tri::Lo; }
@@ -36,8 +38,10 @@ entity Ops {
     notor: Logic[3] out,
     equivalent: Logic[3] out,
     pick: Bit in,
+    mode: Mode in,
     selected: Logic[3] out,
-    selectedOp: Logic[3] out
+    selectedOp: Logic[3] out,
+    matched: Logic[3] out
 }
 impl Ops {
     conj = a and b;
@@ -51,6 +55,9 @@ impl Ops {
     // The condition is scalar and shared; only the branches are per-element.
     selected = if pick == '1' { a } else { b };
     selectedOp = if pick == '1' { a xor b } else { a and b };
+    // `match` selects a whole branch the same way; the two forms share
+    // `MatchArm` and have drifted apart before.
+    matched = match mode { Mode::Copy => a, Mode::Other => b, Mode::Combine => a xor b };
 }
 
 // A declared range rather than a width, to check elements pair by position
@@ -79,7 +86,8 @@ impl ArrayOperatorTest {
     let a: Logic[3] = ['0', '1', '1'];
     let b: Logic[3] = ['1', '1', '0'];
     let pick: Bit = '1';
-    let ops: Ops = { .a = a, .b = b, .pick = pick };
+    let mode: Mode = Mode::Combine;
+    let ops: Ops = { .a = a, .b = b, .pick = pick, .mode = mode };
 
     let da: Logic[7..5] = ['0', '1', '1'];
     let db: Logic[7..5] = ['1', '1', '0'];
@@ -109,6 +117,9 @@ impl ArrayOperatorTest {
             "the taken branch supplies every element");
     assert!(ops.selectedOp[0] == ops.exclusive[0] and ops.selectedOp[2] == ops.exclusive[2],
             "a branch may itself be an element-wise operation");
+    assert!(ops.matched[0] == ops.exclusive[0] and ops.matched[1] == ops.exclusive[1]
+            and ops.matched[2] == ops.exclusive[2],
+            "a match arm selects per element too");
 
     assert!(user.y[0] == Tri::Lo, "the user's own `and` is lifted");
     assert!(user.y[1] == Tri::Hi, "and gives its own answers");
