@@ -1,0 +1,55 @@
+// The three connection forms of spec 3.12, each carrying a value rather than
+// a name for at least one port. A value has no signal for elaboration to
+// bind, so these used to leave the port at its default and read zero — while
+// hardware lowered the identical connection to a constant driver.
+module connection_forms_test;
+
+using std::bits::{unsigned};
+
+entity Add {
+    a: unsigned[8] in,
+    b: unsigned[8] in,
+    y: unsigned[8] out
+}
+impl Add {
+    y = a + b;
+}
+
+// The same positional connection, but inside hardware rather than a
+// testbench — the two must agree.
+entity WrapPositional {
+    y: unsigned[8] out
+}
+impl WrapPositional {
+    let x: unsigned[8] = 3;
+    let inner: Add = { x, 4 };
+    y = inner.y;
+}
+
+#[test]
+entity ConnectionFormsTest {}
+impl ConnectionFormsTest {
+    let x: unsigned[8] = 3;
+
+    // 1. explicit, mixing a name and a literal
+    let byName: Add = { .a = x, .b = 4 };
+    // 2. positional — a brace list with no leading `.`, which parses as a
+    //    concatenation and is told apart only by the declared type
+    let byPosition: Add = { x, 4 };
+    // 3. post-declaration
+    let byPost: Add = {};
+    // an expression, not just a literal
+    let byExpr: Add = { .a = x + 1, .b = 4 };
+    // and the hardware-side control
+    let wrapped: WrapPositional = {};
+
+    byPost.a = x;
+    byPost.b = 4;
+    await 1ns;
+
+    assert!(byName.y == 7, "explicit connection carries a literal");
+    assert!(byPosition.y == 7, "positional connection carries a literal");
+    assert!(byPost.y == 7, "post-declaration connection");
+    assert!(byExpr.y == 8, "a connection may be an expression");
+    assert!(wrapped.y == byPosition.y, "positional parity with hardware");
+}
