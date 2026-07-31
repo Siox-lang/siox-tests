@@ -1,0 +1,95 @@
+// std lifts operators to arrays with blanket impls over `T[]`:
+//
+//     impl<T: Operator<"and", T, T>> Operator<"and", T, T> for T[] { ... }
+//
+// Neither engine had a form for the result, so `y = a and b` on an array
+// fell through to the scalar assignment path and reported the *target* as
+// unassignable — while `y = a` on the same target was fine.
+module array_operator_test;
+
+using std::ops::{Operator};
+
+// A user element type, to check the blanket impl lifts a user's own operator
+// and not just the ones std defines for Logic.
+enum Tri { Lo, Hi, Unk }
+
+impl Operator<"and", Tri, Tri> for Tri {
+    fn apply(self, rhs: Tri) -> Tri {
+        if self == Tri::Lo { return Tri::Lo; }
+        if rhs == Tri::Lo { return Tri::Lo; }
+        if self == Tri::Hi and rhs == Tri::Hi { return Tri::Hi; }
+        return Tri::Unk;
+    }
+}
+
+entity Ops {
+    a: Logic[3] in,
+    b: Logic[3] in,
+    conj: Logic[3] out,
+    inv: Logic[3] out,
+    nested: Logic[3] out,
+    copied: Logic[3] out
+}
+impl Ops {
+    conj = a and b;
+    inv = not a;
+    nested = (not a) and b;
+    copied = a;
+}
+
+// A declared range rather than a width, to check elements pair by position
+// and each side keeps its own indices.
+entity Descending {
+    a: Logic[7..5] in,
+    b: Logic[7..5] in,
+    y: Logic[7..5] out
+}
+impl Descending {
+    y = a and b;
+}
+
+entity UserElement {
+    a: Tri[3] in,
+    b: Tri[3] in,
+    y: Tri[3] out
+}
+impl UserElement {
+    y = a and b;
+}
+
+#[test]
+entity ArrayOperatorTest {}
+impl ArrayOperatorTest {
+    let a: Logic[3] = ['0', '1', '1'];
+    let b: Logic[3] = ['1', '1', '0'];
+    let ops: Ops = { .a = a, .b = b };
+
+    let da: Logic[7..5] = ['0', '1', '1'];
+    let db: Logic[7..5] = ['1', '1', '0'];
+    let desc: Descending = { .a = da, .b = db };
+
+    let ta: Tri[3] = [Tri::Lo, Tri::Hi, Tri::Hi];
+    let tb: Tri[3] = [Tri::Hi, Tri::Hi, Tri::Unk];
+    let user: UserElement = { .a = ta, .b = tb };
+    await 1ns;
+
+    assert!(ops.conj[0] == '0' and ops.conj[1] == '1' and ops.conj[2] == '0', "elementwise and");
+    assert!(ops.inv[0] == '1' and ops.inv[1] == '0' and ops.inv[2] == '0', "elementwise not");
+    assert!(ops.nested[0] == '1' and ops.nested[1] == '0' and ops.nested[2] == '0', "nested");
+    assert!(ops.copied[0] == a[0] and ops.copied[2] == a[2], "a plain copy still works");
+
+    assert!(desc.y[7] == '0' and desc.y[6] == '1' and desc.y[5] == '0', "a declared range pairs by position");
+
+    assert!(user.y[0] == Tri::Lo, "the user's own `and` is lifted");
+    assert!(user.y[1] == Tri::Hi, "and gives its own answers");
+    assert!(user.y[2] == Tri::Unk, "including the ones std has no rule for");
+
+    // The same expressions evaluated in the testbench must agree with the
+    // hardware that computed them.
+    let tbAnd: Logic[3] = a and b;
+    let tbNot: Logic[3] = not a;
+    assert!(tbAnd[0] == ops.conj[0] and tbAnd[1] == ops.conj[1] and tbAnd[2] == ops.conj[2],
+            "and agrees across the engines");
+    assert!(tbNot[0] == ops.inv[0] and tbNot[1] == ops.inv[1] and tbNot[2] == ops.inv[2],
+            "not agrees across the engines");
+}
