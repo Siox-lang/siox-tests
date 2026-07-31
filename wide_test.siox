@@ -8,13 +8,20 @@ entity WideAdder {
     y: unsigned[128] out,
     difference: unsigned[128] out,
     shifted: unsigned[128] out,
-    events: unsigned[3] out
+    events: unsigned[3] out,
+    // Multiply is the hardest of these at 128 bits — it needs the full
+    // partial-product expansion rather than one machine instruction — and
+    // a comparison has to carry across the word boundary too.
+    product: unsigned[128] out,
+    below: Bool out
 }
 
 impl WideAdder {
     y = a + b;
     difference = a - b;
     shifted = a << 65;
+    product = a * b;
+    below = a < b;
     if a'event {
         events = events + 1;
     }
@@ -108,4 +115,18 @@ impl WideTest {
     assert!(copied_words[0] == local_words[0], "wide arrays copy element-wise");
     local_words = [3, 4];
     assert!(local_words[1] == 4, "wide array literals can be reassigned");
+
+    // Drive both operands explicitly rather than relying on whatever the
+    // earlier steps left behind. The product spans both words, and the
+    // comparison has to look at the high one rather than the low half only.
+    a = 18446744073709551615;
+    b = 3;
+    await 1ns;
+    assert!(dut.product == 55340232221128654845, "a 128-bit product spans both words");
+    assert!(dut.below == false, "2^64-1 is not below 3");
+
+    a = 1;
+    b = 340282366920938463463374607431768211455;
+    await 1ns;
+    assert!(dut.below == true, "and the comparison sees the high word");
 }
