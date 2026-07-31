@@ -1,0 +1,56 @@
+module examples::range_attr_test;
+
+using std::bits::{unsigned};
+
+// Range attributes are computed twice — const-folded in the IR for hardware,
+// and again in the testbench emitter — so both are checked here against the
+// declared range. A written range keeps its direction (spec 3.13):
+// `Logic[7..0]` is descending, `Logic[0..3]` ascending.
+
+entity Bounds {
+    dn: Logic[7..0] in,
+    up: Logic[0..3] in,
+    l: integer out,
+    r: integer out,
+    h: integer out,
+    lo: integer out,
+    asc: Bool out
+}
+impl Bounds {
+    l = dn'left;
+    r = dn'right;
+    h = dn'high;
+    lo = dn'low;
+    asc = up'ascending;
+}
+
+#[test]
+entity RangeAttrTest {}
+impl RangeAttrTest {
+    let dn: Logic[7..0];
+    let up: Logic[0..3];
+    let l: integer;
+    let r: integer;
+    let h: integer;
+    let lo: integer;
+    let asc: Bool;
+    let dut: Bounds = { .dn = dn, .up = up, .l = l, .r = r, .h = h, .lo = lo, .asc = asc };
+
+    // Testbench side: a descending range keeps left above right, while
+    // `'high`/`'low` are ordered by value whichever way it was written.
+    assert!(dn'left == 7 and dn'right == 0, "descending keeps its direction");
+    assert!(dn'high == 7 and dn'low == 0, "high and low are ordered by value");
+    assert!(dn'ascending == false, "and it is not ascending");
+    assert!(up'left == 0 and up'right == 3, "an ascending range reads the other way");
+    assert!(up'ascending == true, "and says so");
+    assert!(dn'length == 8 and up'length == 4, "length counts both ends");
+
+    // `'ascending` is the one range attribute that is not a number; it used
+    // to print its discriminant here while hardware printed the variant.
+    print!("ascending: {} / {}", dn'ascending, up'ascending);
+
+    await 1ns;
+    assert!(l == 7 and r == 0, "hardware agrees on the bounds");
+    assert!(h == 7 and lo == 0, "and on high/low");
+    assert!(asc == true, "and on direction");
+}
