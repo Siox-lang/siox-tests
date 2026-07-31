@@ -1,0 +1,54 @@
+// A `signed[N]` value read back through an instance port. A testbench local
+// records the vector family from its own declaration; a port read as
+// `dut.y` had no such record, so it compared and printed as unsigned —
+// `dut.y == -100` was false while `dut.y == local` against an identical
+// local was true, and the two disagreed only in how they were interpreted,
+// never in their bits.
+module signed_port_test;
+
+using std::bits::{signed};
+
+entity Arith {
+    s: signed[8] in,
+    t: signed[8] in,
+    sum: signed[8] out,
+    difference: signed[8] out,
+    quotient: signed[8] out,
+    shifted: signed[8] out,
+    smaller: Bool out
+}
+impl Arith {
+    sum = s + t;
+    difference = s - t;
+    quotient = s / t;
+    shifted = s >> 2;
+    smaller = s < t;
+}
+
+#[test]
+entity SignedPortTest {}
+impl SignedPortTest {
+    let s: signed[8] = 0;
+    let t: signed[8] = -100;
+    let a: Arith = { .s = s, .t = t };
+    await 1ns;
+
+    // Against a literal — this is what a lost family breaks.
+    assert!(a.sum == -100, "a signed port compares against a negative literal");
+    assert!(a.difference == 100, "0 - (-100)");
+    assert!(a.smaller == false, "0 < -100 is false with a signed compare");
+
+    // And against the same expression computed in the testbench.
+    let sum: signed[8] = s + t;
+    assert!(a.sum == sum, "port and local agree");
+
+    // Arithmetic shift keeps the sign; a logical one would not.
+    let neg: signed[8] = -128;
+    let b: Arith = { .s = neg, .t = -1 };
+    await 1ns;
+    // Values checked against a separate two's-complement model, not derived
+    // from the compiler's own answers.
+    assert!(b.shifted == -32, "-128 >> 2 keeps the sign; a logical shift would not");
+    assert!(b.quotient == -128, "-128 / -1 overflows eight bits and wraps to itself");
+    assert!(b.sum == 127, "-128 + (-1) wraps to 127");
+}
