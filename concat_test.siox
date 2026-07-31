@@ -1,0 +1,55 @@
+// Bit concatenation in a testbench, and ports connected to a value rather
+// than to a name. Both work in hardware; both used to be dropped here.
+module concat_test;
+
+using std::bits::{unsigned};
+
+entity Split {
+    src: unsigned[12] in,
+    hi: unsigned[8] out,
+    lo: unsigned[4] out
+}
+impl Split {
+    { hi, lo } = src;
+}
+
+entity Join {
+    a: unsigned[8] in,
+    b: unsigned[4] in,
+    c: Bit in,
+    wide: unsigned[13] out
+}
+impl Join {
+    wide = { a, b, c };
+}
+
+#[test]
+entity ConcatTest {}
+impl ConcatTest {
+    // A port connected to a literal: elaboration has no name to bind, so
+    // this used to leave the port at its default and read 0.
+    let split: Split = { .src = 0xA5C };
+    let join: Join = { .a = 0xA5, .b = 0xC, .c = '1' };
+    await 1ns;
+
+    assert!(split.hi == 0xA5, "concat target takes the high bits");
+    assert!(split.lo == 0xC, "concat target takes the low bits");
+    assert!(join.wide == 5305, "first element is most significant");
+
+    // The same two forms evaluated in the testbench must agree with the
+    // hardware that computed them.
+    let a: unsigned[8] = 0xA5;
+    let b: unsigned[4] = 0xC;
+    let c: Bit = '1';
+    let wide: unsigned[13] = { a, b, c };
+    assert!(wide == join.wide, "concat parity with hardware");
+
+    let hi: unsigned[8] = 0;
+    let lo: unsigned[4] = 0;
+    { hi, lo } = 0xA5C;
+    assert!(hi == split.hi and lo == split.lo, "concat target parity");
+
+    // Uneven and repeated parts.
+    let doubled: unsigned[16] = { a, a };
+    assert!(doubled == 42405, "a part may appear twice");
+}
