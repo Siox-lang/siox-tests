@@ -1,0 +1,91 @@
+// `'event` and `'old` are the two compiler primitives every edge helper is
+// built from, and nothing exercised them directly. Two properties:
+//
+//  * the primitives compose to exactly what `clk.rising()` does, and
+//  * the aggregate spellings the spec writes (`p'old.valid`, `xs'old[0]`)
+//    mean the same as the leaf spellings they push down to.
+//
+// Each detector keeps its `'event` term. Without one the condition is not an
+// edge, the counter feeds itself combinationally, and the count has no
+// settled value — the compiler says so, and the numbers below would drift.
+module old_attr_test;
+
+using std::bits::{unsigned};
+
+struct Pkt { valid: Bit, data: unsigned[8] }
+
+entity Edges {
+    clk: Bit in,
+    by_method: unsigned[8] out,
+    by_primitive: unsigned[8] out,
+    falling: unsigned[8] out
+}
+impl Edges {
+    let m: unsigned[8] = 0;
+    let p: unsigned[8] = 0;
+    let f: unsigned[8] = 0;
+    if clk.rising() { m = m + 1; }
+    if clk'event and clk'old == '0' and clk == '1' { p = p + 1; }
+    if clk'event and clk'old == '1' and clk == '0' { f = f + 1; }
+    by_method = m;
+    by_primitive = p;
+    falling = f;
+}
+
+entity Spellings {
+    p: Pkt in,
+    xs: unsigned[8][2] in,
+    struct_aggregate: unsigned[8] out,
+    struct_leaf: unsigned[8] out,
+    array_aggregate: unsigned[8] out,
+    array_leaf: unsigned[8] out
+}
+impl Spellings {
+    let sa: unsigned[8] = 0;
+    let sl: unsigned[8] = 0;
+    let aa: unsigned[8] = 0;
+    let al: unsigned[8] = 0;
+    // A struct is stored as leaf signals, so the spec's aggregate spelling
+    // means the leaf one; both must count the same transitions.
+    if p.valid'event and p'old.valid == '0' and p.valid == '1' { sa = sa + 1; }
+    if p.valid'event and p.valid'old == '0' and p.valid == '1' { sl = sl + 1; }
+    if xs[0]'event and xs'old[0] != xs[0] { aa = aa + 1; }
+    if xs[0]'event and xs[0]'old != xs[0] { al = al + 1; }
+    struct_aggregate = sa;
+    struct_leaf = sl;
+    array_aggregate = aa;
+    array_leaf = al;
+}
+
+#[test]
+entity OldAttrTest {}
+impl OldAttrTest {
+    let clk: Bit = '0';
+    let e: Edges = { .clk = clk };
+    let pk: Pkt = { .valid = '0', .data = 0 };
+    let xs: unsigned[8][2] = [1, 2];
+    let s: Spellings = { .p = pk, .xs = xs };
+    await 1ns;
+
+    for i in 0..4 {
+        clk = '1'; await 1ns;
+        clk = '0'; await 1ns;
+    }
+    assert!(e.by_method == 5, "five rising edges");
+    assert!(e.by_primitive == e.by_method, "'event/'old compose to .rising()");
+    assert!(e.falling == 5, "and the falling composition counts its own");
+
+    pk.valid = '1'; await 1ns;
+    pk.valid = '0'; await 1ns;
+    pk.valid = '1'; await 1ns;
+    pk.valid = '0'; await 1ns;
+    assert!(s.struct_leaf == 2, "two rising transitions on the leaf");
+    assert!(s.struct_aggregate == s.struct_leaf, "`p'old.valid` is `p.valid'old`");
+
+    xs[0] = 5; await 1ns;
+    xs[0] = 9; await 1ns;
+    // Three, not two: the port starts at its default and the connection
+    // driving it to the local's initial value is itself a change.
+    assert!(s.array_leaf == 3, "the initial drive counts alongside two writes");
+    assert!(s.array_aggregate == s.array_leaf, "`xs'old[0]` is `xs[0]'old`");
+}
