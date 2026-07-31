@@ -61,9 +61,19 @@ impl FanoutInitTest {
     let v1: UseArr = { .a = xs, .y = r1 };
     let v2: UseArr = { .a = xs, .y = r2 };
 
+    // A spread-update copies the fields it does not override, and those are
+    // seeded the same way — the overridden field reached both instances while
+    // the copied ones reached only the last.
+    let bumped: Cfg = { ..cfg, .hi = 9 };
+    let p1: unsigned[8];
+    let p2: unsigned[8];
+    let w1: UseCfg = { .c = bumped, .y = p1 };
+    let w2: UseCfg = { .c = bumped, .y = p2 };
+
     await 1ns;
     assert!(s1 == 7 and s2 == 7, "a struct literal reaches both instances");
     assert!(r1 == 4 and r2 == 4, "and so does an array literal");
+    assert!(p1 == 12 and p2 == 12, "and a spread-update, copied fields included");
 
     // An assignment reaches all of them too, which always worked.
     a = 20;
