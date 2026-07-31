@@ -34,7 +34,10 @@ entity Ops {
     exclusive: Logic[3] out,
     notand: Logic[3] out,
     notor: Logic[3] out,
-    equivalent: Logic[3] out
+    equivalent: Logic[3] out,
+    pick: Bit in,
+    selected: Logic[3] out,
+    selectedOp: Logic[3] out
 }
 impl Ops {
     conj = a and b;
@@ -45,6 +48,9 @@ impl Ops {
     notand = a nand b;
     notor = a nor b;
     equivalent = a xnor b;
+    // The condition is scalar and shared; only the branches are per-element.
+    selected = if pick == '1' { a } else { b };
+    selectedOp = if pick == '1' { a xor b } else { a and b };
 }
 
 // A declared range rather than a width, to check elements pair by position
@@ -72,7 +78,8 @@ entity ArrayOperatorTest {}
 impl ArrayOperatorTest {
     let a: Logic[3] = ['0', '1', '1'];
     let b: Logic[3] = ['1', '1', '0'];
-    let ops: Ops = { .a = a, .b = b };
+    let pick: Bit = '1';
+    let ops: Ops = { .a = a, .b = b, .pick = pick };
 
     let da: Logic[7..5] = ['0', '1', '1'];
     let db: Logic[7..5] = ['1', '1', '0'];
@@ -96,6 +103,12 @@ impl ArrayOperatorTest {
     assert!(ops.notand[0] == '1' and ops.notand[1] == '0' and ops.notand[2] == '1', "nand");
     assert!(ops.notor[0] == '0' and ops.notor[1] == '0' and ops.notor[2] == '0', "nor");
     assert!(ops.equivalent[0] == '0' and ops.equivalent[1] == '1' and ops.equivalent[2] == '0', "xnor");
+
+    // An array-valued if-expression: the whole branch is selected per element.
+    assert!(ops.selected[0] == a[0] and ops.selected[1] == a[1] and ops.selected[2] == a[2],
+            "the taken branch supplies every element");
+    assert!(ops.selectedOp[0] == ops.exclusive[0] and ops.selectedOp[2] == ops.exclusive[2],
+            "a branch may itself be an element-wise operation");
 
     assert!(user.y[0] == Tri::Lo, "the user's own `and` is lifted");
     assert!(user.y[1] == Tri::Hi, "and gives its own answers");
