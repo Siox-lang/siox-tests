@@ -1,0 +1,30 @@
+// A `let` inside a block (spec 3.13). Testbench statements run in sequence,
+// so this is an ordinary scoped local — it used to pass `check` and then fail
+// at build claiming the name was unknown.
+module block_local_test;
+
+using std::bits::{unsigned};
+
+#[test]
+entity BlockLocalTest {}
+impl BlockLocalTest {
+    let top: unsigned[8] = 250;
+    let seen: unsigned[8] = 0;
+
+    if top > 200 {
+        // The declared width applies here exactly as it does at the top
+        // level, so arithmetic wraps rather than running on 64 bits.
+        let wide: unsigned[8] = 250;
+        assert!(wide + 10 == 4, "a block local wraps to its declared width");
+        assert!(wide + 10 == top + 10, "and agrees with a top-level local");
+    }
+
+    for i in 0..3 {
+        let step: unsigned[8] = 2;
+        seen = seen + step;
+    }
+    assert!(seen == 8, "a block local is re-initialized each iteration");
+
+    // A name declared in a block does not leak: `top` is still the outer one.
+    assert!(top == 250, "the outer local is untouched");
+}
