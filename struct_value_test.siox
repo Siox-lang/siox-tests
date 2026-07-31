@@ -6,6 +6,7 @@ using std::bits::{unsigned};
 // another works by name; selecting between two with an `if` used to leave
 // every field at its default, so `r.a` silently read 0.
 
+enum Sel { A, B }
 struct Pair { a: unsigned[8], b: unsigned[8] }
 
 #[test]
@@ -27,6 +28,15 @@ impl StructValueTest {
     assert!(taken.b == 2, "including the second");
     assert!(other.a == 30, "and the untaken branch does not");
     assert!(other.b == 40, "likewise");
+
+    // A `match` selects a struct the same way an `if` does. Only the `if`
+    // shape was taught, so every field of a match-selected struct kept its
+    // default.
+    let k: Sel = Sel::A;
+    let picked: Pair = match k { Sel::A => p, Sel::B => q };
+    let swapped: Pair = match k { Sel::A => q, Sel::B => p };
+    assert!(picked.a == 1 and picked.b == 2, "match selects field by field");
+    assert!(swapped.a == 30 and swapped.b == 40, "and the arms are not swapped");
 
     // A spread-update still overrides only what it names.
     let bumped: Pair = { ..p, .a = 9 };
