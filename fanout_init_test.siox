@@ -1,0 +1,48 @@
+module examples::fanout_init_test;
+
+using std::bits::{unsigned};
+
+// A testbench local wired to several instances has one entry in the signal
+// map and all of its ports in the alias list. The initializer seeded only the
+// first, so every other instance started from its default while an ordinary
+// assignment to the same name reached them all — one clock or reset feeding
+// two DUTs is the common shape of this.
+
+entity Inc { a: unsigned[8] in, y: unsigned[8] out }
+impl Inc { y = a + 1; }
+
+entity Chain { a: unsigned[8] in, y: unsigned[8] out }
+impl Chain {
+    let mid: unsigned[8];
+    let first: Inc = { .a = a, .y = mid };
+    let second: Inc = { .a = mid, .y = y };
+}
+
+#[test]
+entity FanoutInitTest {}
+impl FanoutInitTest {
+    // One local feeding three instances, valued by its initializer.
+    let a: unsigned[8] = 10;
+    let y1: unsigned[8];
+    let y2: unsigned[8];
+    let y3: unsigned[8];
+    let i1: Inc = { .a = a, .y = y1 };
+    let i2: Inc = { .a = a, .y = y2 };
+    let i3: Inc = { .a = a, .y = y3 };
+
+    // And a nested design fed by the same kind of local.
+    let ca: unsigned[8] = 5;
+    let cy: unsigned[8];
+    let c: Chain = { .a = ca, .y = cy };
+
+    await 1ns;
+    assert!(y1 == 11, "the first instance sees the initializer");
+    assert!(y2 == 11, "so does the second");
+    assert!(y3 == 11, "and the third");
+    assert!(cy == 7, "a nested chain sees it through two levels");
+
+    // An assignment reaches all of them too, which always worked.
+    a = 20;
+    await 1ns;
+    assert!(y1 == 21 and y2 == 21 and y3 == 21, "an assignment fans out as well");
+}
