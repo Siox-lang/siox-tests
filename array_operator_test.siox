@@ -28,13 +28,23 @@ entity Ops {
     conj: Logic[3] out,
     inv: Logic[3] out,
     nested: Logic[3] out,
-    copied: Logic[3] out
+    copied: Logic[3] out,
+    // The textual half of the logic family dispatches differently from
+    // `and`/`or`, and used to have no array form at all.
+    exclusive: Logic[3] out,
+    notand: Logic[3] out,
+    notor: Logic[3] out,
+    equivalent: Logic[3] out
 }
 impl Ops {
     conj = a and b;
     inv = not a;
     nested = (not a) and b;
     copied = a;
+    exclusive = a xor b;
+    notand = a nand b;
+    notor = a nor b;
+    equivalent = a xnor b;
 }
 
 // A declared range rather than a width, to check elements pair by position
@@ -79,6 +89,13 @@ impl ArrayOperatorTest {
     assert!(ops.copied[0] == a[0] and ops.copied[2] == a[2], "a plain copy still works");
 
     assert!(desc.y[7] == '0' and desc.y[6] == '1' and desc.y[5] == '0', "a declared range pairs by position");
+
+    // a = 0 1 1, b = 1 1 0 — checked against a truth table, not against the
+    // compiler's own answers.
+    assert!(ops.exclusive[0] == '1' and ops.exclusive[1] == '0' and ops.exclusive[2] == '1', "xor");
+    assert!(ops.notand[0] == '1' and ops.notand[1] == '0' and ops.notand[2] == '1', "nand");
+    assert!(ops.notor[0] == '0' and ops.notor[1] == '0' and ops.notor[2] == '0', "nor");
+    assert!(ops.equivalent[0] == '0' and ops.equivalent[1] == '1' and ops.equivalent[2] == '0', "xnor");
 
     assert!(user.y[0] == Tri::Lo, "the user's own `and` is lifted");
     assert!(user.y[1] == Tri::Hi, "and gives its own answers");
