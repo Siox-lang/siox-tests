@@ -1,0 +1,43 @@
+module examples::logic_table_test;
+
+// The std_logic_1164 tables from IEEE 1076, spot-checked at the rows that
+// distinguish the nine values: `0` forces `and`, `1` forces `or`, `U`
+// dominates otherwise, and the weak values follow their strong counterparts.
+// A generated sweep of the full 9x9 grid passes; these are the cases worth
+// keeping in front of a reader.
+
+#[test]
+entity LogicTableTest {}
+impl LogicTableTest {
+    let u: Logic = 'U';
+    let x: Logic = 'X';
+    let zero: Logic = '0';
+    let one: Logic = '1';
+    let z: Logic = 'Z';
+    let l: Logic = 'L';
+    let h: Logic = 'H';
+
+    // `0` forces an `and` even against `U`; `1` forces an `or`.
+    assert!((zero and u) == '0', "0 and U is 0");
+    assert!((one or u) == '1', "1 or U is 1");
+    assert!((one and u) == 'U', "U dominates otherwise");
+    assert!((zero or u) == 'U', "in both directions");
+
+    // The weak values read as their strong counterparts.
+    assert!((l and one) == '0', "L behaves as 0");
+    assert!((h and one) == '1', "H behaves as 1");
+    assert!((z and one) == 'X', "Z is not a drive strength here");
+
+    assert!((x xor one) == 'X', "unknown propagates through xor");
+    assert!((one xor one) == '0', "and xor is still xor");
+    assert!((not x) == 'X', "not X is X");
+    assert!((not z) == 'X', "not Z is X");
+    assert!((not u) == 'U', "not U is U");
+
+    // The same operators applied to expressions rather than to names: the
+    // operand of an inlined impl used to lose its type and negate the raw
+    // discriminant, so `(not x) and one` gave '1' instead of 'X'.
+    assert!(((not x) and one) == 'X', "a unary operand keeps its type");
+    assert!((one and (x or zero)) == 'X', "and so does a nested expression");
+    assert!((not (x and one)) == 'X', "not applied to an expression");
+}
