@@ -1,0 +1,66 @@
+// An LFSR is the ordinary reason to write `v[7] xor v[5]`, and that shape —
+// a textual operator over two *bits of a packed vector* — did not lower in
+// either engine. A bit of a vector is not a signal in its own right, so it
+// had no type, so no operator impl could be found for it; `and` on the same
+// operands worked, because it is a built-in that needs no impl.
+//
+// The expected sequence comes from a separate model of the same recurrence,
+// not from the compiler.
+module lfsr_test;
+
+using std::bits::{unsigned};
+
+entity Lfsr {
+    clk: Bit in,
+    rst: Bit in,
+    en: Bit in,
+    q: unsigned[8] out,
+    tap: Logic out
+}
+impl Lfsr {
+    let v: unsigned[8] = 1;
+    if clk.rising() {
+        if rst == '1' { v = 1; }
+        else if en == '1' { v = (v << 1) or unsigned[8](v[7] xor v[5]); }
+    }
+    q = v;
+    tap = v[7] xor v[5];
+}
+
+#[test]
+entity LfsrTest {}
+impl LfsrTest {
+    let clk: Bit = '0';
+    let rst: Bit = '1';
+    let en: Bit = '0';
+    let dut: Lfsr = { .clk = clk, .rst = rst, .en = en };
+    await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(dut.q == 1, "reset seeds the register");
+    assert!(dut.tap == '0', "bit 7 and bit 5 of 1 are both clear");
+
+    rst = '0'; en = '1';
+    // 1 -> 2 -> 4 -> 8 -> 16 -> 32
+    for i in 0..4 {
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+    }
+    assert!(dut.q == 32, "five shifts with no feedback yet");
+    // 32 is 00100000: bit 5 set, bit 7 clear, so the tap is high and the
+    // next shift feeds a 1 into bit 0.
+    assert!(dut.tap == '1', "exactly one tapped bit is set");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(dut.q == 65, "64 with the feedback bit, not 64");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(dut.q == 130, "130 = (65 << 1) with no feedback");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(dut.q == 5, "130 has bit 7 set, so the shift wraps and feeds back");
+
+    // The same expression evaluated in the testbench, on a local rather than
+    // through the instance, must agree.
+    let sample: unsigned[8] = 130;
+    let tb: Logic = sample[7] xor sample[5];
+    assert!(tb == '1', "a bit-index operator works on a plain local too");
+}
