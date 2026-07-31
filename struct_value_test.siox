@@ -1,0 +1,36 @@
+module examples::struct_value_test;
+
+using std::bits::{unsigned};
+
+// A struct-valued expression carries its fields. Copying one struct into
+// another works by name; selecting between two with an `if` used to leave
+// every field at its default, so `r.a` silently read 0.
+
+struct Pair { a: unsigned[8], b: unsigned[8] }
+
+#[test]
+entity StructValueTest {}
+impl StructValueTest {
+    let t: Bool = true;
+    let f: Bool = false;
+    let p: Pair = { .a = 1, .b = 2 };
+    let q: Pair = { .a = 30, .b = 40 };
+
+    // A plain copy.
+    let c: Pair = p;
+    assert!(c.a == 1 and c.b == 2, "a struct copies field by field");
+
+    // A selection between two structs, in both directions.
+    let taken: Pair = if t { p } else { q };
+    let other: Pair = if f { p } else { q };
+    assert!(taken.a == 1, "the taken branch supplies each field");
+    assert!(taken.b == 2, "including the second");
+    assert!(other.a == 30, "and the untaken branch does not");
+    assert!(other.b == 40, "likewise");
+
+    // A spread-update still overrides only what it names.
+    let bumped: Pair = { ..p, .a = 9 };
+    assert!(bumped.a == 9 and bumped.b == 2, "spread keeps the rest");
+
+    print!("ok");
+}
