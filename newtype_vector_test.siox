@@ -1,0 +1,45 @@
+module examples::newtype_vector_test;
+
+using std::bits::{unsigned};
+
+// `struct Byte(unsigned[8])` is a nominal newtype over a *vector*: eight bits
+// wide, with a value-transparent constructor. Resolving its representation
+// used to walk on through `unsigned` to `Logic[]` and stop at the element,
+// so every such signal was four bits and silently truncated; the constructor
+// itself reached no conversion rule at all and lowered to nothing.
+
+struct Byte(unsigned[8]);
+struct Word(unsigned[16]);
+
+entity Widths { b: unsigned[8] out, w: unsigned[16] out, lit: unsigned[8] out }
+impl Widths {
+    let stored: Byte = Byte(200);
+    let wide: Word = Word(60000);
+    b = unsigned[8](stored);
+    w = unsigned[16](wide);
+    lit = unsigned[8](Byte(200));
+}
+
+#[test]
+entity NewtypeVectorTest {}
+impl NewtypeVectorTest {
+    let b: unsigned[8];
+    let w: unsigned[16];
+    let lit: unsigned[8];
+    let dut: Widths = { .b = b, .w = w, .lit = lit };
+
+    // The declared width comes from the base, not from its element type.
+    let by: Byte;
+    let wd: Word;
+    assert!(by'length == 8, "a newtype over unsigned[8] is eight bits");
+    assert!(wd'length == 16, "and over unsigned[16], sixteen");
+
+    // The constructor keeps the value in a testbench too.
+    let made: Byte = Byte(200);
+    assert!(unsigned[8](made) == 200, "the constructor is value-transparent");
+
+    await 1ns;
+    assert!(b == 200, "hardware keeps a stored newtype value");
+    assert!(w == 60000, "at sixteen bits as well");
+    assert!(lit == 200, "and an inline construction reaches the same value");
+}
