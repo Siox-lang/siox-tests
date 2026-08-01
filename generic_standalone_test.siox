@@ -1,0 +1,47 @@
+// `check` roots every entity nothing instantiates, so library code is
+// analysed rather than skipped. A generic parameter has no value in that
+// pass, and in *value* position that was reported as `no value named 'N' is
+// in scope` — blaming the author for a name declared in the header two lines
+// above. The same parameter in *type* position had always been tolerated.
+//
+// `Scaler` below is deliberately never instantiated: that is the case that
+// broke, and instantiating it here would hide it.
+module generic_standalone_test;
+
+using std::bits::{unsigned};
+
+entity Scaler<N: integer> {
+    a: unsigned[8] in,
+    // type position: the parameter sets a width
+    wide: unsigned[N] out,
+    // value position: the parameter is arithmetic
+    scaled: unsigned[8] out,
+    over: Bit out
+}
+impl Scaler {
+    wide = unsigned[N](a);
+    scaled = a * N + N;
+    over = if a > N { '1' } else { '0' };
+}
+
+// A second generic entity that *is* instantiated, to check the parameter
+// still carries its real value rather than quietly becoming unknown.
+entity Adder<K: integer> {
+    a: unsigned[8] in,
+    y: unsigned[8] out
+}
+impl Adder {
+    y = a + K;
+}
+
+#[test]
+entity GenericStandaloneTest {}
+impl GenericStandaloneTest {
+    let a: unsigned[8] = 3;
+    let three: Adder<K = 3> = { .a = a };
+    let ten: Adder<K = 10> = { .a = a };
+    await 1ns;
+
+    assert!(three.y == 6, "an instantiated parameter keeps its value");
+    assert!(ten.y == 13, "and each instance keeps its own");
+}
