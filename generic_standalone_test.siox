@@ -1,8 +1,8 @@
 // `check` roots every entity nothing instantiates, so library code is
 // analysed rather than skipped. A generic parameter has no value in that
 // pass, and in *value* position that was reported as `no value named 'N' is
-// in scope` — blaming the author for a name declared in the header two lines
-// above. The same parameter in *type* position had always been tolerated.
+// in scope` — blaming the author for a name the `impl` binder declares. The
+// same parameter in *type* position had always been tolerated.
 //
 // `Scaler` below is deliberately never instantiated: that is the case that
 // broke, and instantiating it here would hide it.
@@ -18,7 +18,7 @@ entity Scaler<N: integer> {
     scaled: unsigned[8] out,
     over: Bit out
 }
-impl Scaler {
+impl<N: integer> Scaler<N> {
     wide = unsigned[N](a);
     scaled = a * N + N;
     over = if a > N { '1' } else { '0' };
@@ -30,7 +30,7 @@ entity Adder<K: integer> {
     a: unsigned[8] in,
     y: unsigned[8] out
 }
-impl Adder {
+impl<K: integer> Adder<K> {
     y = a + K;
 }
 

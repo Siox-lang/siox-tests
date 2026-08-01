@@ -19,7 +19,7 @@ entity Opt<EN: integer> {
     y: unsigned[8] out
 }
 
-impl Opt<EN: integer> {
+impl<EN: integer> Opt<EN> {
     if EN > 0 {
         let s: Inc = { .a = a, .y = y };
     } else {
@@ -35,7 +35,7 @@ entity Chain<N: integer> {
     y: unsigned[8] out
 }
 
-impl Chain<N: integer> {
+impl<N: integer> Chain<N> {
     let w: unsigned[8][4];
     let stage: Inc[3];
     w[0] = a;

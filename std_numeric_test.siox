@@ -13,7 +13,7 @@ entity Memory<DEPTH: integer> {
     addr: unsigned[clog2(DEPTH)] in,
     q: unsigned[8] out
 }
-impl Memory {
+impl<DEPTH: integer> Memory<DEPTH> {
     q = unsigned[8](addr);
 }
 

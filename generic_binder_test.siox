@@ -1,0 +1,54 @@
+// An implementation binds the parameters it uses and applies them to the
+// target, as Rust's `impl<T> Vec<T>` does. The binder introduces the names,
+// so they belong to the implementation and are matched to the declaration by
+// *position* — `impl<M: integer> Reg<M>` is the same implementation as
+// `impl<W: integer> Reg<W>`, written under a different name.
+module generic_binder_test;
+
+using std::bits::{unsigned};
+
+entity Reg<W: integer> {
+    d: unsigned[8] in,
+    q: unsigned[8] out,
+    width: integer out
+}
+
+// Deliberately renamed: the entity calls it `W`, this implementation calls
+// it `M`, and both the value and the width have to follow the rename.
+impl<M: integer> Reg<M> {
+    let store: unsigned[M] = 0;
+    store = unsigned[M](d);
+    q = unsigned[8](store);
+    width = store'length;
+}
+
+entity Scale<K: integer> {
+    a: unsigned[8] in,
+    y: unsigned[8] out
+}
+impl<K: integer> Scale<K> {
+    y = a * K + K;
+}
+
+#[test]
+entity GenericBinderTest {}
+impl GenericBinderTest {
+    let d: unsigned[8] = 200;
+    let narrow: Reg<W = 4> = { .d = d };
+    let wide: Reg<W = 8> = { .d = d };
+
+    let a: unsigned[8] = 3;
+    let by3: Scale<K = 3> = { .a = a };
+    let by5: Scale<K = 5> = { .a = a };
+    await 1ns;
+
+    // The renamed binder still sizes the storage per instance.
+    assert!(narrow.width == 4, "the rename reaches the declared width");
+    assert!(wide.width == 8, "and each instance keeps its own");
+    assert!(narrow.q == 8, "200 truncated to four bits");
+    assert!(wide.q == 200, "and untouched at eight");
+
+    // And the value position, under the declaration's own name.
+    assert!(by3.y == 12, "3*3+3");
+    assert!(by5.y == 20, "3*5+5");
+}

@@ -10,7 +10,7 @@ entity Register<W: integer> {
     q: unsigned[W] out
 }
 
-impl Register<W: integer> {
+impl<W: integer> Register<W> {
     let state: unsigned[W] = 0;
 
     if clk.rising() {

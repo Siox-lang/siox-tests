@@ -8,7 +8,7 @@ entity Counter<W: integer> {
     en: Bit in,
     count: unsigned[W] out
 }
-impl Counter<W: integer> {
+impl<W: integer> Counter<W> {
     let value: unsigned[W] = 0;
     if clk.rising() {
         if rst == '1' { value = 0; } else if en { value = value + 1; }
