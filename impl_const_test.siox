@@ -1,0 +1,64 @@
+// A constant declared *inside* an implementation (spec 3.3, which shows
+// `const MAX: unsigned[W] = (1 << W) - 1;` in exactly this position). Only
+// module-level constants were ever collected, so these compiled and then
+// every read of the name reported it as unknown.
+//
+// They fold per instance, because the spec's own example depends on the
+// entity's parameters — the same declaration is a different number in each
+// instantiation.
+module impl_const_test;
+
+using std::bits::{unsigned};
+
+entity Plain {
+    y: unsigned[8] out
+}
+impl Plain {
+    const LIMIT: unsigned[8] = 5;
+    y = LIMIT;
+}
+
+entity Sized<W: integer> {
+    y: unsigned[8] out
+}
+impl<W: integer> Sized<W> {
+    const MAX: unsigned[8] = (1 << W) - 1;
+    y = MAX;
+}
+
+// The same, through a binder that renames the parameter.
+entity Doubled<W: integer> {
+    y: unsigned[8] out
+}
+impl<V: integer> Doubled<V> {
+    const TWICE: unsigned[8] = V * 2;
+    y = TWICE;
+}
+
+// Constants are order-independent, and may be defined in terms of each other.
+entity Chained<W: integer> {
+    y: unsigned[8] out
+}
+impl<W: integer> Chained<W> {
+    const OUTER: unsigned[8] = INNER + 1;
+    const INNER: unsigned[8] = W * 3;
+    y = OUTER;
+}
+
+#[test]
+entity ImplConstTest {}
+impl ImplConstTest {
+    let plain: Plain = {};
+    let four: Sized<W = 4> = {};
+    let six: Sized<W = 6> = {};
+    let doubled: Doubled<W = 7> = {};
+    let chained: Chained<W = 5> = {};
+    await 1ns;
+
+    assert!(plain.y == 5, "a constant with no parameters");
+    // One declaration, two instances, two values.
+    assert!(four.y == 15, "(1 << 4) - 1");
+    assert!(six.y == 63, "(1 << 6) - 1");
+    assert!(doubled.y == 14, "a renamed binder reaches the constant");
+    assert!(chained.y == 16, "5 * 3 + 1, declared out of order");
+}
