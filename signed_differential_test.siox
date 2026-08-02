@@ -1,0 +1,154 @@
+// Signed arithmetic in both engines, against two's-complement values worked
+// out by hand.
+//
+// Coverage, not a fix: all fifteen already agreed. But signed division's sign
+// handling is written out in std source — `impl Operator<"/", signed, signed>`
+// divides magnitudes and restores the sign, with comments recording where that
+// has gone wrong before — and none of its four sign combinations was pinned by
+// a test that checks both engines. Truncation is toward zero, so -100 / 7 is
+// -14 and not -15; a language that rounded down would pass three of the four.
+//
+// a = -100, b = 7, c = 75, p = 6, q = -6; every result wraps to 8 bits.
+module signed_differential_test;
+
+using std::bits::{signed};
+
+entity D {
+    a: signed[8] in, b: signed[8] in, c: signed[8] in, p: signed[8] in, q: signed[8] in,
+    add: signed[8] out,
+    sub: signed[8] out,
+    mul: signed[8] out,
+    divPosPos: signed[8] out,
+    divNegPos: signed[8] out,
+    divPosNeg: signed[8] out,
+    divNegNeg: signed[8] out,
+    shrKeepsSign: signed[8] out,
+    shl: signed[8] out,
+    neg: signed[8] out,
+    lt: signed[8] out,
+    gt: signed[8] out,
+    eqNeg: signed[8] out,
+    ltZero: signed[8] out,
+    absLike: signed[8] out
+}
+impl D {
+    add = a + b;
+    sub = a - b;
+    mul = a * b;
+    divPosPos = c / p;
+    divNegPos = a / b;
+    divPosNeg = c / q;
+    divNegNeg = a / q;
+    shrKeepsSign = a >> 2;
+    shl = b << 3;
+    neg = 0 - a;
+    lt = if a < b { 1 } else { 0 };
+    gt = if a > b { 1 } else { 0 };
+    eqNeg = if a == 0 - 100 { 1 } else { 0 };
+    ltZero = if a < 0 { 1 } else { 0 };
+    absLike = if a < 0 { 0 - a } else { a };
+}
+
+#[test]
+entity SignedDifferentialTest {}
+impl SignedDifferentialTest {
+    let a: signed[8] = -100;
+    let b: signed[8] = 7;
+    let c: signed[8] = 75;
+    let p: signed[8] = 6;
+    let q: signed[8] = -6;
+    let dut: D = { .a = a, .b = b, .c = c, .p = p, .q = q };
+
+    let t_add: signed[8] = a + b;
+    let t_sub: signed[8] = a - b;
+    let t_mul: signed[8] = a * b;
+    let t_divPosPos: signed[8] = c / p;
+    let t_divNegPos: signed[8] = a / b;
+    let t_divPosNeg: signed[8] = c / q;
+    let t_divNegNeg: signed[8] = a / q;
+    let t_shrKeepsSign: signed[8] = a >> 2;
+    let t_shl: signed[8] = b << 3;
+    let t_neg: signed[8] = 0 - a;
+    let t_lt: signed[8] = if a < b { 1 } else { 0 };
+    let t_gt: signed[8] = if a > b { 1 } else { 0 };
+    let t_eqNeg: signed[8] = if a == 0 - 100 { 1 } else { 0 };
+    let t_ltZero: signed[8] = if a < 0 { 1 } else { 0 };
+    let t_absLike: signed[8] = if a < 0 { 0 - a } else { a };
+
+    await 1ns;
+
+    // wrapping add
+    assert!(dut.add == -93, "hardware: `a + b` is -93");
+    assert!(t_add == -93, "testbench: `a + b` is -93");
+    assert!(dut.add == t_add, "both engines agree on `a + b`");
+
+    // wrapping subtract
+    assert!(dut.sub == -107, "hardware: `a - b` is -107");
+    assert!(t_sub == -107, "testbench: `a - b` is -107");
+    assert!(dut.sub == t_sub, "both engines agree on `a - b`");
+
+    // wrapping multiply, -700 wraps to 68
+    assert!(dut.mul == 68, "hardware: `a * b` is 68");
+    assert!(t_mul == 68, "testbench: `a * b` is 68");
+    assert!(dut.mul == t_mul, "both engines agree on `a * b`");
+
+    // 75 / 6
+    assert!(dut.divPosPos == 12, "hardware: `c / p` is 12");
+    assert!(t_divPosPos == 12, "testbench: `c / p` is 12");
+    assert!(dut.divPosPos == t_divPosPos, "both engines agree on `c / p`");
+
+    // -100 / 7 truncates toward zero, not down
+    assert!(dut.divNegPos == -14, "hardware: `a / b` is -14");
+    assert!(t_divNegPos == -14, "testbench: `a / b` is -14");
+    assert!(dut.divNegPos == t_divNegPos, "both engines agree on `a / b`");
+
+    // 75 / -6
+    assert!(dut.divPosNeg == -12, "hardware: `c / q` is -12");
+    assert!(t_divPosNeg == -12, "testbench: `c / q` is -12");
+    assert!(dut.divPosNeg == t_divPosNeg, "both engines agree on `c / q`");
+
+    // -100 / -6 is positive
+    assert!(dut.divNegNeg == 16, "hardware: `a / q` is 16");
+    assert!(t_divNegNeg == 16, "testbench: `a / q` is 16");
+    assert!(dut.divNegNeg == t_divNegNeg, "both engines agree on `a / q`");
+
+    // arithmetic shift fills with the sign bit
+    assert!(dut.shrKeepsSign == -25, "hardware: `a >> 2` is -25");
+    assert!(t_shrKeepsSign == -25, "testbench: `a >> 2` is -25");
+    assert!(dut.shrKeepsSign == t_shrKeepsSign, "both engines agree on `a >> 2`");
+
+    // left shift
+    assert!(dut.shl == 56, "hardware: `b << 3` is 56");
+    assert!(t_shl == 56, "testbench: `b << 3` is 56");
+    assert!(dut.shl == t_shl, "both engines agree on `b << 3`");
+
+    // negation
+    assert!(dut.neg == 100, "hardware: `0 - a` is 100");
+    assert!(t_neg == 100, "testbench: `0 - a` is 100");
+    assert!(dut.neg == t_neg, "both engines agree on `0 - a`");
+
+    // a signed compare, not the raw bits
+    assert!(dut.lt == 1, "hardware: `if a < b { 1 } else { 0 }` is 1");
+    assert!(t_lt == 1, "testbench: `if a < b { 1 } else { 0 }` is 1");
+    assert!(dut.lt == t_lt, "both engines agree on `if a < b { 1 } else { 0 }`");
+
+    // the other way
+    assert!(dut.gt == 0, "hardware: `if a > b { 1 } else { 0 }` is 0");
+    assert!(t_gt == 0, "testbench: `if a > b { 1 } else { 0 }` is 0");
+    assert!(dut.gt == t_gt, "both engines agree on `if a > b { 1 } else { 0 }`");
+
+    // equality against a negative literal
+    assert!(dut.eqNeg == 1, "hardware: `if a == 0 - 100 { 1 } else { 0 }` is 1");
+    assert!(t_eqNeg == 1, "testbench: `if a == 0 - 100 { 1 } else { 0 }` is 1");
+    assert!(dut.eqNeg == t_eqNeg, "both engines agree on `if a == 0 - 100 { 1 } else { 0 }`");
+
+    // the sign test on its own
+    assert!(dut.ltZero == 1, "hardware: `if a < 0 { 1 } else { 0 }` is 1");
+    assert!(t_ltZero == 1, "testbench: `if a < 0 { 1 } else { 0 }` is 1");
+    assert!(dut.ltZero == t_ltZero, "both engines agree on `if a < 0 { 1 } else { 0 }`");
+
+    // the shape an abs() would take
+    assert!(dut.absLike == 100, "hardware: `if a < 0 { 0 - a } else { a }` is 100");
+    assert!(t_absLike == 100, "testbench: `if a < 0 { 0 - a } else { a }` is 100");
+    assert!(dut.absLike == t_absLike, "both engines agree on `if a < 0 { 0 - a } else { a }`");
+}
