@@ -1,0 +1,106 @@
+// `await`'s three forms, against a hand-computed timing model.
+//
+// Coverage, not a fix: everything here already behaved correctly. But of the
+// ~257 `await`s in this corpus, all but six are `await <duration>` — the edge
+// and condition forms, which are the scheduler's real work and the surface
+// cocotb integration will sit on, were barely exercised.
+//
+// Simulation time is not readable from a testbench, so each check counts clock
+// edges through a DUT instead. The expected counts are worked out from the
+// clock periods below, not read back from a run:
+//
+//   fast = not fast after 5ns   -> rises at 5, 15, 25, 35, ... ns
+//   slow = not slow after 20ns  -> rises at 20, 60, 100, ... ns
+module await_forms_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+entity Counter { clk: Bit in, count: unsigned[8] out }
+impl Counter {
+    let c: unsigned[8] = 0;
+    if clk.rising() { c = c + 1; }
+    count = c;
+}
+
+#[test]
+entity AwaitFormsTest {}
+impl AwaitFormsTest {
+    let fast: Bit = '0';
+    let slow: Bit = '0';
+    let fc: unsigned[8];
+    let sc: unsigned[8];
+    let a: Counter = { .clk = fast, .count = fc };
+    let b: Counter = { .clk = slow, .count = sc };
+
+    fast = not fast after 5ns;
+    slow = not slow after 20ns;
+
+    // A condition that already holds returns without advancing time: nothing
+    // has clocked yet, so both counters are still at their reset value.
+    await fc == 0;
+    assert!(fc == 0, "an already-true condition returns immediately");
+    assert!(sc == 0, "and no time passed while it did");
+
+    // The edge form: one rising edge is exactly one count.
+    await fast.rising();
+    assert!(fc == 1, "one rising edge advances the counter once");
+
+    await fast.rising();
+    await fast.rising();
+    await fast.rising();
+    assert!(fc == 4, "and three more make four");
+
+    // A falling edge is a real wait but not a counted one — this is what
+    // separates `falling()` from `rising()` rather than just "an edge".
+    await fast.falling();
+    assert!(fc == 4, "a falling edge does not advance a rising-edge counter");
+
+    // `'event` is either edge: from a falling, the next event is a rising.
+    await fast'event;
+    assert!(fc == 5, "`'event` takes the next edge of either direction");
+
+    // The condition form stops at the first moment it holds — not one edge
+    // late, which is the failure a coarse scheduler would show.
+    await fc == 7;
+    assert!(fc == 7, "a condition stops exactly when it first holds");
+
+    // A compound condition over two signals.
+    await fc >= 9 and fast == '1';
+    assert!(fc == 9, "a compound condition stops at the first satisfying moment");
+
+}
+
+// Two clocks at different periods, interleaving on one scheduler. This is a
+// separate `#[test]` so it starts at t = 0: the awaits above advance time
+// cumulatively, and expectations that depend on where a previous section left
+// off are unreviewable.
+#[test]
+entity AwaitTwoClocksTest {}
+impl AwaitTwoClocksTest {
+    let fast: Bit = '0';
+    let slow: Bit = '0';
+    let fc: unsigned[8];
+    let sc: unsigned[8];
+    let a: Counter = { .clk = fast, .count = fc };
+    let b: Counter = { .clk = slow, .count = sc };
+
+    fast = not fast after 5ns;     // rises at 5, 15, 25, ...
+    slow = not slow after 20ns;    // rises at 20, 60, 100, ...
+
+    // First slow rising is 20ns, by which time fast has risen at 5 and 15.
+    await slow.rising();
+    assert!(sc == 1, "one slow edge at 20ns");
+    assert!(fc == 2, "and two fast edges by then");
+
+    // Second slow rising is 60ns: fast has added 25, 35, 45 and 55.
+    await slow.rising();
+    assert!(sc == 2, "two slow edges at 60ns");
+    assert!(fc == 6, "and six fast edges by then");
+
+    // A condition on the fast counter still resolves with both clocks running.
+    // fast reaches 12 at 115ns; slow has risen at 20, 60 and 100 by then.
+    await fc == 12;
+    assert!(fc == 12, "the condition holds on the fast counter");
+    assert!(sc == 3, "with the slow clock at three edges by 115ns");
+}
