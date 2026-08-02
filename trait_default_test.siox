@@ -1,0 +1,93 @@
+// A trait method with a body is a default the implementor may omit.
+//
+// The type checker already worked this way: `trait_required` counts only the
+// body-less methods, so `impl Meter for Plain { fn raw(..) }` — omitting the
+// two defaulted methods — is a complete implementation and is accepted.
+// Dispatch did not agree. All three method tables (the checker's, lowering's
+// and the emitter's) were built from `impl` items alone, so calling an
+// inherited default failed with "`Plain` has no method `scaled`": the language
+// accepted an implementation and then refused to let anyone call it.
+//
+// std shows the cost — `ClockLike`'s three methods are written out verbatim
+// for `Logic` and again for `Bit`, which is what you do when defaults do not
+// work.
+module trait_default_test;
+
+using std::bits::{unsigned};
+
+trait Meter {
+    // Required: no body.
+    fn raw(self) -> unsigned[8];
+    // Defaulted, and calls another trait method — so the default must
+    // dispatch back to the *implementor's* `raw`, not to some fixed one.
+    fn scaled(self) -> unsigned[8] { return self.raw() * 2; }
+    // Defaulted and self-contained.
+    fn label(self) -> unsigned[8] { return 100; }
+}
+
+// Inherits both defaults.
+struct Plain { v: unsigned[8] }
+impl Meter for Plain {
+    fn raw(self) -> unsigned[8] { return self.v; }
+}
+
+// Overrides one default, inherits the other.
+struct Custom { v: unsigned[8] }
+impl Meter for Custom {
+    fn raw(self) -> unsigned[8] { return self.v; }
+    fn scaled(self) -> unsigned[8] { return self.raw() * 10; }
+}
+
+entity Uses {
+    pRaw: unsigned[8] out, pScaled: unsigned[8] out, pLabel: unsigned[8] out,
+    cRaw: unsigned[8] out, cScaled: unsigned[8] out, cLabel: unsigned[8] out
+}
+impl Uses {
+    let p: Plain = { .v = 3 };
+    pRaw = p.raw();
+    pScaled = p.scaled();
+    pLabel = p.label();
+
+    let c: Custom = { .v = 3 };
+    cRaw = c.raw();
+    cScaled = c.scaled();
+    cLabel = c.label();
+}
+
+#[test]
+entity TraitDefaultTest {}
+impl TraitDefaultTest {
+    let u: Uses = {};
+    await 1ns;
+
+    // Inherited defaults, in hardware.
+    assert!(u.pRaw == 3, "the required method is the implementor's");
+    assert!(u.pScaled == 6, "an inherited default runs: raw * 2");
+    assert!(u.pLabel == 100, "and a self-contained default too");
+
+    // An override wins over the default, and the default it did *not*
+    // override is still inherited.
+    assert!(u.cScaled == 30, "an override wins: raw * 10");
+    assert!(u.cLabel == 100, "while the untouched default is still inherited");
+
+    // The two implementors disagree on `scaled` and agree on `label`, which
+    // is only possible if each got its own resolution rather than a shared one.
+    assert!(u.pScaled != u.cScaled, "each type resolves `scaled` for itself");
+    assert!(u.pLabel == u.cLabel, "and both share the one default `label`");
+
+    // The same calls on the testbench side: a separate method table, built the
+    // same way and previously missing defaults the same way.
+    let p: Plain = { .v = 3 };
+    let c: Custom = { .v = 3 };
+    await 1ns;
+
+    assert!(p.scaled() == 6, "the testbench inherits the default too");
+    assert!(p.label() == 100, "including the self-contained one");
+    assert!(c.scaled() == 30, "and honours an override");
+    assert!(c.label() == 100, "while inheriting the rest");
+
+    // Hardware and testbench agree on every one of them.
+    assert!(p.scaled() == u.pScaled, "engines agree on an inherited default");
+    assert!(c.scaled() == u.cScaled, "and on an override");
+    assert!(p.label() == u.pLabel, "and on a shared default");
+}
