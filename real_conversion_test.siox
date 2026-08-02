@@ -1,0 +1,71 @@
+// Crossing out of `real`, and negating one.
+//
+// `real` is stored as f64 bits, and every conversion in the compiler is a raw
+// resize — zero-extend or truncate. So `integer(x)` on a real kept a slice of
+// the *bit pattern* instead of the number: `integer(3.5)` read the low bits of
+// 0x400C000000000000, i.e. 0. Nothing said so; the design compiled and ran.
+//
+// Unary minus had the same shape: `UnOp::Neg` negates a word, so `-2.5` was
+// the two's-complement of the bit pattern, and `-2.5 == 0.0 - 2.5` was false.
+//
+// The expected values are what Python's `math.trunc` gives for the same
+// doubles, not what the compiler produced.
+module real_conversion_test;
+
+using std::bits::{unsigned, signed};
+
+entity Cross {
+    fromConst: unsigned[8] out,
+    fromLocal: unsigned[8] out,
+    afterMul: unsigned[8] out,
+    truncUp: signed[8] out,
+    truncDown: signed[8] out,
+    negLiteral: signed[8] out,
+    negMatchesSub: unsigned[8] out,
+    stillReal: unsigned[8] out
+}
+impl Cross {
+    fromConst = unsigned[8](integer(4.0));
+
+    let a: real = 3.5;
+    fromLocal = unsigned[8](integer(a));
+    afterMul = unsigned[8](integer(a * 2.0));
+
+    // Truncation is toward zero, both ways.
+    truncUp = signed[8](integer(2.9));
+    truncDown = signed[8](integer(0.0 - 2.9));
+
+    // Unary minus on a real is the negative of the number.
+    negLiteral = signed[8](integer(-2.5));
+    negMatchesSub = if -2.5 == 0.0 - 2.5 { 1 } else { 0 };
+
+    // The real value itself was never wrong — only the crossing was — so this
+    // held before the fix and must still hold after it.
+    stillReal = if a > 3.0 and a < 4.0 and a == 3.5 { 1 } else { 0 };
+}
+
+#[test]
+entity RealConversionTest {}
+impl RealConversionTest {
+    let c: Cross = {};
+    await 1ns;
+
+    assert!(c.fromConst == 4, "`integer(4.0)` is 4, not a slice of its bits");
+    assert!(c.fromLocal == 3, "`integer(3.5)` truncates toward zero");
+    assert!(c.afterMul == 7, "`integer(3.5 * 2.0)` is 7");
+
+    assert!(c.truncUp == 2, "2.9 truncates down to 2");
+    assert!(c.truncDown == -2, "-2.9 truncates toward zero, to -2");
+
+    assert!(c.negLiteral == -2, "`integer(-2.5)` is -2");
+    assert!(c.negMatchesSub == 1, "`-2.5` and `0.0 - 2.5` are the same real");
+
+    assert!(c.stillReal == 1, "and the real comparisons still hold");
+
+    // The same conversions evaluated on the testbench side, which stores reals
+    // as doubles directly.
+    let t: real = 3.5;
+    assert!(integer(t) == 3, "the testbench truncates the same way");
+    assert!(integer(t * 2.0) == 7, "including after arithmetic");
+    assert!(integer(-2.5) == -2, "and negates the same way");
+}
