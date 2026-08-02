@@ -13,6 +13,7 @@ module initializer_seed_test;
 
 using std::bits::{unsigned};
 using std::logic::{Logic};
+using std::text::{unicode};
 
 enum Phase { Idle, Run, Done }
 
@@ -23,6 +24,9 @@ fn twice(n: unsigned[8]) -> unsigned[8] { return n * 2; }
 // Aggregates seed the same way, leaf by leaf.
 struct Pair { x: unsigned[8], s: Logic }
 
+// A `Char` field, to seed a character through the aggregate path too.
+struct Tagged { c: Char, n: unsigned[8] }
+
 entity Seeds {
     fromLiteral: unsigned[8] out,
     fromConst: unsigned[8] out,
@@ -32,6 +36,9 @@ entity Seeds {
     fromChar: unsigned[8] out,
     fromVariant: unsigned[8] out,
     fromReal: unsigned[8] out,
+    fromCharKernel: unsigned[16] out,
+    fieldChar2: unsigned[16] out,
+    elemChar: unsigned[16] out,
     fieldFold: unsigned[8] out,
     fieldChar: unsigned[8] out,
     elemConst: unsigned[8] out,
@@ -62,6 +69,17 @@ impl Seeds {
 
     let h: real = 2.5;                     // a real, seeded as f64 bits
     fromReal = if h == 2.5 { 1 } else { 0 };
+
+    // A `Char` is a kernel type, not an enum, so its character initializer
+    // reads through the Unicode table rather than an enum's variant list.
+    let k: Char = 'A';
+    fromCharKernel = unsigned[16](unicode(k));
+
+    let tg: Tagged = { .c = 'Z', .n = 1 };
+    fieldChar2 = unsigned[16](unicode(tg.c));
+
+    let chars: Char[2] = ['q', '~'];
+    elemChar = unsigned[16](unicode(chars[1]));
 
     // A struct literal seeds each field, and an array literal each element —
     // both fold the same expressions the scalar form does.
@@ -99,6 +117,10 @@ impl InitializerSeedTest {
     assert!(s.fieldChar == 1, "and a field character takes the field's type");
     assert!(s.elemConst == 5, "an array element seeds a module constant");
     assert!(s.elemFold == 12, "and folds `3 * 4`");
+
+    assert!(s.fromCharKernel == 65, "a `Char` seeds its Unicode code point");
+    assert!(s.fieldChar2 == 90, "including as a struct field");
+    assert!(s.elemChar == 126, "and as an array element");
 
     assert!(s.computed == 201, "and a driver computes from another signal");
 }
