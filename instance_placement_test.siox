@@ -1,0 +1,59 @@
+// Where an entity may be instantiated: the root layer of another entity's
+// body, a generate `for`, and a generate `if`. Nowhere else.
+//
+// The illegal placements — a process (an `if` on a signal), a `match` arm, a
+// function body — used to be accepted and then dropped by elaboration without
+// a word, so a design ran as though the instance had never been written. They
+// are `E-P020` now, and cannot appear in a passing corpus file; this one pins
+// the three that stay legal, since a check that rejects too much would break
+// exactly these.
+module instance_placement_test;
+
+using std::bits::{unsigned};
+
+entity Cell { i: unsigned[8] in, o: unsigned[8] out }
+impl Cell { o = i + 1; }
+
+entity Chain<WIDE: integer> {
+    fromRoot: unsigned[8] out,
+    fromLoop: unsigned[8] out,
+    fromIf: unsigned[8] out
+}
+impl<WIDE: integer> Chain<WIDE> {
+    // Root layer.
+    let head: Cell = { .i = 1 };
+    fromRoot = head.o;
+
+    // Generate `for`: one instance per index, connected by index.
+    let stage: Cell[3];
+    for i in 0..2 {
+        stage[i] = Cell { .i = 10 + i };
+    }
+    fromLoop = stage[2].o;
+
+    // Generate `if`: the condition folds from a parameter, so exactly one
+    // branch is elaborated and the other's instance does not exist.
+    if WIDE == 1 {
+        let wide: Cell = { .i = 100 };
+        fromIf = wide.o;
+    } else {
+        let narrow: Cell = { .i = 200 };
+        fromIf = narrow.o;
+    }
+}
+
+#[test]
+entity InstancePlacementTest {}
+impl InstancePlacementTest {
+    let taken: Chain<1> = {};
+    let other: Chain<0> = {};
+    await 1ns;
+
+    assert!(taken.fromRoot == 2, "an instance at the root layer runs");
+    assert!(taken.fromLoop == 13, "the last generate-`for` instance is 12 + 1");
+    assert!(taken.fromIf == 101, "the generate-`if` took the WIDE == 1 branch");
+    assert!(other.fromIf == 201, "and the other parameter takes the else branch");
+
+    // The two elaborations are independent instances, not one shared one.
+    assert!(taken.fromIf != other.fromIf, "each parameterisation is its own hardware");
+}
