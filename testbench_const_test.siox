@@ -1,0 +1,56 @@
+// Constants declared inside a *testbench's* implementation. The emitter
+// gathered only module-level `const` items, so every kind of constant
+// declared in `impl SomeTest` reported its own name as unknown at the point
+// of use — the entity path had been fixed, this one had not.
+//
+// Two testbenches below deliberately declare the same name with different
+// values: constants are folded per testbench, so they must not collide.
+module testbench_const_test;
+
+using std::bits::{unsigned};
+
+const SHARED: integer = 100;
+
+#[test]
+entity TestbenchConstTest {}
+impl TestbenchConstTest {
+    const COUNT: integer = 7;
+    const TABLE: unsigned[8][3] = [10, 20, 30];
+    const SPAN: range = 7..0;
+    const HALF: real = 0.5;
+    const LIMIT: integer = 3;
+
+    // as a plain value, and as a local's initializer
+    let n: unsigned[8] = COUNT;
+    assert!(COUNT == 7, "a constant read directly");
+    assert!(n == 7, "and as an initializer");
+
+    // as a declared width
+    let sized: unsigned[COUNT] = 3;
+    assert!(sized'length == 7, "a constant as a width");
+
+    // a range constant states a span, not a width
+    let spanned: unsigned[SPAN] = 1;
+    assert!(spanned'length == 8, "a range constant is a span");
+
+    // a lookup table
+    assert!(TABLE[1] == 20, "a constant lookup table");
+
+    // a real
+    let ratio: real = HALF;
+    assert!(ratio == 0.5, "a real constant");
+
+    // module-level constants still resolve alongside
+    assert!(SHARED == 100, "a module constant is still visible");
+
+    // this testbench's own LIMIT, not the other one's
+    assert!(LIMIT == 3, "each testbench keeps its own constant");
+}
+
+#[test]
+entity OtherConstTest {}
+impl OtherConstTest {
+    const LIMIT: integer = 99;
+    assert!(LIMIT == 99, "the same name, a different value");
+    assert!(SHARED == 100, "and the module constant is shared");
+}
