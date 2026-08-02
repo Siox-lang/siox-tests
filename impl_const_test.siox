@@ -45,6 +45,30 @@ impl<W: integer> Chained<W> {
     y = OUTER;
 }
 
+// A constant also has to be visible where *types* and *indices* resolve, not
+// only in expressions: array sizes and slice bounds go through the parameter
+// environment, and a constant missing from it left `let regs: unsigned[8][N]`
+// with no elements at all.
+entity Shaped<W: integer> {
+    d: unsigned[8] in,
+    count: integer out,
+    sliced: unsigned[8] out,
+    last: unsigned[8] out
+}
+impl<W: integer> Shaped<W> {
+    const N: integer = W + 1;
+    const TOP: integer = W - 1;
+
+    let regs: unsigned[8][N];
+    // Each iteration drives a *different* element, so this accumulates
+    // rather than overriding one signal.
+    for i in 0..N - 1 { regs[i] = d + i; }
+
+    count = regs'length;
+    sliced = unsigned[8](d[TOP..0]);
+    last = regs[N - 1];
+}
+
 #[test]
 entity ImplConstTest {}
 impl ImplConstTest {
@@ -53,6 +77,9 @@ impl ImplConstTest {
     let six: Sized<W = 6> = {};
     let doubled: Doubled<W = 7> = {};
     let chained: Chained<W = 5> = {};
+    let d: unsigned[8] = 0xA5;
+    let shaped2: Shaped<W = 2> = { .d = d };
+    let shaped4: Shaped<W = 4> = { .d = d };
     await 1ns;
 
     assert!(plain.y == 5, "a constant with no parameters");
@@ -61,4 +88,12 @@ impl ImplConstTest {
     assert!(six.y == 63, "(1 << 6) - 1");
     assert!(doubled.y == 14, "a renamed binder reaches the constant");
     assert!(chained.y == 16, "5 * 3 + 1, declared out of order");
+
+    // 0xA5 = 1010_0101. Widths and masks computed separately, not read back.
+    assert!(shaped2.count == 3, "the array is sized by the constant");
+    assert!(shaped4.count == 5, "and differently in each instance");
+    assert!(shaped2.sliced == 1, "0xA5 masked to the low 2 bits");
+    assert!(shaped4.sliced == 5, "and to the low 4");
+    assert!(shaped2.last == 0xA5 + 2, "the last element the loop drove");
+    assert!(shaped4.last == 0xA5 + 4, "one element further at the wider size");
 }
