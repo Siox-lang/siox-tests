@@ -69,6 +69,30 @@ impl<W: integer> Shaped<W> {
     last = regs[N - 1];
 }
 
+// Every *kind* of constant, in both positions. The first version of
+// implementation constants folded integers only, so a lookup table or a real
+// declared inside an implementation reported its own name as unknown while
+// the module-level spelling worked. A range constant used as a width was
+// worse than that: it compiled, and produced a signal of zero bits.
+const OUTER_SPAN: range = 7..0;
+
+entity Kinds {
+    sel: unsigned[8] in,
+    table: unsigned[8] out,
+    inner_len: integer out,
+    outer_len: integer out
+}
+impl Kinds {
+    const TAB: unsigned[8][4] = [10, 20, 30, 40];
+    const SPAN: range = 15..0;
+
+    table = TAB[sel];
+    let narrow: unsigned[OUTER_SPAN];
+    let wide: unsigned[SPAN];
+    outer_len = narrow'length;
+    inner_len = wide'length;
+}
+
 #[test]
 entity ImplConstTest {}
 impl ImplConstTest {
@@ -80,6 +104,8 @@ impl ImplConstTest {
     let d: unsigned[8] = 0xA5;
     let shaped2: Shaped<W = 2> = { .d = d };
     let shaped4: Shaped<W = 4> = { .d = d };
+    let sel: unsigned[8] = 2;
+    let kinds: Kinds = { .sel = sel };
     await 1ns;
 
     assert!(plain.y == 5, "a constant with no parameters");
@@ -96,4 +122,9 @@ impl ImplConstTest {
     assert!(shaped4.sliced == 5, "and to the low 4");
     assert!(shaped2.last == 0xA5 + 2, "the last element the loop drove");
     assert!(shaped4.last == 0xA5 + 4, "one element further at the wider size");
+
+    assert!(kinds.table == 30, "a lookup table declared inside the impl");
+    // A range says a span, not a width: `7..0` is eight bits, `15..0` sixteen.
+    assert!(kinds.outer_len == 8, "a module range constant as a width");
+    assert!(kinds.inner_len == 16, "and one declared inside the impl");
 }
