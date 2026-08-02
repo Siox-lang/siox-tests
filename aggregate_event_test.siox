@@ -1,0 +1,82 @@
+// `'event` on a struct or an array.
+//
+// The spec defines both — "p'event = any field changed", "array'event = any
+// element changed" — but neither lowered. An aggregate has no signal of its
+// own (elaboration flattens it into one leaf per field or element), and while
+// `'old` still lands on a leaf (`p'old.data` sinks to `p.data'old`, `xs'old[0]`
+// indexes first), `'event` had nothing to sink to and became an `Unknown`. The
+// design failed to build with "the driver for `y` contains an Unknown", naming
+// neither the attribute nor the signal.
+//
+// The aggregate is checked against the OR of its own leaves' events, which is
+// what the spec says it means — an invariant that holds whatever the delta
+// schedule does, rather than a count that depends on it.
+//
+// `'event` is only true during the delta in which the change propagates, so
+// each observation is latched into a counter here. Reading it combinationally
+// from the testbench after `await` would sample after the settle, when nothing
+// is changing any more.
+module aggregate_event_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+struct Pkt { valid: Bit, data: unsigned[8] }
+
+entity Watch {
+    p: Pkt in,
+    xs: unsigned[8][3] in,
+    structAgg: unsigned[8] out,
+    structLeaves: unsigned[8] out,
+    arrayAgg: unsigned[8] out,
+    arrayLeaves: unsigned[8] out
+}
+impl Watch {
+    let sa: unsigned[8] = 0;
+    let sl: unsigned[8] = 0;
+    let aa: unsigned[8] = 0;
+    let al: unsigned[8] = 0;
+
+    if p'event { sa = sa + 1; }
+    if p.valid'event or p.data'event { sl = sl + 1; }
+
+    if xs'event { aa = aa + 1; }
+    if xs[0]'event or xs[1]'event or xs[2]'event { al = al + 1; }
+
+    structAgg = sa;
+    structLeaves = sl;
+    arrayAgg = aa;
+    arrayLeaves = al;
+}
+
+#[test]
+entity AggregateEventTest {}
+impl AggregateEventTest {
+    let pk: Pkt = { .valid = '0', .data = 0 };
+    let xs: unsigned[8][3] = [1, 2, 3];
+    let w: Watch = { .p = pk, .xs = xs };
+    await 1ns;
+
+    pk.data = 7; await 1ns;      // one field changes
+    pk.valid = '1'; await 1ns;   // the other changes
+    pk.data = 7; await 1ns;      // written, but unchanged: not an event
+
+    xs[1] = 5; await 1ns;
+    xs[2] = 6; await 1ns;
+    xs[1] = 5; await 1ns;        // unchanged again
+
+    // The defining property, whatever the delta schedule does.
+    assert!(w.structAgg == w.structLeaves,
+            "`p'event` is exactly the OR of its fields' events");
+    assert!(w.arrayAgg == w.arrayLeaves,
+            "`xs'event` is exactly the OR of its elements' events");
+
+    // And the counts themselves: two real field changes, and a write that
+    // changes nothing must not count.
+    assert!(w.structAgg == 2, "two changes, and the redundant write is not one");
+
+    // Three for the array: the two element writes, plus the connection first
+    // driving the ports from their default to the local's initial value —
+    // the same initial change `old_attr_test` pins.
+    assert!(w.arrayAgg == 3, "two writes plus the initial drive");
+}
