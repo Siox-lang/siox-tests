@@ -1,0 +1,96 @@
+// `extern "C"` with `real` parameters and returns.
+//
+// No bug prompted this: real-typed FFI came back correct in both engines, for
+// real-only, integer-only and mixed argument lists. What was missing was
+// coverage — `ffi_test` calls only `labs`, so the whole f64 side of the C ABI
+// (bit-cast in, bit-cast out, and a mixed argument list where one register
+// file is used for the doubles and another for the integers) was exercised by
+// nothing.
+//
+// Every value here is exact in binary floating point, so the assertions are
+// equalities rather than tolerances, and each is what the C library is
+// specified to return — not what siox produced.
+//
+// libm is on the link line (`-lm`), so these symbols are always available.
+module ffi_real_test;
+
+using std::bits::{unsigned};
+
+extern "C" {
+    pub fn sqrt(v: real) -> real;
+    pub fn fabs(v: real) -> real;
+    pub fn pow(b: real, e: real) -> real;
+    pub fn fmax(a: real, b: real) -> real;
+    pub fn ldexp(x: real, e: integer) -> real;   // (double, int) -> double
+    pub fn labs(v: integer) -> integer;
+}
+
+entity Calc {
+    rootIsFour: unsigned[8] out,
+    absIsTwoAndAHalf: unsigned[8] out,
+    powIsExact: unsigned[8] out,
+    rootAsInt: unsigned[8] out,
+    powScaled: unsigned[8] out,
+    mixedArgs: unsigned[8] out,
+    integerOnly: unsigned[8] out,
+    twoReals: unsigned[8] out
+}
+impl Calc {
+    // A C call is a driver, not a foldable initializer (`E-P021`), so each
+    // result is declared then driven.
+    let r: real;
+    r = sqrt(16.0);
+    rootIsFour = if r == 4.0 { 1 } else { 0 };
+    rootAsInt = unsigned[8](integer(r));
+
+    let a: real;
+    a = fabs(0.0 - 2.5);
+    absIsTwoAndAHalf = if a == 2.5 { 1 } else { 0 };
+
+    let p: real;
+    p = pow(2.0, 10.0);
+    powIsExact = if p == 1024.0 { 1 } else { 0 };
+    powScaled = unsigned[8](integer(p / 8.0));
+
+    // One double and one int in the same call: the two travel in different
+    // registers under the C ABI, so a marshalling slip shows up here and not
+    // in the single-type calls above.
+    let m: real;
+    m = ldexp(3.0, 4);
+    mixedArgs = unsigned[8](integer(m));
+
+    let i: integer;
+    i = labs(0 - 7);
+    integerOnly = unsigned[8](i);
+
+    let f: real;
+    f = fmax(2.5, 7.5);
+    twoReals = unsigned[8](integer(f));
+}
+
+#[test]
+entity FfiRealTest {}
+impl FfiRealTest {
+    let c: Calc = {};
+    await 1ns;
+
+    assert!(c.rootIsFour == 1, "sqrt(16.0) is exactly 4.0");
+    assert!(c.absIsTwoAndAHalf == 1, "fabs(-2.5) is exactly 2.5");
+    assert!(c.powIsExact == 1, "pow(2.0, 10.0) is exactly 1024.0");
+
+    assert!(c.rootAsInt == 4, "and crosses to integer as 4");
+    assert!(c.powScaled == 128, "1024.0 / 8.0 is 128");
+    assert!(c.mixedArgs == 48, "ldexp(3.0, 4) is 3 * 2^4");
+    assert!(c.integerOnly == 7, "labs(-7) is 7");
+    assert!(c.twoReals == 7, "fmax(2.5, 7.5) truncates to 7");
+
+    // The same calls evaluated on the testbench side: the two engines marshal
+    // the C ABI independently, so they are compared against each other as well
+    // as against the values C is specified to return.
+    assert!(integer(sqrt(16.0)) == 4, "the testbench marshals a real argument");
+    assert!(integer(fabs(0.0 - 2.5)) == 2, "and a computed one");
+    assert!(integer(pow(2.0, 10.0)) == 1024, "and two of them");
+    assert!(integer(ldexp(3.0, 4)) == 48, "and a mixed argument list");
+    assert!(labs(0 - 7) == 7, "and an integer-only call");
+    assert!(integer(fmax(2.5, 7.5)) == 7, "matching the hardware side throughout");
+}
