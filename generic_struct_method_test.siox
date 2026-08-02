@@ -1,0 +1,74 @@
+// A method called on a *generic* struct local.
+//
+// Lowering records a local's struct name — how a method call finds its impl —
+// for a plain type (`Plain`) and for a view-applied one, and fell through for
+// a generic one (`Box<unsigned[8]>`). So the receiver had no type name, no
+// method was found, and the call was dropped without a word: the design
+// compiled, ran, and left the field at its initial value.
+//
+// Every generic call below is paired with the identical call on a
+// non-generic struct, so the two are compared against each other rather than
+// against the compiler's own idea of what a method call does.
+module generic_struct_method_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+struct Box<T> { v: T, tag: Bit }
+impl<T> Box<T> {
+    fn set(self, x: T) { self.v = x; }
+    fn tagit(self) { self.tag = '1'; }
+    fn doubled(self) -> T { return self.v + self.v; }
+}
+
+// The same shape without the parameter.
+struct Plain { v: unsigned[8], tag: Bit }
+impl Plain {
+    fn set(self, x: unsigned[8]) { self.v = x; }
+    fn tagit(self) { self.tag = '1'; }
+    fn doubled(self) -> unsigned[8] { return self.v + self.v; }
+}
+
+entity Uses {
+    genericV: unsigned[8] out,
+    genericTag: Bit out,
+    genericDoubled: unsigned[8] out,
+    plainV: unsigned[8] out,
+    plainTag: Bit out,
+    plainDoubled: unsigned[8] out
+}
+impl Uses {
+    let b: Box<unsigned[8]> = { .v = 0, .tag = '0' };
+    b.set(7);
+    b.tagit();
+    genericV = b.v;
+    genericTag = b.tag;
+    genericDoubled = b.doubled();
+
+    let p: Plain = { .v = 0, .tag = '0' };
+    p.set(7);
+    p.tagit();
+    plainV = p.v;
+    plainTag = p.tag;
+    plainDoubled = p.doubled();
+}
+
+#[test]
+entity GenericStructMethodTest {}
+impl GenericStructMethodTest {
+    let u: Uses = {};
+    await 1ns;
+
+    // A statement-position method call drives the field it writes.
+    assert!(u.genericV == 7, "`b.set(7)` on a generic struct takes effect");
+    assert!(u.genericTag == '1', "and a nullary method does too");
+
+    // A value-returning method reads the receiver's field.
+    assert!(u.genericDoubled == 14, "`b.doubled()` reads `self.v`");
+
+    // The non-generic spelling is the control: identical calls, identical
+    // results, so the generic path is measured against working hardware.
+    assert!(u.genericV == u.plainV, "generic and plain agree on the write");
+    assert!(u.genericTag == u.plainTag, "and on the flag");
+    assert!(u.genericDoubled == u.plainDoubled, "and on the returned value");
+}
