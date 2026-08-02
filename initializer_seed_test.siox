@@ -27,6 +27,10 @@ struct Pair { x: unsigned[8], s: Logic }
 // A `Char` field, to seed a character through the aggregate path too.
 struct Tagged { c: Char, n: unsigned[8] }
 
+// A struct inside a struct: the outer literal names no leaf at `.inner`, so
+// seeding has to recurse into it rather than skip it.
+struct Deep { inner: Pair, flag: unsigned[8] }
+
 entity Seeds {
     fromLiteral: unsigned[8] out,
     fromConst: unsigned[8] out,
@@ -39,6 +43,9 @@ entity Seeds {
     fromCharKernel: unsigned[16] out,
     fieldChar2: unsigned[16] out,
     elemChar: unsigned[16] out,
+    nestedX: unsigned[8] out,
+    nestedY: unsigned[8] out,
+    nestedFlag: unsigned[8] out,
     fieldFold: unsigned[8] out,
     fieldChar: unsigned[8] out,
     elemConst: unsigned[8] out,
@@ -91,6 +98,13 @@ impl Seeds {
     elemConst = arr[1];
     elemFold = arr[2];
 
+    // A nested struct literal seeds the inner leaves; the sibling scalar
+    // field on the same literal is the control, since it always worked.
+    let dp: Deep = { .inner = { .x = 7, .s = 'X' }, .flag = 3 };
+    nestedX = dp.inner.x;
+    nestedY = if dp.inner.s == 'X' { 1 } else { 0 };
+    nestedFlag = dp.flag;
+
     // The control: computing from another signal is a *driver*, not an
     // initializer, and carries the value the dropped initializer did not.
     let i: unsigned[8];
@@ -121,6 +135,10 @@ impl InitializerSeedTest {
     assert!(s.fromCharKernel == 65, "a `Char` seeds its Unicode code point");
     assert!(s.fieldChar2 == 90, "including as a struct field");
     assert!(s.elemChar == 126, "and as an array element");
+
+    assert!(s.nestedX == 7, "a nested struct literal seeds its inner leaves");
+    assert!(s.nestedY == 1, "including a character one, typed by the inner field");
+    assert!(s.nestedFlag == 3, "and the sibling scalar field still seeds");
 
     assert!(s.computed == 201, "and a driver computes from another signal");
 }
