@@ -1,0 +1,82 @@
+// Matching on a character-valued enum — `Logic` above all.
+//
+// A character literal already worked in expression position (`l == '0'`), and
+// it distinguished a metavalue from a driven bit correctly. In *pattern*
+// position it was a parse error, and so was the qualified spelling
+// (`Logic::'0'`), and a bare-string pattern cannot express `"Z"`. So there was
+// no way at all to `match` on the one enum every design uses, though spec 3.22
+// says Phase 1 supports `match` over enums.
+//
+// Each arm is checked against the equivalent `==` comparison, which is the
+// spelling that already worked, so the pattern is measured against the
+// language's existing behaviour rather than against itself.
+module logic_match_test;
+
+using std::bits::{unsigned};
+using std::logic::{Logic};
+
+entity Decode {
+    l: Logic in,
+    code: unsigned[8] out,
+    viaCompare: unsigned[8] out,
+    // Alternation and a wildcard over the same domain.
+    driven: unsigned[8] out
+}
+impl Decode {
+    match l {
+        '0' => code = 10,
+        '1' => code = 20,
+        'Z' => code = 30,
+        _   => code = 99,
+    }
+
+    // The `if`/`else if` chain the match replaces.
+    viaCompare = if l == '0' { 10 } else if l == '1' { 20 }
+                 else if l == 'Z' { 30 } else { 99 };
+
+    // `A | B` over character literals.
+    match l {
+        '0' | '1' => driven = 1,
+        _         => driven = 0,
+    }
+}
+
+#[test]
+entity LogicMatchTest {}
+impl LogicMatchTest {
+    let l: Logic = '0';
+    let d: Decode = { .l = l };
+    await 1ns;
+
+    assert!(d.code == 10, "'0' selects its own arm");
+    assert!(d.code == d.viaCompare, "the match agrees with the `==` chain");
+    assert!(d.driven == 1, "'0' is in the `'0' | '1'` alternation");
+
+    l = '1'; await 1ns;
+    assert!(d.code == 20, "'1' selects its arm");
+    assert!(d.code == d.viaCompare, "still agreeing with the `==` chain");
+    assert!(d.driven == 1, "'1' is in the alternation too");
+
+    // A metavalue must not collapse into '0' or '1': a bit pattern would only
+    // test the value bit and could not tell 'Z' from '0'.
+    l = 'Z'; await 1ns;
+    assert!(d.code == 30, "'Z' is distinguished from '0'");
+    assert!(d.code == d.viaCompare, "and the chain agrees");
+    assert!(d.driven == 0, "'Z' is outside the alternation");
+
+    l = 'X'; await 1ns;
+    assert!(d.code == 99, "an unlisted metavalue falls to the wildcard");
+    assert!(d.code == d.viaCompare, "as it does in the chain");
+
+    // The same match evaluated on the testbench side, so the two engines are
+    // compared on one value rather than each against its own idea of it.
+    let tb: unsigned[8] = 0;
+    match l { '0' => tb = 10, '1' => tb = 20, 'Z' => tb = 30, _ => tb = 99, }
+    assert!(tb == 99, "the testbench evaluates the same arms");
+    assert!(tb == d.code, "hardware and testbench agree");
+
+    l = 'Z'; await 1ns;
+    match l { '0' => tb = 10, '1' => tb = 20, 'Z' => tb = 30, _ => tb = 99, }
+    assert!(tb == 30, "and on a metavalue");
+    assert!(tb == d.code, "still agreeing");
+}
