@@ -1,0 +1,71 @@
+// A `let` inside a free function's body. The inliner in each engine handled
+// only `return` and `if` chains, so any body naming an intermediate value
+// produced an unlowered expression — and quietly: `check` passes on it and
+// `--emit ir` reports no diagnostics. Only code generation says anything, so
+// this is verified by building an object as well as by running.
+module fn_local_test;
+
+using std::bits::{unsigned};
+
+fn absdiff(a: unsigned[8], b: unsigned[8]) -> unsigned[8] {
+    let hi: unsigned[8] = if a > b { a } else { b };
+    let lo: unsigned[8] = if a > b { b } else { a };
+    return hi - lo;
+}
+
+// Each `let` reads the one before it.
+fn chained(a: unsigned[8]) -> unsigned[8] {
+    let t: unsigned[8] = a + 1;
+    let u: unsigned[8] = t * 2;
+    let v: unsigned[8] = u - 3;
+    return v;
+}
+
+// A named value used by a following `if`.
+fn clamp(a: unsigned[8]) -> unsigned[8] {
+    let doubled: unsigned[8] = a * 2;
+    if doubled > 100 { return 100; }
+    return doubled;
+}
+
+// The declared width still applies to the name.
+fn narrowed(a: unsigned[8]) -> unsigned[8] {
+    let small: unsigned[4] = unsigned[4](a);
+    return unsigned[8](small);
+}
+
+entity Compute {
+    x: unsigned[8] in,
+    y: unsigned[8] in,
+    diff: unsigned[8] out,
+    chain: unsigned[8] out,
+    clamped: unsigned[8] out,
+    narrow: unsigned[8] out
+}
+impl Compute {
+    diff = absdiff(x, y);
+    chain = chained(x);
+    clamped = clamp(x);
+    narrow = narrowed(y);
+}
+
+#[test]
+entity FnLocalTest {}
+impl FnLocalTest {
+    let x: unsigned[8] = 3;
+    let y: unsigned[8] = 200;
+    let dut: Compute = { .x = x, .y = y };
+    await 1ns;
+
+    // Values computed by hand: |3-200|, ((3+1)*2)-3, min(3*2,100), 200 & 0xF.
+    assert!(dut.diff == 197, "a body naming two intermediates");
+    assert!(dut.chain == 5, "each name reads the one before it");
+    assert!(dut.clamped == 6, "a name used by a following if");
+    assert!(dut.narrow == 8, "200 truncated to four bits is 8");
+
+    // The same calls in the testbench must agree with the hardware.
+    assert!(absdiff(x, y) == dut.diff, "absdiff parity");
+    assert!(chained(x) == dut.chain, "chained parity");
+    assert!(clamp(x) == dut.clamped, "clamp parity");
+    assert!(narrowed(y) == dut.narrow, "the declared width applies to the name");
+}
