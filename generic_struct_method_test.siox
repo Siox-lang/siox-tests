@@ -71,4 +71,29 @@ impl GenericStructMethodTest {
     assert!(u.genericV == u.plainV, "generic and plain agree on the write");
     assert!(u.genericTag == u.plainTag, "and on the flag");
     assert!(u.genericDoubled == u.plainDoubled, "and on the returned value");
+
+    // The same calls on the *testbench* side. The emitter dispatches a call
+    // statement on the callee's leading path segment; a method call's callee
+    // is a field, so it matched nothing and was dropped without a word —
+    // a mutating method did nothing here while the identical call in an
+    // entity body above worked.
+    let tb: Box<unsigned[8]> = { .v = 0, .tag = '0' };
+    let tp: Plain = { .v = 0, .tag = '0' };
+    await 1ns;
+    tb.set(7);
+    tp.set(7);
+    tb.tagit();
+    tp.tagit();
+    await 1ns;
+
+    assert!(tb.v == 7, "a method statement drives a testbench local too");
+    assert!(tb.tag == '1', "including a nullary one");
+    assert!(tb.doubled() == 14, "and a value-returning method reads it back");
+
+    // Hardware and testbench agree on the same source.
+    assert!(tb.v == u.genericV, "testbench and hardware agree");
+    assert!(tb.doubled() == u.genericDoubled, "and on the returned value");
+    // Generic and plain agree on the testbench side as well.
+    assert!(tb.v == tp.v, "generic and plain agree in a testbench");
+    assert!(tb.tag == tp.tag, "and on the flag");
 }
