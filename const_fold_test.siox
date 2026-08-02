@@ -1,0 +1,141 @@
+// Constant folding, in both engines, against hand-computed values.
+//
+// Coverage, not a fix: all 16 expressions below already agreed. But folding
+// exists twice — `eval_const_fns` seeds a signal's power-on value during
+// lowering, and the emitter folds the same source for a testbench local — and
+// two implementations of one rule are what most of this session's bugs were.
+// Nothing compared them.
+//
+// Each expression is written identically in both places, so the test asserts
+// three things per row: the hardware value, the testbench value, and that the
+// two agree. The expected values are hand-computed, not read back from a run.
+module const_fold_test;
+
+using std::bits::{unsigned};
+
+entity Folds {
+    add: unsigned[16] out,
+    sub: unsigned[16] out,
+    mul: unsigned[16] out,
+    div: unsigned[16] out,
+    shl: unsigned[16] out,
+    shr: unsigned[16] out,
+    prec: unsigned[16] out,
+    paren: unsigned[16] out,
+    nested: unsigned[16] out,
+    chain: unsigned[16] out,
+    shlarge: unsigned[16] out,
+    divexact: unsigned[16] out,
+    mulzero: unsigned[16] out,
+    big: unsigned[16] out,
+    shrzero: unsigned[16] out,
+    deep: unsigned[16] out
+}
+impl Folds {
+    let s_add: unsigned[16] = 7 + 5;
+    add = s_add;
+    let s_sub: unsigned[16] = 7 - 5;
+    sub = s_sub;
+    let s_mul: unsigned[16] = 7 * 5;
+    mul = s_mul;
+    let s_div: unsigned[16] = 37 / 5;
+    div = s_div;
+    let s_shl: unsigned[16] = 3 << 4;
+    shl = s_shl;
+    let s_shr: unsigned[16] = 200 >> 3;
+    shr = s_shr;
+    let s_prec: unsigned[16] = 2 + 3 * 4;
+    prec = s_prec;
+    let s_paren: unsigned[16] = (2 + 3) * 4;
+    paren = s_paren;
+    let s_nested: unsigned[16] = ((10 - 3) * 2) / 7;
+    nested = s_nested;
+    let s_chain: unsigned[16] = 1 + 2 + 3 + 4 + 5;
+    chain = s_chain;
+    let s_shlarge: unsigned[16] = 1 << 7;
+    shlarge = s_shlarge;
+    let s_divexact: unsigned[16] = 144 / 12;
+    divexact = s_divexact;
+    let s_mulzero: unsigned[16] = 0 * 99;
+    mulzero = s_mulzero;
+    let s_big: unsigned[16] = 1000 * 60;
+    big = s_big;
+    let s_shrzero: unsigned[16] = 1 >> 5;
+    shrzero = s_shrzero;
+    let s_deep: unsigned[16] = ((1 + 2) * (3 + 4)) - ((5 - 3) * 2);
+    deep = s_deep;
+}
+
+#[test]
+entity ConstFoldTest {}
+impl ConstFoldTest {
+    let c: Folds = {};
+    let t_add: unsigned[16] = 7 + 5;
+    let t_sub: unsigned[16] = 7 - 5;
+    let t_mul: unsigned[16] = 7 * 5;
+    let t_div: unsigned[16] = 37 / 5;
+    let t_shl: unsigned[16] = 3 << 4;
+    let t_shr: unsigned[16] = 200 >> 3;
+    let t_prec: unsigned[16] = 2 + 3 * 4;
+    let t_paren: unsigned[16] = (2 + 3) * 4;
+    let t_nested: unsigned[16] = ((10 - 3) * 2) / 7;
+    let t_chain: unsigned[16] = 1 + 2 + 3 + 4 + 5;
+    let t_shlarge: unsigned[16] = 1 << 7;
+    let t_divexact: unsigned[16] = 144 / 12;
+    let t_mulzero: unsigned[16] = 0 * 99;
+    let t_big: unsigned[16] = 1000 * 60;
+    let t_shrzero: unsigned[16] = 1 >> 5;
+    let t_deep: unsigned[16] = ((1 + 2) * (3 + 4)) - ((5 - 3) * 2);
+    await 1ns;
+
+    assert!(c.add == 12, "hardware folds `7 + 5` to 12");
+    assert!(c.sub == 2, "hardware folds `7 - 5` to 2");
+    assert!(c.mul == 35, "hardware folds `7 * 5` to 35");
+    assert!(c.div == 7, "hardware folds `37 / 5` to 7");
+    assert!(c.shl == 48, "hardware folds `3 << 4` to 48");
+    assert!(c.shr == 25, "hardware folds `200 >> 3` to 25");
+    assert!(c.prec == 14, "hardware folds `2 + 3 * 4` to 14");
+    assert!(c.paren == 20, "hardware folds `(2 + 3) * 4` to 20");
+    assert!(c.nested == 2, "hardware folds `((10 - 3) * 2) / 7` to 2");
+    assert!(c.chain == 15, "hardware folds `1 + 2 + 3 + 4 + 5` to 15");
+    assert!(c.shlarge == 128, "hardware folds `1 << 7` to 128");
+    assert!(c.divexact == 12, "hardware folds `144 / 12` to 12");
+    assert!(c.mulzero == 0, "hardware folds `0 * 99` to 0");
+    assert!(c.big == 60000, "hardware folds `1000 * 60` to 60000");
+    assert!(c.shrzero == 0, "hardware folds `1 >> 5` to 0");
+    assert!(c.deep == 17, "hardware folds `((1 + 2) * (3 + 4)) - ((5 - 3) * 2)` to 17");
+
+    assert!(t_add == 12, "testbench folds `7 + 5` to 12");
+    assert!(t_sub == 2, "testbench folds `7 - 5` to 2");
+    assert!(t_mul == 35, "testbench folds `7 * 5` to 35");
+    assert!(t_div == 7, "testbench folds `37 / 5` to 7");
+    assert!(t_shl == 48, "testbench folds `3 << 4` to 48");
+    assert!(t_shr == 25, "testbench folds `200 >> 3` to 25");
+    assert!(t_prec == 14, "testbench folds `2 + 3 * 4` to 14");
+    assert!(t_paren == 20, "testbench folds `(2 + 3) * 4` to 20");
+    assert!(t_nested == 2, "testbench folds `((10 - 3) * 2) / 7` to 2");
+    assert!(t_chain == 15, "testbench folds `1 + 2 + 3 + 4 + 5` to 15");
+    assert!(t_shlarge == 128, "testbench folds `1 << 7` to 128");
+    assert!(t_divexact == 12, "testbench folds `144 / 12` to 12");
+    assert!(t_mulzero == 0, "testbench folds `0 * 99` to 0");
+    assert!(t_big == 60000, "testbench folds `1000 * 60` to 60000");
+    assert!(t_shrzero == 0, "testbench folds `1 >> 5` to 0");
+    assert!(t_deep == 17, "testbench folds `((1 + 2) * (3 + 4)) - ((5 - 3) * 2)` to 17");
+
+    assert!(c.add == t_add, "both engines agree on `7 + 5`");
+    assert!(c.sub == t_sub, "both engines agree on `7 - 5`");
+    assert!(c.mul == t_mul, "both engines agree on `7 * 5`");
+    assert!(c.div == t_div, "both engines agree on `37 / 5`");
+    assert!(c.shl == t_shl, "both engines agree on `3 << 4`");
+    assert!(c.shr == t_shr, "both engines agree on `200 >> 3`");
+    assert!(c.prec == t_prec, "both engines agree on `2 + 3 * 4`");
+    assert!(c.paren == t_paren, "both engines agree on `(2 + 3) * 4`");
+    assert!(c.nested == t_nested, "both engines agree on `((10 - 3) * 2) / 7`");
+    assert!(c.chain == t_chain, "both engines agree on `1 + 2 + 3 + 4 + 5`");
+    assert!(c.shlarge == t_shlarge, "both engines agree on `1 << 7`");
+    assert!(c.divexact == t_divexact, "both engines agree on `144 / 12`");
+    assert!(c.mulzero == t_mulzero, "both engines agree on `0 * 99`");
+    assert!(c.big == t_big, "both engines agree on `1000 * 60`");
+    assert!(c.shrzero == t_shrzero, "both engines agree on `1 >> 5`");
+    assert!(c.deep == t_deep, "both engines agree on `((1 + 2) * (3 + 4)) - ((5 - 3) * 2)`");
+}
