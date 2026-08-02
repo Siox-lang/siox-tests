@@ -1,0 +1,47 @@
+// A constant whose value is an enum variant. Constant folding handled a
+// single-segment path and stopped there, so `Mode::Fast` — two segments —
+// never entered the tables and every read of the constant reported its own
+// name as unknown. Binding it to a signal first happened to work, which is
+// what made it look supported.
+//
+// The immediate cause was ordering: the discriminant map was built *after*
+// the fold that needed it.
+module enum_const_test;
+
+using std::bits::{unsigned};
+
+enum Mode { Fast, Slow, Off }
+
+const SPEED: Mode = Mode::Slow;
+const DEFAULT: Mode = Mode::Fast;
+
+entity Configured {
+    picked: unsigned[8] out,
+    other: unsigned[8] out,
+    generated: unsigned[8] out,
+    viaSignal: unsigned[8] out
+}
+impl Configured {
+    // read directly in an expression
+    picked = if SPEED == Mode::Slow { 20 } else { 99 };
+    other = if DEFAULT == Mode::Fast { 10 } else { 99 };
+
+    // and as a generate-if condition, where only the taken branch is built
+    if SPEED == Mode::Slow { generated = 5; } else { generated = 6; }
+
+    // the spelling that always worked: bind it to a signal first
+    let m: Mode = SPEED;
+    viaSignal = if m == Mode::Slow { 30 } else { 99 };
+}
+
+#[test]
+entity EnumConstTest {}
+impl EnumConstTest {
+    let dut: Configured = {};
+    await 1ns;
+
+    assert!(dut.picked == 20, "a variant constant read in an expression");
+    assert!(dut.other == 10, "and a different variant of the same enum");
+    assert!(dut.generated == 5, "a variant constant as a generate condition");
+    assert!(dut.viaSignal == 30, "the signal-bound spelling still works");
+}
