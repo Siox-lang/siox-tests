@@ -22,6 +22,10 @@ impl<T> Box<T> {
 }
 
 // The same shape without the parameter.
+// A free function mutating through its argument: the same dispatch arm as a
+// method call, and it was dropped in a testbench the same way.
+fn store(p: Plain, x: unsigned[8]) { p.v = x; }
+
 struct Plain { v: unsigned[8], tag: Bit }
 impl Plain {
     fn set(self, x: unsigned[8]) { self.v = x; }
@@ -96,4 +100,12 @@ impl GenericStructMethodTest {
     // Generic and plain agree on the testbench side as well.
     assert!(tb.v == tp.v, "generic and plain agree in a testbench");
     assert!(tb.tag == tp.tag, "and on the flag");
+
+    // A free call in statement position goes through the same arm.
+    let fr: Plain = { .v = 0, .tag = '0' };
+    await 1ns;
+    store(fr, 7);
+    await 1ns;
+    assert!(fr.v == 7, "a free call in statement position drives its argument");
+    assert!(fr.v == tp.v, "matching the method spelling of the same write");
 }
