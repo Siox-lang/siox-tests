@@ -20,6 +20,9 @@ const K: unsigned[8] = 5;
 
 fn twice(n: unsigned[8]) -> unsigned[8] { return n * 2; }
 
+// Aggregates seed the same way, leaf by leaf.
+struct Pair { x: unsigned[8], s: Logic }
+
 entity Seeds {
     fromLiteral: unsigned[8] out,
     fromConst: unsigned[8] out,
@@ -29,6 +32,10 @@ entity Seeds {
     fromChar: unsigned[8] out,
     fromVariant: unsigned[8] out,
     fromReal: unsigned[8] out,
+    fieldFold: unsigned[8] out,
+    fieldChar: unsigned[8] out,
+    elemConst: unsigned[8] out,
+    elemFold: unsigned[8] out,
     computed: unsigned[8] out
 }
 impl Seeds {
@@ -56,6 +63,16 @@ impl Seeds {
     let h: real = 2.5;                     // a real, seeded as f64 bits
     fromReal = if h == 2.5 { 1 } else { 0 };
 
+    // A struct literal seeds each field, and an array literal each element —
+    // both fold the same expressions the scalar form does.
+    let p: Pair = { .x = K + 2, .s = 'X' };
+    fieldFold = p.x;
+    fieldChar = if p.s == 'X' { 1 } else { 0 };
+
+    let arr: unsigned[8][3] = [1, K, 3 * 4];
+    elemConst = arr[1];
+    elemFold = arr[2];
+
     // The control: computing from another signal is a *driver*, not an
     // initializer, and carries the value the dropped initializer did not.
     let i: unsigned[8];
@@ -77,6 +94,11 @@ impl InitializerSeedTest {
     assert!(s.fromChar == 1, "a character takes its meaning from the target type");
     assert!(s.fromVariant == 1, "an enum variant seeds its discriminant");
     assert!(s.fromReal == 1, "a real seeds its f64 value");
+
+    assert!(s.fieldFold == 7, "a struct field folds `K + 2`");
+    assert!(s.fieldChar == 1, "and a field character takes the field's type");
+    assert!(s.elemConst == 5, "an array element seeds a module constant");
+    assert!(s.elemFold == 12, "and folds `3 * 4`");
 
     assert!(s.computed == 201, "and a driver computes from another signal");
 }
