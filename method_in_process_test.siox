@@ -1,0 +1,104 @@
+// A call in statement position inside a clocked block.
+//
+// `lower_stmt` inlines a method call (`a.bump(step)`) or a free call
+// (`store(r, x)`) written as a statement, turning its assignments into drivers.
+// `lower_event_block`, the sequential walker, had no arm for it and fell
+// through its catch-all, so `if clk.rising() { a.bump(step); }` left the
+// register at its reset value — no error, no warning, no driver.
+//
+// This is how a clocked protocol is naturally written, so the silence was
+// expensive: the design looks right and does nothing.
+//
+// Every call below is paired with the same write spelled out by hand, so the
+// call is measured against written-out hardware rather than against the
+// compiler's own reading of it.
+module method_in_process_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+struct Counter { n: unsigned[8] }
+impl Counter {
+    fn bump(self, by: unsigned[8]) { self.n = self.n + by; }
+    fn set(self, x: unsigned[8]) { self.n = x; }
+}
+
+// A free function mutating through its argument.
+fn store(c: Counter, x: unsigned[8]) { c.n = x; }
+
+entity Dev {
+    clk: Bit in,
+    en: Bit in,
+    step: unsigned[8] in,
+    viaMethod: unsigned[8] out,
+    viaControl: unsigned[8] out,
+    viaFree: unsigned[8] out,
+    viaGuarded: unsigned[8] out,
+    guardControl: unsigned[8] out,
+    viaLoop: unsigned[8] out
+}
+impl Dev {
+    // The shape that produced nothing at all.
+    let a: Counter = { .n = 0 };
+    if clk.rising() { a.bump(step); }
+    viaMethod = a.n;
+
+    let ac: Counter = { .n = 0 };
+    if clk.rising() { ac.n = ac.n + step; }
+    viaControl = ac.n;
+
+    // A free call in statement position.
+    let b: Counter = { .n = 0 };
+    if clk.rising() { store(b, step); }
+    viaFree = b.n;
+
+    // Nested under an `if` inside the process: the edge condition and the
+    // guard have to compose, or the write happens unconditionally.
+    let g: Counter = { .n = 0 };
+    if clk.rising() { if en == '1' { g.set(step); } }
+    viaGuarded = g.n;
+
+    let gc: Counter = { .n = 0 };
+    if clk.rising() { if en == '1' { gc.n = step; } }
+    guardControl = gc.n;
+
+    // And under a generate `for` inside the process: three writes to one
+    // register in one edge, so the last wins.
+    let l: Counter = { .n = 0 };
+    if clk.rising() { for i in 0..2 { l.set(step + i); } }
+    viaLoop = l.n;
+}
+
+#[test]
+entity MethodInProcessTest {}
+impl MethodInProcessTest {
+    let clk: Bit = '0';
+    let en: Bit = '0';
+    let step: unsigned[8] = 4;
+    let d: Dev = { .clk = clk, .en = en, .step = step };
+    await 1ns;
+
+    assert!(d.viaMethod == 0, "registers hold their reset value before the edge");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    assert!(d.viaMethod == 4, "a method call in a process drives its register");
+    assert!(d.viaMethod == d.viaControl, "and matches the write spelled out");
+    assert!(d.viaFree == 4, "a free call in statement position does too");
+
+    // The guard is false, so nothing was written — proving the call is
+    // conditional rather than unconditional.
+    assert!(d.viaGuarded == 0, "a guarded call does not fire when the guard is false");
+    assert!(d.viaGuarded == d.guardControl, "matching the hand-written guard");
+
+    // `l.set(step + i)` for i in 0..2: last write wins, so step + 2.
+    assert!(d.viaLoop == 6, "a call under a loop unrolls, last write winning");
+
+    en = '1'; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    assert!(d.viaMethod == 8, "a second edge bumps again");
+    assert!(d.viaMethod == d.viaControl, "still matching the control");
+    assert!(d.viaGuarded == 4, "and now the guard lets the call through");
+    assert!(d.viaGuarded == d.guardControl, "still matching the hand-written guard");
+}
