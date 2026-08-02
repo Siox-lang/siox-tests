@@ -30,6 +30,28 @@ impl<K: integer> Scale<K> {
     y = a * K + K;
 }
 
+// A renamed binder has to reach *elaboration* too, not just lowering: the
+// argument an instance passes to a child is evaluated there.
+entity Inner<K: integer> { y: unsigned[8] out }
+impl<K: integer> Inner<K> { y = K * 2; }
+
+entity Outer<N: integer> { y: unsigned[8] out }
+impl<M: integer> Outer<M> {
+    let child: Inner<K = M> = {};
+    y = child.y + M;
+}
+
+// Binders bind by position, so this one names the entity's first parameter
+// `B` and its second `A`.
+entity Pair<LO: integer, HI: integer> {
+    lo_out: unsigned[8] out,
+    hi_out: unsigned[8] out
+}
+impl<A: integer, B: integer> Pair<B, A> {
+    lo_out = B;
+    hi_out = A;
+}
+
 #[test]
 entity GenericBinderTest {}
 impl GenericBinderTest {
@@ -40,6 +62,8 @@ impl GenericBinderTest {
     let a: unsigned[8] = 3;
     let by3: Scale<K = 3> = { .a = a };
     let by5: Scale<K = 5> = { .a = a };
+    let nested: Outer<N = 5> = {};
+    let pair: Pair<LO = 3, HI = 9> = {};
     await 1ns;
 
     // The renamed binder still sizes the storage per instance.
@@ -51,4 +75,7 @@ impl GenericBinderTest {
     // And the value position, under the declaration's own name.
     assert!(by3.y == 12, "3*3+3");
     assert!(by5.y == 20, "3*5+5");
+
+    assert!(nested.y == 15, "a renamed binder passes its value to a child");
+    assert!(pair.lo_out == 3 and pair.hi_out == 9, "binders bind by position");
 }
