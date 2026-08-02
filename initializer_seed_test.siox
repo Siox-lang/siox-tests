@@ -1,0 +1,82 @@
+// What a `let` initializer may be, and what each one seeds.
+//
+// An initializer is the signal's power-on value, folded at elaboration (§3.29).
+// Every shape below folds, and each is pinned to the value it must produce —
+// this is the coverage that says the *accepting* half of the rule still works,
+// since an initializer that cannot fold is now `E-P021` and so cannot live in
+// a passing corpus file.
+//
+// The shape that prompted the check: `let i: unsigned[8] = a + 1;` reads
+// another signal, cannot fold, and used to leave `i` at 0 in silence. Driving
+// it is the spelling that means "compute this", and it is here as the control.
+module initializer_seed_test;
+
+using std::bits::{unsigned};
+using std::logic::{Logic};
+
+enum Phase { Idle, Run, Done }
+
+const K: unsigned[8] = 5;
+
+fn twice(n: unsigned[8]) -> unsigned[8] { return n * 2; }
+
+entity Seeds {
+    fromLiteral: unsigned[8] out,
+    fromConst: unsigned[8] out,
+    fromFold: unsigned[8] out,
+    fromCall: unsigned[8] out,
+    fromString: unsigned[8] out,
+    fromChar: unsigned[8] out,
+    fromVariant: unsigned[8] out,
+    fromReal: unsigned[8] out,
+    computed: unsigned[8] out
+}
+impl Seeds {
+    let a: unsigned[8] = 200;              // a plain literal
+    fromLiteral = a;
+
+    let b: unsigned[8] = K;                // a module constant
+    fromConst = b;
+
+    let c: unsigned[8] = 3 * 7;            // constant arithmetic
+    fromFold = c;
+
+    let d: unsigned[8] = twice(4);         // a const-evaluable call
+    fromCall = d;
+
+    let e: unsigned[8] = "00001111";       // a bit string on a packed vector
+    fromString = e;
+
+    let f: Logic = 'X';                    // a character, typed by the target
+    fromChar = if f == 'X' { 1 } else { 0 };
+
+    let g: Phase = Phase::Run;             // an enum variant
+    fromVariant = if g == Phase::Run { 1 } else { 0 };
+
+    let h: real = 2.5;                     // a real, seeded as f64 bits
+    fromReal = if h == 2.5 { 1 } else { 0 };
+
+    // The control: computing from another signal is a *driver*, not an
+    // initializer, and carries the value the dropped initializer did not.
+    let i: unsigned[8];
+    i = a + 1;
+    computed = i;
+}
+
+#[test]
+entity InitializerSeedTest {}
+impl InitializerSeedTest {
+    let s: Seeds = {};
+    await 1ns;
+
+    assert!(s.fromLiteral == 200, "a literal seeds its value");
+    assert!(s.fromConst == 5, "a module constant seeds through");
+    assert!(s.fromFold == 21, "constant arithmetic folds to 21");
+    assert!(s.fromCall == 8, "a const-evaluable call folds to 8");
+    assert!(s.fromString == 15, "`\"00001111\"` seeds 15 on a packed vector");
+    assert!(s.fromChar == 1, "a character takes its meaning from the target type");
+    assert!(s.fromVariant == 1, "an enum variant seeds its discriminant");
+    assert!(s.fromReal == 1, "a real seeds its f64 value");
+
+    assert!(s.computed == 201, "and a driver computes from another signal");
+}
