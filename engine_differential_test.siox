@@ -1,0 +1,247 @@
+// The same expression computed in hardware and in a testbench, against
+// hand-computed values.
+//
+// The two engines are separate implementations of one language — lowering to
+// the digital IR, and the C emitter for stimulus — and nearly every bug found
+// in this corpus has been a place where they disagreed or one lagged the
+// other. Nothing compared them across expression shapes systematically.
+//
+// Each row asserts three things: the hardware value, the testbench value, and
+// that the two agree. The third is what catches a *shared* mistake becoming an
+// unshared one; the first two catch a mistake they might both make.
+//
+// Written as a sweep, this found `{a[3..0], b[3..0]}` — a concat of slices —
+// lowering correctly in hardware and being rejected outright in a testbench,
+// because the emitter could compute a slice's bits but not its width.
+//
+// a = 200, b = 13, all values 8-bit and wrapping.
+module engine_differential_test;
+
+using std::bits::{unsigned};
+
+entity D {
+    a: unsigned[8] in, b: unsigned[8] in,
+    add: unsigned[8] out,
+    sub: unsigned[8] out,
+    mul: unsigned[8] out,
+    div: unsigned[8] out,
+    shl: unsigned[8] out,
+    shr: unsigned[8] out,
+    andOp: unsigned[8] out,
+    orOp: unsigned[8] out,
+    xorOp: unsigned[8] out,
+    nandOp: unsigned[8] out,
+    norOp: unsigned[8] out,
+    xnorOp: unsigned[8] out,
+    notOp: unsigned[8] out,
+    eq: unsigned[8] out,
+    ne: unsigned[8] out,
+    lt: unsigned[8] out,
+    le: unsigned[8] out,
+    gt: unsigned[8] out,
+    ge: unsigned[8] out,
+    sliceHi: unsigned[8] out,
+    sliceLo: unsigned[8] out,
+    bit7: unsigned[8] out,
+    concatSlices: unsigned[8] out,
+    nested: unsigned[8] out,
+    prec: unsigned[8] out,
+    chain: unsigned[8] out,
+    selfSub: unsigned[8] out,
+    shlZero: unsigned[8] out,
+    divSelf: unsigned[8] out,
+    mixed: unsigned[8] out
+}
+impl D {
+    add = a + b;
+    sub = a - b;
+    mul = a * b;
+    div = a / b;
+    shl = a << 1;
+    shr = a >> 2;
+    andOp = a and b;
+    orOp = a or b;
+    xorOp = a xor b;
+    nandOp = a nand b;
+    norOp = a nor b;
+    xnorOp = a xnor b;
+    notOp = not a;
+    eq = if a == b { 1 } else { 0 };
+    ne = if a != b { 1 } else { 0 };
+    lt = if a < b { 1 } else { 0 };
+    le = if a <= b { 1 } else { 0 };
+    gt = if a > b { 1 } else { 0 };
+    ge = if a >= b { 1 } else { 0 };
+    sliceHi = unsigned[8](a[7..4]);
+    sliceLo = unsigned[8](a[3..0]);
+    bit7 = unsigned[8](a[7]);
+    concatSlices = unsigned[8]({a[3..0], b[3..0]});
+    nested = (a + b) * 2;
+    prec = a + b * 2;
+    chain = a - b - 1;
+    selfSub = a - a;
+    shlZero = a << 0;
+    divSelf = a / a;
+    mixed = (a >> 1) + (b << 1);
+}
+
+#[test]
+entity EngineDifferentialTest {}
+impl EngineDifferentialTest {
+    let a: unsigned[8] = 200;
+    let b: unsigned[8] = 13;
+    let d: D = { .a = a, .b = b };
+
+    let t_add: unsigned[8] = a + b;
+    let t_sub: unsigned[8] = a - b;
+    let t_mul: unsigned[8] = a * b;
+    let t_div: unsigned[8] = a / b;
+    let t_shl: unsigned[8] = a << 1;
+    let t_shr: unsigned[8] = a >> 2;
+    let t_andOp: unsigned[8] = a and b;
+    let t_orOp: unsigned[8] = a or b;
+    let t_xorOp: unsigned[8] = a xor b;
+    let t_nandOp: unsigned[8] = a nand b;
+    let t_norOp: unsigned[8] = a nor b;
+    let t_xnorOp: unsigned[8] = a xnor b;
+    let t_notOp: unsigned[8] = not a;
+    let t_eq: unsigned[8] = if a == b { 1 } else { 0 };
+    let t_ne: unsigned[8] = if a != b { 1 } else { 0 };
+    let t_lt: unsigned[8] = if a < b { 1 } else { 0 };
+    let t_le: unsigned[8] = if a <= b { 1 } else { 0 };
+    let t_gt: unsigned[8] = if a > b { 1 } else { 0 };
+    let t_ge: unsigned[8] = if a >= b { 1 } else { 0 };
+    let t_sliceHi: unsigned[8] = unsigned[8](a[7..4]);
+    let t_sliceLo: unsigned[8] = unsigned[8](a[3..0]);
+    let t_bit7: unsigned[8] = unsigned[8](a[7]);
+    let t_concatSlices: unsigned[8] = unsigned[8]({a[3..0], b[3..0]});
+    let t_nested: unsigned[8] = (a + b) * 2;
+    let t_prec: unsigned[8] = a + b * 2;
+    let t_chain: unsigned[8] = a - b - 1;
+    let t_selfSub: unsigned[8] = a - a;
+    let t_shlZero: unsigned[8] = a << 0;
+    let t_divSelf: unsigned[8] = a / a;
+    let t_mixed: unsigned[8] = (a >> 1) + (b << 1);
+
+    await 1ns;
+
+    assert!(d.add == 213, "hardware: `a + b` is 213");
+    assert!(t_add == 213, "testbench: `a + b` is 213");
+    assert!(d.add == t_add, "both engines agree on `a + b`");
+
+    assert!(d.sub == 187, "hardware: `a - b` is 187");
+    assert!(t_sub == 187, "testbench: `a - b` is 187");
+    assert!(d.sub == t_sub, "both engines agree on `a - b`");
+
+    assert!(d.mul == 40, "hardware: `a * b` is 40");
+    assert!(t_mul == 40, "testbench: `a * b` is 40");
+    assert!(d.mul == t_mul, "both engines agree on `a * b`");
+
+    assert!(d.div == 15, "hardware: `a / b` is 15");
+    assert!(t_div == 15, "testbench: `a / b` is 15");
+    assert!(d.div == t_div, "both engines agree on `a / b`");
+
+    assert!(d.shl == 144, "hardware: `a << 1` is 144");
+    assert!(t_shl == 144, "testbench: `a << 1` is 144");
+    assert!(d.shl == t_shl, "both engines agree on `a << 1`");
+
+    assert!(d.shr == 50, "hardware: `a >> 2` is 50");
+    assert!(t_shr == 50, "testbench: `a >> 2` is 50");
+    assert!(d.shr == t_shr, "both engines agree on `a >> 2`");
+
+    assert!(d.andOp == 8, "hardware: `a and b` is 8");
+    assert!(t_andOp == 8, "testbench: `a and b` is 8");
+    assert!(d.andOp == t_andOp, "both engines agree on `a and b`");
+
+    assert!(d.orOp == 205, "hardware: `a or b` is 205");
+    assert!(t_orOp == 205, "testbench: `a or b` is 205");
+    assert!(d.orOp == t_orOp, "both engines agree on `a or b`");
+
+    assert!(d.xorOp == 197, "hardware: `a xor b` is 197");
+    assert!(t_xorOp == 197, "testbench: `a xor b` is 197");
+    assert!(d.xorOp == t_xorOp, "both engines agree on `a xor b`");
+
+    assert!(d.nandOp == 247, "hardware: `a nand b` is 247");
+    assert!(t_nandOp == 247, "testbench: `a nand b` is 247");
+    assert!(d.nandOp == t_nandOp, "both engines agree on `a nand b`");
+
+    assert!(d.norOp == 50, "hardware: `a nor b` is 50");
+    assert!(t_norOp == 50, "testbench: `a nor b` is 50");
+    assert!(d.norOp == t_norOp, "both engines agree on `a nor b`");
+
+    assert!(d.xnorOp == 58, "hardware: `a xnor b` is 58");
+    assert!(t_xnorOp == 58, "testbench: `a xnor b` is 58");
+    assert!(d.xnorOp == t_xnorOp, "both engines agree on `a xnor b`");
+
+    assert!(d.notOp == 55, "hardware: `not a` is 55");
+    assert!(t_notOp == 55, "testbench: `not a` is 55");
+    assert!(d.notOp == t_notOp, "both engines agree on `not a`");
+
+    assert!(d.eq == 0, "hardware: `if a == b { 1 } else { 0 }` is 0");
+    assert!(t_eq == 0, "testbench: `if a == b { 1 } else { 0 }` is 0");
+    assert!(d.eq == t_eq, "both engines agree on `if a == b { 1 } else { 0 }`");
+
+    assert!(d.ne == 1, "hardware: `if a != b { 1 } else { 0 }` is 1");
+    assert!(t_ne == 1, "testbench: `if a != b { 1 } else { 0 }` is 1");
+    assert!(d.ne == t_ne, "both engines agree on `if a != b { 1 } else { 0 }`");
+
+    assert!(d.lt == 0, "hardware: `if a < b { 1 } else { 0 }` is 0");
+    assert!(t_lt == 0, "testbench: `if a < b { 1 } else { 0 }` is 0");
+    assert!(d.lt == t_lt, "both engines agree on `if a < b { 1 } else { 0 }`");
+
+    assert!(d.le == 0, "hardware: `if a <= b { 1 } else { 0 }` is 0");
+    assert!(t_le == 0, "testbench: `if a <= b { 1 } else { 0 }` is 0");
+    assert!(d.le == t_le, "both engines agree on `if a <= b { 1 } else { 0 }`");
+
+    assert!(d.gt == 1, "hardware: `if a > b { 1 } else { 0 }` is 1");
+    assert!(t_gt == 1, "testbench: `if a > b { 1 } else { 0 }` is 1");
+    assert!(d.gt == t_gt, "both engines agree on `if a > b { 1 } else { 0 }`");
+
+    assert!(d.ge == 1, "hardware: `if a >= b { 1 } else { 0 }` is 1");
+    assert!(t_ge == 1, "testbench: `if a >= b { 1 } else { 0 }` is 1");
+    assert!(d.ge == t_ge, "both engines agree on `if a >= b { 1 } else { 0 }`");
+
+    assert!(d.sliceHi == 12, "hardware: `unsigned[8](a[7..4])` is 12");
+    assert!(t_sliceHi == 12, "testbench: `unsigned[8](a[7..4])` is 12");
+    assert!(d.sliceHi == t_sliceHi, "both engines agree on `unsigned[8](a[7..4])`");
+
+    assert!(d.sliceLo == 8, "hardware: `unsigned[8](a[3..0])` is 8");
+    assert!(t_sliceLo == 8, "testbench: `unsigned[8](a[3..0])` is 8");
+    assert!(d.sliceLo == t_sliceLo, "both engines agree on `unsigned[8](a[3..0])`");
+
+    assert!(d.bit7 == 1, "hardware: `unsigned[8](a[7])` is 1");
+    assert!(t_bit7 == 1, "testbench: `unsigned[8](a[7])` is 1");
+    assert!(d.bit7 == t_bit7, "both engines agree on `unsigned[8](a[7])`");
+
+    assert!(d.concatSlices == 141, "hardware: `unsigned[8]({a[3..0], b[3..0]})` is 141");
+    assert!(t_concatSlices == 141, "testbench: `unsigned[8]({a[3..0], b[3..0]})` is 141");
+    assert!(d.concatSlices == t_concatSlices, "both engines agree on `unsigned[8]({a[3..0], b[3..0]})`");
+
+    assert!(d.nested == 170, "hardware: `(a + b) * 2` is 170");
+    assert!(t_nested == 170, "testbench: `(a + b) * 2` is 170");
+    assert!(d.nested == t_nested, "both engines agree on `(a + b) * 2`");
+
+    assert!(d.prec == 226, "hardware: `a + b * 2` is 226");
+    assert!(t_prec == 226, "testbench: `a + b * 2` is 226");
+    assert!(d.prec == t_prec, "both engines agree on `a + b * 2`");
+
+    assert!(d.chain == 186, "hardware: `a - b - 1` is 186");
+    assert!(t_chain == 186, "testbench: `a - b - 1` is 186");
+    assert!(d.chain == t_chain, "both engines agree on `a - b - 1`");
+
+    assert!(d.selfSub == 0, "hardware: `a - a` is 0");
+    assert!(t_selfSub == 0, "testbench: `a - a` is 0");
+    assert!(d.selfSub == t_selfSub, "both engines agree on `a - a`");
+
+    assert!(d.shlZero == 200, "hardware: `a << 0` is 200");
+    assert!(t_shlZero == 200, "testbench: `a << 0` is 200");
+    assert!(d.shlZero == t_shlZero, "both engines agree on `a << 0`");
+
+    assert!(d.divSelf == 1, "hardware: `a / a` is 1");
+    assert!(t_divSelf == 1, "testbench: `a / a` is 1");
+    assert!(d.divSelf == t_divSelf, "both engines agree on `a / a`");
+
+    assert!(d.mixed == 126, "hardware: `(a >> 1) + (b << 1)` is 126");
+    assert!(t_mixed == 126, "testbench: `(a >> 1) + (b << 1)` is 126");
+    assert!(d.mixed == t_mixed, "both engines agree on `(a >> 1) + (b << 1)`");
+}
