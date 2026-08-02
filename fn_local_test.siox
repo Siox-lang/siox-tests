@@ -34,6 +34,39 @@ fn narrowed(a: unsigned[8]) -> unsigned[8] {
     return unsigned[8](small);
 }
 
+enum Sel { A, B, C }
+
+// A `match` whose arms return is the same shape as an `if` chain, and only
+// the `if` form was inlined. Both engines fold the arms in reverse so an
+// earlier arm wins, and an arm that returns nothing falls through to the
+// statements after the match.
+fn pick(a: unsigned[8], s: Sel) -> unsigned[8] {
+    match s {
+        Sel::A => { return a + 1; }
+        Sel::B => { return a + 2; }
+        Sel::C => { return a + 3; }
+    }
+}
+
+fn fallthrough(s: Sel) -> unsigned[8] {
+    match s {
+        Sel::A => { return 10; }
+        _ => {}
+    }
+    return 99;
+}
+
+entity Selected {
+    a: unsigned[8] in,
+    s: Sel in,
+    picked: unsigned[8] out,
+    fell: unsigned[8] out
+}
+impl Selected {
+    picked = pick(a, s);
+    fell = fallthrough(s);
+}
+
 entity Compute {
     x: unsigned[8] in,
     y: unsigned[8] in,
@@ -55,6 +88,8 @@ impl FnLocalTest {
     let x: unsigned[8] = 3;
     let y: unsigned[8] = 200;
     let dut: Compute = { .x = x, .y = y };
+    let chosen: Sel = Sel::A;
+    let sel: Selected = { .a = x, .s = chosen };
     await 1ns;
 
     // Values computed by hand: |3-200|, ((3+1)*2)-3, min(3*2,100), 200 & 0xF.
@@ -68,4 +103,16 @@ impl FnLocalTest {
     assert!(chained(x) == dut.chain, "chained parity");
     assert!(clamp(x) == dut.clamped, "clamp parity");
     assert!(narrowed(y) == dut.narrow, "the declared width applies to the name");
+
+    // A match statement in a function body, in both engines.
+    assert!(sel.picked == 4, "the first arm, a + 1");
+    assert!(sel.fell == 10, "an arm that returns");
+    assert!(pick(x, chosen) == sel.picked, "match parity with hardware");
+    assert!(fallthrough(chosen) == sel.fell, "fall-through parity");
+
+    chosen = Sel::C;
+    await 1ns;
+    assert!(sel.picked == 6, "the third arm, a + 3");
+    assert!(sel.fell == 99, "no arm returned, so the statement after the match");
+    assert!(pick(x, chosen) == 6, "and the testbench agrees");
 }
