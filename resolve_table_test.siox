@@ -1,0 +1,83 @@
+// The IEEE 1076-2019 (std_logic_1164) resolution table, through real parallel
+// drivers.
+//
+// No bug prompted this: a sweep of all 81 two-driver pairs, all 729
+// three-driver folds, a `Logic[4]` vector net and two `inout` pads across
+// instances all matched the standard's table exactly. What was missing was
+// coverage — every existing test drives only `'0'`, `'1'`, `'Z'` and `'X'`, so
+// the weak levels (`'L'`, `'H'`, `'W'`), the uninitialised `'U'` and the
+// don't-care `'-'` were resolved by code nothing checked.
+//
+// The expected values are transcribed from the standard's table, not from what
+// the compiler produced.
+module resolve_table_test;
+
+using std::bits::{unsigned};
+using std::logic::{Logic};
+
+// Two parallel contexts drive one net; `impl Resolve for Logic` folds them.
+entity Net { sa: unsigned[4] in, sb: unsigned[4] in, bus: Logic out }
+impl Net {
+    let a: Logic = 'Z';
+    match sa {
+        0 => a = 'U', 1 => a = 'X', 2 => a = '0', 3 => a = '1', 4 => a = 'Z',
+        5 => a = 'W', 6 => a = 'L', 7 => a = 'H', _ => a = '-',
+    }
+    bus = a;
+}
+impl Net {
+    let b: Logic = 'Z';
+    match sb {
+        0 => b = 'U', 1 => b = 'X', 2 => b = '0', 3 => b = '1', 4 => b = 'Z',
+        5 => b = 'W', 6 => b = 'L', 7 => b = 'H', _ => b = '-',
+    }
+    bus = b;
+}
+
+#[test]
+entity ResolveTableTest {}
+impl ResolveTableTest {
+    let sa: unsigned[4] = 4;   // 'Z'
+    let sb: unsigned[4] = 4;   // 'Z'
+    let n: Net = { .sa = sa, .sb = sb };
+    await 1ns;
+    assert!(n.bus == 'Z', "'Z' + 'Z' is 'Z' — nobody driving");
+
+    // The weak levels pass through an undriven line unchanged.
+    sa = 6; await 1ns;                       // 'L' + 'Z'
+    assert!(n.bus == 'L', "'L' + 'Z' is 'L'");
+    sa = 7; await 1ns;                       // 'H' + 'Z'
+    assert!(n.bus == 'H', "'H' + 'Z' is 'H'");
+
+    // Two disagreeing weak levels are weak-unknown, not strong-unknown.
+    sa = 6; sb = 7; await 1ns;               // 'L' + 'H'
+    assert!(n.bus == 'W', "'L' + 'H' is 'W', not 'X'");
+
+    // A forcing level overrides a weak one — this is what a pull-up is for.
+    sa = 6; sb = 3; await 1ns;               // 'L' + '1'
+    assert!(n.bus == '1', "a forcing '1' beats a weak 'L'");
+    sa = 7; sb = 2; await 1ns;               // 'H' + '0'
+    assert!(n.bus == '0', "a forcing '0' beats a weak 'H'");
+    sa = 5; sb = 2; await 1ns;               // 'W' + '0'
+    assert!(n.bus == '0', "and beats weak-unknown too");
+
+    // Two forcing levels that disagree are strong-unknown.
+    sa = 2; sb = 3; await 1ns;               // '0' + '1'
+    assert!(n.bus == 'X', "'0' + '1' is 'X'");
+
+    // Uninitialised dominates everything, including a driven level.
+    sa = 0; sb = 3; await 1ns;               // 'U' + '1'
+    assert!(n.bus == 'U', "'U' + '1' is 'U' — uninitialised wins");
+    sa = 0; sb = 4; await 1ns;               // 'U' + 'Z'
+    assert!(n.bus == 'U', "'U' + 'Z' is 'U'");
+
+    // Don't-care resolves as unknown, not as a wildcard.
+    sa = 8; sb = 2; await 1ns;               // '-' + '0'
+    assert!(n.bus == 'X', "'-' + '0' is 'X'; a don't-care does not defer");
+
+    // A value against itself is itself, for the levels nothing else covers.
+    sa = 6; sb = 6; await 1ns;
+    assert!(n.bus == 'L', "'L' + 'L' is 'L'");
+    sa = 5; sb = 5; await 1ns;
+    assert!(n.bus == 'W', "'W' + 'W' is 'W'");
+}
