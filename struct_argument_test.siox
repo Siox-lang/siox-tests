@@ -1,0 +1,58 @@
+// A struct passed as a *call argument* to a free function. Hardware has
+// always lowered it; the testbench emitter binds one C expression per
+// parameter, and a struct local is one variable per leaf field, so there was
+// no expression to bind and the argument's own name was reported as not in
+// scope. A *method* on the same struct inlined fine, which is what made it
+// look like structs worked here.
+module struct_argument_test;
+
+using std::bits::{unsigned};
+
+struct Point { x: unsigned[8], y: unsigned[8] }
+
+fn spread(a: Point, b: Point) -> unsigned[8] {
+    return a.x + a.y + b.x + b.y;
+}
+
+fn pick(a: Point) -> unsigned[8] {
+    if a.x > a.y { return a.x; }
+    return a.y;
+}
+
+fn scale(a: Point, k: unsigned[8]) -> unsigned[8] {
+    return a.x * k;
+}
+
+entity Compute {
+    p: Point in,
+    q: Point in,
+    total: unsigned[8] out,
+    larger: unsigned[8] out,
+    scaled: unsigned[8] out
+}
+impl Compute {
+    total = spread(p, q);
+    larger = pick(p);
+    scaled = scale(p, 5);
+}
+
+#[test]
+entity StructArgumentTest {}
+impl StructArgumentTest {
+    let p: Point = { .x = 3, .y = 4 };
+    let q: Point = { .x = 10, .y = 1 };
+    let dut: Compute = { .p = p, .q = q };
+    await 1ns;
+
+    // Values computed by hand: 3+4+10+1, max(3,4), 3*5.
+    assert!(dut.total == 18, "hardware sums every field of both arguments");
+    assert!(dut.larger == 4, "and branches on them");
+    assert!(dut.scaled == 15, "mixing a struct and a scalar argument");
+
+    // The same calls evaluated in the testbench must agree.
+    assert!(spread(p, q) == 18, "two struct arguments");
+    assert!(pick(p) == 4, "a body that branches on fields");
+    assert!(scale(p, 5) == 15, "a struct argument beside a scalar one");
+    assert!(spread(p, q) == dut.total, "parity with hardware");
+    assert!(pick(p) == dut.larger, "and for the branching one");
+}
