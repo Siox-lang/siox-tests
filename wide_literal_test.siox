@@ -1,0 +1,74 @@
+// A bit-string literal wider than one 64-bit word, used as a *driver*.
+//
+// Lowering decoded a literal to its low word only, so `y = x"DEADBEEF0123..."`
+// drove `0x0123456789ABCDEF` — the top half gone — while the very same
+// literal written as an initializer (`let y: unsigned[96] = x"DEAD..."`) was
+// correct, because that path already decoded to words. The plain-string form
+// was worse: a 73-character logic string drove 3, its low two bits.
+//
+// The assertions compare against the *decimal* spelling of each value, which
+// reaches it by base-10 accumulation rather than by packing nibbles, so a
+// shared decoding mistake cannot make both sides agree.
+//
+// Digit separators come along for the ride: `_` is a separator in a numeric
+// literal (`0xAB_CD`) and in a bit pattern, but a radix bit-string literal
+// rejected it and counted it as a digit when sizing (`x"AB_CD"` was 20 bits
+// wide, and unassignable to `unsigned[16]`).
+module wide_literal_test;
+
+using std::bits::{unsigned};
+
+entity Wide {
+    direct: unsigned[96] out,
+    viaSignal: unsigned[96] out,
+    inExpr: unsigned[96] out,
+    top: unsigned[32] out,
+    fromString: unsigned[73] out,
+    sep16: unsigned[16] out,
+    sepOct: unsigned[12] out
+}
+impl Wide {
+    // Driver position, the shape that lost its top word.
+    direct = x"DEAD_BEEF_0123_4567_89AB_CDEF";
+
+    // Initializer position, which was already correct — kept so the two
+    // spellings of one value are checked against each other.
+    let held: unsigned[96] = x"DEADBEEF0123456789ABCDEF";
+    viaSignal = held;
+
+    // The literal as an operand rather than the whole driver.
+    inExpr = x"DEAD_BEEF_0123_4567_89AB_CDEF" or 0;
+
+    // The high word, which only exists if the top half survived.
+    top = held[95..64];
+
+    // A plain string is a per-character logic vector: 73 characters, so the
+    // set bit is 8 bits above the word boundary.
+    fromString = "1000000000000000000000000000000000000000000000000000000000000000000000011";
+
+    // Separators in the narrow cases, where a miscount changes the width.
+    sep16 = x"AB_CD";
+    sepOct = o"1_2_3_4";
+}
+
+#[test]
+entity WideLiteralTest {}
+impl WideLiteralTest {
+    let w: Wide = {};
+    await 1ns;
+
+    assert!(w.direct == 68915718005617500482515488239,
+            "a 96-bit hex literal drives all 96 bits");
+    assert!(w.viaSignal == 68915718005617500482515488239,
+            "the initializer spelling agrees");
+    assert!(w.direct == w.viaSignal, "driver and initializer are one value");
+    assert!(w.inExpr == 68915718005617500482515488239,
+            "and so does the literal as an operand");
+    assert!(w.top == 3735928559, "the high word is 0xDEADBEEF, not zero");
+
+    assert!(w.fromString == 4722366482869645213699,
+            "a 73-character logic string keeps the bits above 64");
+
+    assert!(w.sep16 == 43981, "`x\"AB_CD\"` is 0xABCD in 16 bits");
+    assert!(w.sepOct == 668, "`o\"1_2_3_4\"` is 0o1234 in 12 bits");
+}
