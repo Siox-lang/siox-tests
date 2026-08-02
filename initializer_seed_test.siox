@@ -31,6 +31,10 @@ struct Tagged { c: Char, n: unsigned[8] }
 // seeding has to recurse into it rather than skip it.
 struct Deep { inner: Pair, flag: unsigned[8] }
 
+// Field values that are themselves aggregates: each names no leaf of its own,
+// so seeding has to descend rather than skip.
+struct Holder { arr: unsigned[8][3], name: string[3], n: unsigned[8] }
+
 entity Seeds {
     fromLiteral: unsigned[8] out,
     fromConst: unsigned[8] out,
@@ -46,6 +50,9 @@ entity Seeds {
     nestedX: unsigned[8] out,
     nestedY: unsigned[8] out,
     nestedFlag: unsigned[8] out,
+    fieldArr0: unsigned[8] out, fieldArr2: unsigned[8] out,
+    fieldStr0: unsigned[16] out, fieldScalar: unsigned[8] out,
+    spreadKept: unsigned[8] out, spreadOverridden: unsigned[8] out,
     fieldFold: unsigned[8] out,
     fieldChar: unsigned[8] out,
     elemConst: unsigned[8] out,
@@ -105,6 +112,19 @@ impl Seeds {
     nestedY = if dp.inner.s == 'X' { 1 } else { 0 };
     nestedFlag = dp.flag;
 
+    // An array literal and a string literal as struct-field values.
+    let hd: Holder = { .arr = [4, 5, 6], .name = "abc", .n = 8 };
+    fieldArr0 = hd.arr[0];
+    fieldArr2 = hd.arr[2];
+    fieldStr0 = unsigned[16](unicode(hd.name[0]));
+    fieldScalar = hd.n;
+
+    // A spread takes every field from the base, then the named ones override.
+    let sbase: Pair = { .x = 1, .s = 'X' };
+    let supd: Pair = { ..sbase, .x = 7 };
+    spreadOverridden = supd.x;
+    spreadKept = if supd.s == 'X' { 1 } else { 0 };
+
     // The control: computing from another signal is a *driver*, not an
     // initializer, and carries the value the dropped initializer did not.
     let i: unsigned[8];
@@ -139,6 +159,14 @@ impl InitializerSeedTest {
     assert!(s.nestedX == 7, "a nested struct literal seeds its inner leaves");
     assert!(s.nestedY == 1, "including a character one, typed by the inner field");
     assert!(s.nestedFlag == 3, "and the sibling scalar field still seeds");
+
+    assert!(s.fieldArr0 == 4, "an array literal as a field value seeds element 0");
+    assert!(s.fieldArr2 == 6, "and element 2");
+    assert!(s.fieldStr0 == 97, "a string literal as a field value seeds 'a'");
+    assert!(s.fieldScalar == 8, "and the sibling scalar field still seeds");
+
+    assert!(s.spreadOverridden == 7, "a spread's named field overrides the base");
+    assert!(s.spreadKept == 1, "and the fields it does not name come from the base");
 
     assert!(s.computed == 201, "and a driver computes from another signal");
 }
