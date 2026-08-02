@@ -23,13 +23,27 @@ using std::logic::{Bit};
 
 struct Pkt { valid: Bit, data: unsigned[8] }
 
+// Nesting, because the leaves of an aggregate are found by walking the
+// flattened signal names: a struct inside a struct, and a struct holding an
+// array, both have to reach every leaf and no others.
+struct Inner { a: unsigned[8], b: unsigned[8] }
+struct Outer { flag: Bit, inner: Inner }
+
 entity Watch {
     p: Pkt in,
     xs: unsigned[8][3] in,
+    o: Outer in,
+    // A sibling whose name shares a prefix with `o`, which a careless scan
+    // over flattened names would sweep into `o`'s leaves.
+    op: unsigned[8] in,
     structAgg: unsigned[8] out,
     structLeaves: unsigned[8] out,
     arrayAgg: unsigned[8] out,
-    arrayLeaves: unsigned[8] out
+    arrayLeaves: unsigned[8] out,
+    outerAgg: unsigned[8] out,
+    outerLeaves: unsigned[8] out,
+    innerAgg: unsigned[8] out,
+    innerLeaves: unsigned[8] out
 }
 impl Watch {
     let sa: unsigned[8] = 0;
@@ -43,10 +57,27 @@ impl Watch {
     if xs'event { aa = aa + 1; }
     if xs[0]'event or xs[1]'event or xs[2]'event { al = al + 1; }
 
+    let oa: unsigned[8] = 0;
+    let ol: unsigned[8] = 0;
+    let ia: unsigned[8] = 0;
+    let il: unsigned[8] = 0;
+
+    if o'event { oa = oa + 1; }
+    if o.flag'event or o.inner.a'event or o.inner.b'event { ol = ol + 1; }
+
+    // The inner struct is an aggregate in its own right, and must see only
+    // its own leaves — not the outer's `flag`.
+    if o.inner'event { ia = ia + 1; }
+    if o.inner.a'event or o.inner.b'event { il = il + 1; }
+
     structAgg = sa;
     structLeaves = sl;
     arrayAgg = aa;
     arrayLeaves = al;
+    outerAgg = oa;
+    outerLeaves = ol;
+    innerAgg = ia;
+    innerLeaves = il;
 }
 
 #[test]
@@ -54,7 +85,9 @@ entity AggregateEventTest {}
 impl AggregateEventTest {
     let pk: Pkt = { .valid = '0', .data = 0 };
     let xs: unsigned[8][3] = [1, 2, 3];
-    let w: Watch = { .p = pk, .xs = xs };
+    let o: Outer = { .flag = '0', .inner = { .a = 0, .b = 0 } };
+    let op: unsigned[8] = 0;
+    let w: Watch = { .p = pk, .xs = xs, .o = o, .op = op };
     await 1ns;
 
     pk.data = 7; await 1ns;      // one field changes
@@ -79,4 +112,20 @@ impl AggregateEventTest {
     // driving the ports from their default to the local's initial value —
     // the same initial change `old_attr_test` pins.
     assert!(w.arrayAgg == 3, "two writes plus the initial drive");
+
+    // Nesting: a change in the inner struct counts for both, a change to the
+    // outer's own field counts only for the outer, and a sibling sharing a
+    // name prefix counts for neither.
+    o.inner.a = 3; await 1ns;
+    o.flag = '1'; await 1ns;
+    op = 99; await 1ns;
+    o.inner.b = 4; await 1ns;
+
+    assert!(w.outerAgg == w.outerLeaves,
+            "a nested struct's `'event` is the OR of every leaf beneath it");
+    assert!(w.innerAgg == w.innerLeaves,
+            "and an inner struct sees only its own leaves");
+    assert!(w.outerAgg == 3, "three changes beneath `o`");
+    assert!(w.innerAgg == 2, "two of them inside `o.inner`");
+    assert!(w.outerAgg > w.innerAgg, "`o.flag` counts for the outer alone");
 }
