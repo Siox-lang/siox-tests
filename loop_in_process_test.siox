@@ -1,0 +1,90 @@
+// A generate `for` inside a clocked block.
+//
+// The spec says a `for` over a static range unrolls "instances *and*
+// per-iteration drivers". The combinational walker did that; the sequential
+// one (`lower_event_block`) handled assignments, `if` and `match` and fell
+// through its catch-all for everything else, so every driver a loop wrote
+// inside a process was dropped in silence. `if clk.rising() { for i in 0..2 {
+// v = i; } }` left `v` at its initial value, with no error and no warning.
+//
+// Each loop here is paired with an unrolled control writing the same
+// registers, so the test compares the loop against hand-written hardware
+// rather than against the compiler's own idea of what the loop means.
+module loop_in_process_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+entity Regs {
+    clk: Bit in,
+    step: unsigned[8] in,
+    // Same register written three times in one edge: the last write wins.
+    lastWins: unsigned[8] out,
+    lastControl: unsigned[8] out,
+    // A different element per iteration.
+    bank0: unsigned[8] out,
+    bank2: unsigned[8] out,
+    bankControl: unsigned[8] out,
+    // The loop index reaching the value, not just the target.
+    weighted: unsigned[8] out
+}
+impl Regs {
+    let v: unsigned[8] = 99;
+    if clk.rising() { for i in 0..2 { v = i; } }
+    lastWins = v;
+
+    let vc: unsigned[8] = 99;
+    if clk.rising() { vc = 0; vc = 1; vc = 2; }
+    lastControl = vc;
+
+    let bank: unsigned[8][3];
+    if clk.rising() { for i in 0..2 { bank[i] = bank[i] + step; } }
+    bank0 = bank[0];
+    bank2 = bank[2];
+
+    let bankc: unsigned[8][3];
+    if clk.rising() {
+        bankc[0] = bankc[0] + step;
+        bankc[1] = bankc[1] + step;
+        bankc[2] = bankc[2] + step;
+    }
+    bankControl = bankc[2];
+
+    // The index has to survive substitution into the driven expression.
+    let acc: unsigned[8] = 0;
+    if clk.rising() { for i in 1..3 { acc = acc + i; } }
+    weighted = acc;
+}
+
+#[test]
+entity LoopInProcessTest {}
+impl LoopInProcessTest {
+    let clk: Bit = '0';
+    let step: unsigned[8] = 4;
+    let r: Regs = { .clk = clk, .step = step };
+    await 1ns;
+
+    assert!(r.lastWins == 99, "registers hold their initial value before the edge");
+    assert!(r.bank2 == 0, "and the bank starts empty");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    // `v = 0; v = 1; v = 2` in one edge: the last driver wins.
+    assert!(r.lastWins == 2, "the unrolled loop's last write wins");
+    assert!(r.lastWins == r.lastControl, "and matches the hand-unrolled control");
+
+    // Every element advanced, not just one.
+    assert!(r.bank0 == 4, "element 0 advanced");
+    assert!(r.bank2 == 4, "element 2 advanced too");
+    assert!(r.bank2 == r.bankControl, "the loop matches three written-out edges");
+
+    // `acc = acc + 1; acc = acc + 2; acc = acc + 3` all read the same current
+    // value, so the last wins: 0 + 3.
+    assert!(r.weighted == 3, "the loop index reaches the driven expression");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    assert!(r.bank2 == 8, "a second edge advances the bank again");
+    assert!(r.bank2 == r.bankControl, "still matching the control");
+    assert!(r.weighted == 6, "and the accumulator takes another +3");
+}
