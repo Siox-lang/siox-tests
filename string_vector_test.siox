@@ -1,0 +1,59 @@
+// A plain string spelling a packed vector in a testbench.
+//
+// A design may write `data = "10110011";` — a string of logic values reads as
+// a logic vector by context (§3.24) — but a testbench could not spell the same
+// value: `let data: unsigned[8] = "10110011";` failed with `no value named
+// data`. The emitter's composite writer claimed a string initializer and wrote
+// one C assignment per character, which is right for a `Char[]` and writes
+// nothing at all for a packed vector, since it has no per-character storage.
+// Claiming it anyway meant the scalar declaration was skipped, so the local
+// never existed.
+//
+// The values are asserted against their decimal spelling, which reaches them
+// by base-10 accumulation rather than by packing characters, and against the
+// design's own arithmetic on the same inputs.
+module string_vector_test;
+
+using std::bits::{unsigned};
+
+entity Masker {
+    data: unsigned[8] in,
+    mask: unsigned[8] in,
+    masked: unsigned[8] out,
+    hit: Bool out,
+    wide: unsigned[73] out
+}
+impl Masker {
+    masked = data and mask;
+    hit = (data and mask) == mask;
+
+    // Hardware has always accepted this spelling; it is here so the two sides
+    // can be compared on one value.
+    wide = "1000000000000000000000000000000000000000000000000000000000000000000000011";
+}
+
+#[test]
+entity StringVectorTest {}
+impl StringVectorTest {
+    // The shape that did not compile: packed vectors spelled as bit strings.
+    let data: unsigned[8] = "10110011";
+    let mask: unsigned[8] = "00110000";
+    let m: Masker = { .data = data, .mask = mask };
+    await 1ns;
+
+    assert!(data == 179, "`\"10110011\"` is 179 in a testbench local");
+    assert!(mask == 48, "`\"00110000\"` is 48");
+
+    // The design's arithmetic on the same inputs agrees.
+    assert!(m.masked == 48, "179 and 48 is 48");
+    assert!(m.hit == true, "the masked bits are all set");
+    assert!(m.masked == (data and mask), "port and local compute one value");
+
+    // Past one 64-bit word: the set bit is 8 bits above the boundary, so a
+    // truncating decode would read 3.
+    let wide: unsigned[73] =
+        "1000000000000000000000000000000000000000000000000000000000000000000000011";
+    assert!(wide == 4722366482869645213699,
+            "a 73-character string keeps the bits above 64");
+    assert!(m.wide == wide, "hardware and testbench decode it alike");
+}
