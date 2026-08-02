@@ -38,9 +38,28 @@ impl Meter for Custom {
     fn scaled(self) -> unsigned[8] { return self.raw() * 10; }
 }
 
+// The other shapes an implementor can take. A default has to be inherited
+// whatever the impl target is, and a `self`-less default is an associated
+// function reached as `Type::name()`, through a different table again.
+enum Mode { Slow, Fast }
+impl Meter for Mode {
+    fn raw(self) -> unsigned[8] { return if self == Mode::Fast { 10 } else { 2 }; }
+}
+
+trait Named {
+    fn tag() -> unsigned[8] { return 77; }
+    fn other() -> unsigned[8] { return 5; }
+}
+struct Thing { }
+impl Named for Thing {
+    fn other() -> unsigned[8] { return 9; }   // overrides one static default
+}
+
 entity Uses {
     pRaw: unsigned[8] out, pScaled: unsigned[8] out, pLabel: unsigned[8] out,
-    cRaw: unsigned[8] out, cScaled: unsigned[8] out, cLabel: unsigned[8] out
+    cRaw: unsigned[8] out, cScaled: unsigned[8] out, cLabel: unsigned[8] out,
+    enumScaled: unsigned[8] out,
+    staticTag: unsigned[8] out, staticOther: unsigned[8] out
 }
 impl Uses {
     let p: Plain = { .v = 3 };
@@ -52,6 +71,14 @@ impl Uses {
     cRaw = c.raw();
     cScaled = c.scaled();
     cLabel = c.label();
+
+    // An enum implementor inherits the same default.
+    let m: Mode = Mode::Fast;
+    enumScaled = m.scaled();
+
+    // A `self`-less default, and one the impl overrides.
+    staticTag = Thing::tag();
+    staticOther = Thing::other();
 }
 
 #[test]
@@ -90,4 +117,15 @@ impl TraitDefaultTest {
     assert!(p.scaled() == u.pScaled, "engines agree on an inherited default");
     assert!(c.scaled() == u.cScaled, "and on an override");
     assert!(p.label() == u.pLabel, "and on a shared default");
+
+    // An enum is an implementor like any other: 10 * 2 through the default.
+    assert!(u.enumScaled == 20, "an enum inherits the trait default");
+
+    // A `self`-less default is an associated function, and an impl's own
+    // static wins over it.
+    assert!(u.staticTag == 77, "a static default is inherited as `Type::name()`");
+    assert!(u.staticOther == 9, "and an impl's own static overrides it");
+    assert!(Thing::tag() == 77, "the testbench inherits the static default too");
+    assert!(Thing::other() == 9, "and honours the override");
+    assert!(Thing::tag() == u.staticTag, "both engines agree on the static default");
 }
