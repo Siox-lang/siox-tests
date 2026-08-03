@@ -1,0 +1,104 @@
+// A function that returns a struct.
+//
+// `lower_free_call` inlined the body and then kept only a `Val::Scalar`,
+// discarding the `Val::Fields` a struct-returning body produces. The call was
+// left with no value, the assignment it fed was dropped for want of fields,
+// and `s = twice(a)` read as zero — with nothing but a "signal never driven"
+// warning naming the destination. A *method* with the identical body worked,
+// because the method path always kept the `Val`, so the two spellings of the
+// same computation disagreed.
+//
+// Nesting needed a second fix. `twice(v) + v` gives the operator a *call* as
+// its left operand, and `operand_type_name` returned a call's declared return
+// type only when that was a vector family or an enum. A struct return had no
+// type, so no `Operator` impl could be found and the expression again produced
+// nothing.
+//
+// Values are worked out from the arithmetic, not read back from a run:
+// a = (3, 5); twice(a) = (6, 10); nested(a) = twice(a) + a = (9, 15).
+module struct_valued_call_test;
+
+using std::bits::{unsigned};
+using std::ops::{Operator};
+
+struct Vec2 { x: unsigned[8], y: unsigned[8] }
+
+impl Operator<"+", Vec2, Vec2> for Vec2 {
+    fn apply(self, rhs: Vec2) -> Vec2 {
+        return Vec2 { .x = self.x + rhs.x, .y = self.y + rhs.y };
+    }
+}
+
+// The same computation three ways: as a method, as a free function, and as a
+// free function whose body combines a call with an operator.
+impl Vec2 {
+    fn doubled(self) -> Vec2 { return Vec2 { .x = self.x * 2, .y = self.y * 2 }; }
+}
+fn twice(v: Vec2) -> Vec2 { return Vec2 { .x = v.x * 2, .y = v.y * 2 }; }
+fn nested(v: Vec2) -> Vec2 { return twice(v) + v; }
+
+entity Calc {
+    mx: unsigned[8] out, my: unsigned[8] out,   // method
+    fx: unsigned[8] out, fy: unsigned[8] out,   // free function
+    nx: unsigned[8] out, ny: unsigned[8] out,   // nested call + operator
+    cx: unsigned[8] out, cy: unsigned[8] out,   // call as an operator's operand
+    ox: unsigned[8] out, oy: unsigned[8] out    // plain operator, the control
+}
+impl Calc {
+    let a: Vec2;
+    a = Vec2 { .x = 3, .y = 5 };
+
+    let m: Vec2;
+    m = a.doubled();
+    mx = m.x; my = m.y;
+
+    let f: Vec2;
+    f = twice(a);
+    fx = f.x; fy = f.y;
+
+    let n: Vec2;
+    n = nested(a);
+    nx = n.x; ny = n.y;
+
+    let c: Vec2;
+    c = twice(a) + a;
+    cx = c.x; cy = c.y;
+
+    let o: Vec2;
+    o = a + a;
+    ox = o.x; oy = o.y;
+}
+
+#[test]
+entity StructValuedCallTest {}
+impl StructValuedCallTest {
+    let c: Calc = {};
+    await 1ns;
+
+    // The control: this shape always worked, and must keep working.
+    assert!(c.ox == 6, "a + a doubles x");
+    assert!(c.oy == 10, "and y");
+
+    // A method returning a struct — also always worked.
+    assert!(c.mx == 6, "a.doubled() doubles x");
+    assert!(c.my == 10, "and y");
+
+    // The same body as a free function, which used to read as zero.
+    assert!(c.fx == 6, "twice(a) doubles x");
+    assert!(c.fy == 10, "and y");
+
+    // The two spellings have to agree — that they did not is what made this
+    // worth chasing rather than filing as an unsupported form.
+    assert!(c.fx == c.mx, "a free function and a method agree on x");
+    assert!(c.fy == c.my, "and on y");
+
+    // A call feeding an operator, inside a function body.
+    assert!(c.nx == 9, "nested(a) is twice(a) + a on x");
+    assert!(c.ny == 15, "and on y");
+
+    // And the same shape written out at the use site rather than in a body.
+    assert!(c.cx == 9, "twice(a) + a written in place: x");
+    assert!(c.cy == 15, "and y");
+    assert!(c.cx == c.nx, "in a body or in place, the same result");
+    assert!(c.cy == c.ny, "on both fields");
+}
