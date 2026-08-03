@@ -32,6 +32,10 @@ using std::logic::{Bit};
 enum Kind { Alu, Logic, Imm, Branch, Mem, Nop }
 struct Ctrl { kind: Kind, writes: Bit, usesImm: Bit }
 
+// An arm may be a call rather than a literal, so each branch has to be reduced
+// to its literal before the fields can be distributed.
+fn memOp() -> Ctrl { return Ctrl { .kind = Kind::Mem, .writes = '1', .usesImm = '1' }; }
+
 entity Decoder {
     op: unsigned[4] in,
     kind: unsigned[8] out,
@@ -147,6 +151,32 @@ impl MatchStructValueTest {
     assert!(unsigned[8](c.kind) == kind, "both engines agree on the kind");
     assert!(c.writes == writes, "and on the write flag");
     assert!(c.usesImm == usesImm, "and on the immediate flag");
+
+    // An arm that is a *call* returning a struct rather than a literal. The
+    // hardware side inlines it; the testbench has to reduce it to a literal
+    // before it can distribute the fields.
+    let viaCall: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
+    viaCall = match sel {
+        0 | 1 => Ctrl { .kind = Kind::Alu, .writes = '1', .usesImm = '0' },
+        _     => memOp()
+    };
+    await 1ns;
+    assert!(unsigned[8](viaCall.kind) == 4, "a call arm decodes as Mem");
+    assert!(viaCall.writes == '1', "with its write flag");
+    assert!(viaCall.usesImm == '1', "and its immediate flag");
+
+    // Arms that list the same fields in a different order. Order is not part
+    // of a struct literal's meaning, and matching arms up by position rather
+    // than by name would silently transpose two fields here.
+    let reordered: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
+    reordered = match sel {
+        0 | 1 => Ctrl { .kind = Kind::Alu, .writes = '1', .usesImm = '0' },
+        _     => Ctrl { .usesImm = '1', .kind = Kind::Branch, .writes = '0' }
+    };
+    await 1ns;
+    assert!(unsigned[8](reordered.kind) == 3, "a reordered arm still names Branch");
+    assert!(reordered.writes == '0', "and keeps its own write flag");
+    assert!(reordered.usesImm == '1', "and its own immediate flag");
 
     // A struct-valued `if` on the testbench side too.
     let e: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
