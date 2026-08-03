@@ -1,0 +1,184 @@
+// Assigning a whole struct on a clock edge.
+//
+// A struct signal is many leaf signals and no single one, so an assignment to
+// it has to be expanded field by field. The combinational path did that; the
+// clocked path had no case for it at all and fell through to a diagnostic
+// about a different problem — `bus = Bus { .. }` inside `if clk.rising()`
+// reported "`bus` cannot be assigned to", which reads as though the signal
+// were an input port rather than as "this form is not lowered here". The
+// per-field spelling (`bus.data = ..`) worked, and so did the identical
+// assignment one line outside the clocked block.
+//
+// Registering a bus is the ordinary way to write a pipeline stage, so this is
+// the shape a packet buffer or a skid buffer is built from.
+module registered_struct_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+struct Entry { tag: unsigned[4], data: unsigned[8] }
+
+// One pipeline stage: the whole entry is registered on the edge, as a unit.
+entity Stage {
+    clk: Bit in,
+    en: Bit in,
+    tagIn: unsigned[4] in,
+    dataIn: unsigned[8] in,
+    tagOut: unsigned[4] out,
+    dataOut: unsigned[8] out
+}
+impl Stage {
+    let held: Entry;
+    if clk.rising() {
+        if en { held = Entry { .tag = tagIn, .data = dataIn }; }
+    }
+    tagOut = held.tag;
+    dataOut = held.data;
+}
+
+// The same assignment into an element of a struct array, which is the other
+// place `target_signal` has no single id to return.
+entity Slots {
+    clk: Bit in,
+    sel: Bit in,
+    tagIn: unsigned[4] in,
+    dataIn: unsigned[8] in,
+    d0: unsigned[8] out, t0: unsigned[4] out,
+    d1: unsigned[8] out, t1: unsigned[4] out
+}
+impl Slots {
+    let mem: Entry[2];
+    if clk.rising() {
+        if sel { mem[1] = Entry { .tag = tagIn, .data = dataIn }; }
+        else   { mem[0] = Entry { .tag = tagIn, .data = dataIn }; }
+    }
+    t0 = mem[0].tag; d0 = mem[0].data;
+    t1 = mem[1].tag; d1 = mem[1].data;
+}
+
+#[test]
+entity RegisteredStructTest {}
+impl RegisteredStructTest {
+    let clk: Bit = '0';
+    let en: Bit = '0';
+    let ti: unsigned[4] = 0;
+    let di: unsigned[8] = 0;
+    let to: unsigned[4];
+    let dof: unsigned[8];
+    let s: Stage = { .clk = clk, .en = en, .tagIn = ti, .dataIn = di,
+                     .tagOut = to, .dataOut = dof };
+    clk = not clk after 5ns;
+
+    // Disabled: the edge passes and the register holds its power-on value.
+    ti = 7; di = 99;
+    await clk.rising(); await 1ns;
+    assert!(to == 0, "held tag stays at its reset value while disabled");
+    assert!(dof == 0, "and so does the data");
+
+    // Enabled: both fields land on the same edge, from one assignment.
+    en = '1';
+    ti = 5; di = 200;
+    await clk.rising(); await 1ns;
+    assert!(to == 5, "the whole struct registers: tag");
+    assert!(dof == 200, "and data, from a single assignment");
+
+    // A second load replaces both fields together.
+    ti = 9; di = 17;
+    await clk.rising(); await 1ns;
+    assert!(to == 9, "a later load replaces the tag");
+    assert!(dof == 17, "and the data");
+
+    // Disabled again: it holds rather than following the inputs.
+    en = '0';
+    ti = 1; di = 2;
+    await clk.rising(); await 1ns;
+    assert!(to == 9, "and it holds when disabled");
+    assert!(dof == 17, "on both fields");
+}
+
+#[test]
+entity RegisteredStructArrayTest {}
+impl RegisteredStructArrayTest {
+    let clk: Bit = '0';
+    let sel: Bit = '0';
+    let ti: unsigned[4] = 0;
+    let di: unsigned[8] = 0;
+    let d0: unsigned[8]; let t0: unsigned[4];
+    let d1: unsigned[8]; let t1: unsigned[4];
+    let s: Slots = { .clk = clk, .sel = sel, .tagIn = ti, .dataIn = di,
+                     .d0 = d0, .t0 = t0, .d1 = d1, .t1 = t1 };
+    clk = not clk after 5ns;
+
+    // Into element 0.
+    sel = '0'; ti = 3; di = 33;
+    await clk.rising(); await 1ns;
+    assert!(t0 == 3, "element 0 takes the tag");
+    assert!(d0 == 33, "and the data");
+    assert!(t1 == 0, "element 1 is untouched");
+    assert!(d1 == 0, "on both fields");
+
+    // Into element 1, leaving element 0 alone — the two elements are distinct
+    // storage, which a field-wise expansion could get wrong by writing the
+    // array's first element every time.
+    sel = '1'; ti = 6; di = 66;
+    await clk.rising(); await 1ns;
+    assert!(t1 == 6, "element 1 takes the tag");
+    assert!(d1 == 66, "and the data");
+    assert!(t0 == 3, "element 0 still holds its own tag");
+    assert!(d0 == 33, "and its own data");
+}
+
+// The index of a struct-array element is not always a literal in the source.
+// A generate loop substitutes its variable before lowering, but an entity
+// parameter is only bound at elaboration, so the element path has to be folded
+// through the parameter environment before its leaves can be found. Without
+// that, `mem[N] = Entry { .. }` reports "cannot assign to `mem[N]`".
+entity Filled<N: integer> {
+    clk: Bit in,
+    base: unsigned[8] in,
+    at0: unsigned[8] out,
+    at2: unsigned[8] out,
+    tag2: unsigned[4] out,
+    picked: unsigned[8] out,
+    pickedTag: unsigned[4] out
+}
+impl<N: integer> Filled<N> {
+    // Unrolled: every element written by one whole-struct assignment.
+    let mem: Entry[3];
+    if clk.rising() {
+        for i in 0..2 {
+            mem[i] = Entry { .tag = unsigned[4](i), .data = base + unsigned[8](i) };
+        }
+    }
+    at0 = mem[0].data;
+    at2 = mem[2].data;
+    tag2 = mem[2].tag;
+
+    // A parameter as the index, constant only after elaboration.
+    let slot: Entry[3];
+    if clk.rising() { slot[N] = Entry { .tag = 5, .data = 77 }; }
+    picked = slot[2].data;
+    pickedTag = slot[2].tag;
+}
+
+#[test]
+entity RegisteredStructIndexTest {}
+impl RegisteredStructIndexTest {
+    let clk: Bit = '0';
+    let base: unsigned[8] = 100;
+    let at0: unsigned[8]; let at2: unsigned[8]; let tag2: unsigned[4];
+    let picked: unsigned[8]; let pickedTag: unsigned[4];
+    let f: Filled<N = 2> = { .clk = clk, .base = base, .at0 = at0, .at2 = at2,
+                             .tag2 = tag2, .picked = picked, .pickedTag = pickedTag };
+    clk = not clk after 5ns;
+    await clk.rising(); await 1ns;
+
+    // The loop writes element i with tag i and data base + i.
+    assert!(at0 == 100, "the unrolled loop writes element 0");
+    assert!(at2 == 102, "and element 2, with its own data");
+    assert!(tag2 == 2, "and the tag that goes with it");
+
+    // N = 2 selects the last slot; the others keep their reset value.
+    assert!(picked == 77, "a parameter index writes the element it names");
+    assert!(pickedTag == 5, "on both fields");
+}
