@@ -1,0 +1,124 @@
+// A composite assignment whose right-hand side reads the target.
+//
+// The testbench emitter writes a composite element by element. Nothing
+// evaluated the right-hand side first, so a later element read one already
+// written: a rotation filled every slot from the first write, and a struct
+// literal that exchanges two fields duplicated one of them instead.
+//
+//   a = [a[2], a[0], a[1]]           gave 3 3 3, not 3 1 2
+//   t = P { .a = t.b, .b = t.a }     gave (2, 2), not (2, 1)
+//
+// Hardware was right in both cases — drivers there are concurrent, and this is
+// exactly the property a sequential emitter has to reproduce by staging. So
+// each check below asserts the testbench result *and* compares it to the
+// hardware result for the same computation.
+//
+// Every expected value is worked out from the definition of a rotation and a
+// swap, not read back from a run.
+module composite_self_assign_test;
+
+using std::bits::{unsigned};
+
+struct P { a: unsigned[8], b: unsigned[8] }
+
+fn swap(v: P) -> P { return P { .a = v.b, .b = v.a }; }
+
+// A DUT that reads the bus, so a testbench struct connected to it is backed by
+// real signals rather than plain C variables. The emitter writes those through
+// a different branch, and it needs staging for the same reason.
+entity Sink { bus: P in, code: unsigned[8] out }
+impl Sink { code = bus.a * 16 + bus.b; }
+
+entity Hw {
+    sa: unsigned[8] out, sb: unsigned[8] out,
+    fa: unsigned[8] out, fb: unsigned[8] out
+}
+impl Hw {
+    // The exchange written as a literal.
+    let t: P; t = P { .a = 1, .b = 2 };
+    let u: P; u = P { .a = t.b, .b = t.a };
+    sa = u.a; sb = u.b;
+
+    // And through a function, which is the same exchange one level down.
+    let f: P; f = swap(t);
+    fa = f.a; fb = f.b;
+}
+
+#[test]
+entity CompositeSelfAssignTest {}
+impl CompositeSelfAssignTest {
+    let h: Hw = {};
+    await 1ns;
+
+    // A rotation: every element takes another element's *old* value. Writing
+    // in order without staging propagates the first write through the rest.
+    let a: unsigned[8][3] = [1, 2, 3];
+    a = [a[2], a[0], a[1]];
+    await 1ns;
+    assert!(a[0] == 3, "rotate right: slot 0 takes the old last element");
+    assert!(a[1] == 1, "slot 1 takes the old first");
+    assert!(a[2] == 2, "slot 2 takes the old middle");
+
+    // Rotating again returns to a rotation of the original, which a
+    // fill-from-the-first-write would not do.
+    a = [a[2], a[0], a[1]];
+    await 1ns;
+    assert!(a[0] == 2, "and rotating twice moves every element two places");
+    assert!(a[1] == 3, "on the second slot");
+    assert!(a[2] == 1, "and the third");
+
+    // A struct literal that exchanges its own two fields.
+    let t: P = { .a = 1, .b = 2 };
+    t = P { .a = t.b, .b = t.a };
+    await 1ns;
+    assert!(t.a == 2, "the exchange gives a the old b");
+    assert!(t.b == 1, "and b the old a — not a second copy of b");
+    assert!(t.a == h.sa, "and hardware agrees on a");
+    assert!(t.b == h.sb, "and on b");
+
+    // Exchanging twice is the identity, which only holds if each exchange
+    // really exchanged.
+    t = P { .a = t.b, .b = t.a };
+    await 1ns;
+    assert!(t.a == 1, "exchanging twice restores a");
+    assert!(t.b == 2, "and b");
+
+    // The same exchange through a function whose argument is the target.
+    let s: P = { .a = 1, .b = 2 };
+    s = swap(s);
+    await 1ns;
+    assert!(s.a == 2, "a function may take the struct it assigns: a");
+    assert!(s.b == 1, "and b");
+    assert!(s.a == h.fa, "matching hardware on a");
+    assert!(s.b == h.fb, "and on b");
+
+    // A spread that reads the struct it writes. This one was always right —
+    // `..s` copies b and `.a = s.b` overrides a, so both end up 2 — and it is
+    // here so that staging does not quietly change an answer that was correct.
+    let g: P = { .a = 1, .b = 2 };
+    g = P { ..g, .a = g.b };
+    await 1ns;
+    assert!(g.a == 2, "the named field overrides with the old b");
+    assert!(g.b == 2, "and the spread copies the old b");
+
+    // The same exchange on a struct that is *connected to a DUT*, so its
+    // fields are signals. Its value has to reach the instance as well as the
+    // testbench's own view of it.
+    let bus: P = { .a = 1, .b = 2 };
+    let code: unsigned[8];
+    let d: Sink = { .bus = bus, .code = code };
+    await 1ns;
+    bus = P { .a = bus.b, .b = bus.a };
+    await 1ns;
+    assert!(bus.a == 2, "a connected struct exchanges too: a");
+    assert!(bus.b == 1, "and b");
+    assert!(code == 33, "and the instance sees the exchanged pair (2*16 + 1)");
+
+    // A plain copy between two different structs is untouched by staging.
+    let src: P = { .a = 7, .b = 9 };
+    let dst: P = { .a = 0, .b = 0 };
+    dst = src;
+    await 1ns;
+    assert!(dst.a == 7, "an ordinary copy still copies a");
+    assert!(dst.b == 9, "and b");
+}
