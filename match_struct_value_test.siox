@@ -178,6 +178,20 @@ impl MatchStructValueTest {
     assert!(reordered.writes == '0', "and keeps its own write flag");
     assert!(reordered.usesImm == '1', "and its own immediate flag");
 
+    // An arm that is a plain *name* rather than a literal. Hardware reads the
+    // struct's fields directly; the testbench has to expand the name into a
+    // literal of its own fields before it can distribute them.
+    let preset: Ctrl = { .kind = Kind::Branch, .writes = '0', .usesImm = '1' };
+    let viaName: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
+    viaName = match sel {
+        0 | 1 => Ctrl { .kind = Kind::Alu, .writes = '1', .usesImm = '0' },
+        _     => preset
+    };
+    await 1ns;
+    assert!(unsigned[8](viaName.kind) == 3, "a name arm carries its own kind");
+    assert!(viaName.writes == '0', "and its own write flag");
+    assert!(viaName.usesImm == '1', "and its own immediate flag");
+
     // A struct-valued `if` on the testbench side too.
     let e: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
     e = if sel > 1 { Ctrl { .kind = Kind::Mem, .writes = '1', .usesImm = '1' } }
