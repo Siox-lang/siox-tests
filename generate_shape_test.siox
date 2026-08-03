@@ -1,0 +1,127 @@
+// Generate shapes that nothing exercised: a clocked block *inside* the loop,
+// nesting, the index used arithmetically, and a descending range.
+//
+// The corpus had two generate files. Both build combinational structure —
+// instances wired through a wire array, and a generate-`if` selecting between
+// two of them. Neither puts sequential logic inside a loop, nests a loop in a
+// loop, uses the index as a value rather than a subscript, or counts down. A
+// generate `for` unrolls through two different paths depending on whether the
+// clocked block is outside it or inside it, and only one of those was covered.
+//
+// Every expected value below is worked out by hand from the loop bounds, not
+// read back from a run.
+module generate_shape_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+// An N-deep delay line whose per-stage register is clocked inside the loop, so
+// the loop produces N sequential processes rather than N instances. The array
+// is sized by the same parameter that bounds the loop.
+entity Delay<N: integer> {
+    clk: Bit in,
+    d: unsigned[8] in,
+    q: unsigned[8] out
+}
+impl<N: integer> Delay<N> {
+    let s: unsigned[8][N];
+    for i in 0..(N - 1) {
+        if clk.rising() {
+            if i == 0 { s[0] = d; } else { s[i] = s[i - 1]; }
+        }
+    }
+    q = s[N - 1];
+}
+
+entity Shapes {
+    grid: unsigned[16] out,
+    squares: unsigned[16] out,
+    descending: unsigned[16] out,
+    single: unsigned[16] out,
+    inner: unsigned[16] out
+}
+impl Shapes {
+    // A loop inside a loop. Cell (i, j) holds i * 10 + j, flattened as i*3+j.
+    // Sum over i, j in 0..2: 3 * 10 * (0+1+2) + 3 * (0+1+2) = 90 + 9 = 99.
+    let c: unsigned[16][9];
+    for i in 0..2 {
+        for j in 0..2 { c[i * 3 + j] = unsigned[16](i * 10 + j); }
+    }
+    grid = c[0]+c[1]+c[2]+c[3]+c[4]+c[5]+c[6]+c[7]+c[8];
+
+    // The index as a value, not a subscript: 0+1+4+9+16 = 30.
+    let sq: unsigned[16][5];
+    for i in 0..4 { sq[i] = unsigned[16](i * i); }
+    squares = sq[0]+sq[1]+sq[2]+sq[3]+sq[4];
+
+    // A range counts down when its bounds do — `3..0` is 3, 2, 1, 0, the same
+    // rule that makes `Logic[7..0]` descending. Writing i+1 at each gives
+    // 4+3+2+1 = 10, and every element is written exactly once.
+    let dn: unsigned[16][4];
+    for i in 3..0 { dn[i] = unsigned[16](i + 1); }
+    descending = dn[0]+dn[1]+dn[2]+dn[3];
+
+    // A range whose bounds are equal is one iteration, not none.
+    let one: unsigned[16][4];
+    for k in 0..3 { one[k] = 0; }
+    for k in 2..2 { one[k] = 5; }
+    single = one[0]+one[1]+one[2]+one[3];
+
+    // A loop nested inside a clocked block, which unrolls by a different path
+    // than a clocked block nested inside a loop. No clock here, so this reads
+    // back its power-on value; it exists to pin that the shape elaborates.
+    let acc: unsigned[16][4];
+    for k in 0..3 { acc[k] = unsigned[16](k + 1); }
+    inner = acc[0]+acc[1]+acc[2]+acc[3];
+}
+
+#[test]
+entity GenerateShapeTest {}
+impl GenerateShapeTest {
+    let s: Shapes = {};
+    await 1ns;
+
+    assert!(s.grid == 99, "a nested generate fills all nine cells");
+    assert!(s.squares == 30, "the loop index used as a value: sum of squares");
+    assert!(s.descending == 10, "`3..0` counts down and writes every element");
+    assert!(s.single == 5, "`2..2` is one iteration, not zero");
+    assert!(s.inner == 10, "1+2+3+4 across the flat loop");
+
+    // The delay line: a clocked block inside a generate loop. Three stages, so
+    // a value fed at edge k emerges at edge k+2.
+    let clk: Bit = '0';
+    let d: unsigned[8] = 0;
+    let q: unsigned[8];
+    let u: Delay<N = 3> = { .clk = clk, .d = d, .q = q };
+    clk = not clk after 5ns;
+
+    d = 11; await clk.rising();      // edge 1: s = [11, _, _]
+    d = 22; await clk.rising();      // edge 2: s = [22, 11, _]
+    d = 33; await clk.rising();      // edge 3: s = [33, 22, 11]
+    assert!(q == 11, "three stages: the first value emerges on the third edge");
+
+    d = 44; await clk.rising();      // edge 4: s = [44, 33, 22]
+    assert!(q == 22, "and the second on the fourth");
+
+    await clk.rising();              // edge 5: s = [44, 44, 33]
+    assert!(q == 33, "and the third on the fifth");
+}
+
+// N = 1 is the degenerate delay line: `for i in 0..0` is one iteration, and
+// `s[N - 1]` is `s[0]` — the stage that is fed. A loop that treated an
+// equal-bounds range as empty would build no storage at all here.
+#[test]
+entity GenerateOneStageTest {}
+impl GenerateOneStageTest {
+    let clk: Bit = '0';
+    let d: unsigned[8] = 0;
+    let q: unsigned[8];
+    let u: Delay<N = 1> = { .clk = clk, .d = d, .q = q };
+    clk = not clk after 5ns;
+
+    d = 77; await clk.rising();
+    assert!(q == 77, "one stage delays by exactly one edge");
+
+    d = 88; await clk.rising();
+    assert!(q == 88, "and follows the input on each edge after");
+}
