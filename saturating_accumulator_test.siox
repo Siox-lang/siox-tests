@@ -1,0 +1,113 @@
+// A saturating accumulator: std's `min`/`max`/`abs` over a value that reached
+// kernel arithmetic through `sext`.
+//
+// `sext` exists to turn a `signed[N]` into a negative kernel integer, and it
+// is inlined — so the `signed[8]` signal it reads is still visible in the
+// lowered expression. Signedness was decided by looking for a non-integer
+// signal anywhere in that expression, which found one and forced *unsigned*
+// comparison, ignoring `sext`'s declared `-> integer` return. So:
+//
+//   if sext(x) < 0        was false for every negative x
+//   abs(sext(x))          returned 251 for -5
+//   min(127, sext(x))     returned 127
+//
+// and this accumulator saturated to -128 on every sample regardless of its
+// value. Hardware only: the testbench emits C, where the value is already a
+// signed word, so a design could pass its own testbench and be wrong.
+//
+// The expected table is a Python model of the stated behaviour — accumulate,
+// clamp to a signed byte, take the magnitude — not anything the compiler
+// produced.
+module saturating_accumulator_test;
+
+using std::bits::{signed, sext};
+using std::logic::{Bit};
+using std::math::{min, max, abs};
+
+entity Acc {
+    clk: Bit in,
+    din: signed[8] in,
+    raw: signed[16] out,    // the running sum, which was always right
+    sat: signed[8] out,     // clamped to a signed byte
+    mag: signed[16] out,    // magnitude of the running sum
+    neg: signed[16] out     // a bare comparison on the call itself
+}
+impl Acc {
+    let acc: signed[16] = 0;
+    if clk.rising() { acc = acc + signed[16](sext(din)); }
+    raw = acc;
+    sat = signed[8](max(0 - 128, min(127, sext(acc))));
+    mag = signed[16](abs(sext(acc)));
+    // Not inside any function: the comparison's own operand is the call, so
+    // its declared `-> integer` has to outrank the `signed[16]` signal that
+    // the inlined `sext` body reads.
+    neg = if sext(acc) < 0 { 1 } else { 0 };
+}
+
+#[test]
+entity SaturatingAccumulatorTest {}
+impl SaturatingAccumulatorTest {
+    let clk: Bit = '0';
+    let din: signed[8] = 0;
+    let raw: signed[16]; let sat: signed[8]; let mag: signed[16]; let neg: signed[16];
+    let a: Acc = { .clk = clk, .din = din, .raw = raw, .sat = sat, .mag = mag, .neg = neg };
+    clk = not clk after 5ns;
+
+    // 100: below the ceiling, so nothing clamps yet.
+    din = 100; await clk.rising(); await 1ns;
+    assert!(raw == 100, "the running sum is 100");
+    assert!(sat == 100, "which is inside a signed byte");
+    assert!(mag == 100, "and its magnitude is itself");
+    assert!(neg == 0, "a bare `sext(acc) < 0` is false while the sum is positive");
+
+    // 200: over the ceiling. `min` has to pick 127, which it could only do by
+    // comparing correctly.
+    din = 100; await clk.rising(); await 1ns;
+    assert!(raw == 200, "the sum runs past a byte");
+    assert!(sat == 127, "and clamps to the ceiling");
+    assert!(mag == 200, "while the magnitude keeps the true value");
+
+    // Coming back down, still above the ceiling.
+    din = -50; await clk.rising(); await 1ns;
+    assert!(raw == 150, "the sum falls to 150");
+    assert!(sat == 127, "still clamped");
+
+    // Back inside the range: the clamp has to *stop* clamping.
+    din = -100; await clk.rising(); await 1ns;
+    assert!(raw == 50, "the sum re-enters the range");
+    assert!(sat == 50, "and passes through unclamped");
+    assert!(mag == 50, "with the magnitude unchanged");
+
+    // Negative sum: `max` chooses the value, and `abs` has to flip the sign.
+    din = -100; await clk.rising(); await 1ns;
+    assert!(raw == -50, "the sum goes negative");
+    assert!(sat == -50, "which is inside a signed byte");
+    assert!(mag == 50, "and the magnitude is positive — this returned -50");
+    assert!(neg == 1, "and the bare comparison is true — this returned 0");
+
+    // Back across zero.
+    din = 60; await clk.rising(); await 1ns;
+    assert!(raw == 10, "the sum crosses back up");
+    assert!(sat == 10, "unclamped");
+    assert!(mag == 10, "and the magnitude follows");
+
+    // Negative but inside the range: neither bound applies.
+    din = -120; await clk.rising(); await 1ns;
+    assert!(raw == -110, "the sum is -110");
+    assert!(sat == -110, "inside the floor");
+    assert!(mag == 110, "with magnitude 110");
+
+    // Past the floor: `max` clamps at the other end, which a comparison that
+    // treats negatives as huge positives would never do.
+    din = -120; await clk.rising(); await 1ns;
+    assert!(raw == -230, "the sum runs past the floor");
+    assert!(sat == -128, "and clamps to it");
+    assert!(mag == 230, "while the magnitude keeps the true value");
+
+    // The pieces on their own, so a failure says which one broke.
+    let x: signed[8] = -5;
+    assert!(sext(x) == -5, "sext gives a negative kernel integer");
+    assert!(abs(sext(x)) == 5, "abs over it flips the sign");
+    assert!(min(127, sext(x)) == -5, "min picks the negative");
+    assert!(max(0 - 128, sext(x)) == -5, "and max picks it too");
+}
