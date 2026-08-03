@@ -1,0 +1,110 @@
+// A function parameter declared `integer` compares as a signed value.
+//
+// Signedness of an operation is decided from the recorded type of its operand
+// expressions. A free function's body is type-checked with no parameters in
+// scope, so every use of a parameter records as `Ty::Error` — and lowering,
+// finding no kernel-integer operand, emitted an *unsigned* comparison. So
+// `if v < 0` inside `fn f(v: integer)` was false for every negative `v`:
+//
+//   abs(n)  returned n         for n = -5
+//   min(127, n) returned 127   for n = -5
+//   mylt(n) returned 0         for n = -5
+//
+// while the identical comparison written inline (`if n < 0`) was correct, and
+// the *testbench* engine was correct too — it evaluates the body in C, where
+// the values are signed. A design could therefore pass its own testbench and
+// be wrong in hardware, which is the worst shape this can take.
+//
+// The existing coverage missed it because it exercised `abs` on a `signed[8]`
+// (which dispatches signed's `<=>` and never reaches this path) and on a
+// literal (which const-folds).
+//
+// Expected values are what the arithmetic says, not what the compiler printed.
+module integer_param_signed_test;
+
+using std::bits::{signed, unsigned};
+using std::math::{abs, min, max};
+
+// The same bodies std uses, in the user's own module, so this does not depend
+// on std continuing to spell them the same way.
+fn myabs(v: integer) -> integer { if v < 0 { return 0 - v; } return v; }
+fn isneg(v: integer) -> integer { if v < 0 { return 1; } return 0; }
+fn clamp(v: integer, lo: integer, hi: integer) -> integer {
+    if v < lo { return lo; }
+    if v > hi { return hi; }
+    return v;
+}
+
+entity Calc {
+    // std's helpers on a negative kernel integer.
+    stdAbs: signed[16] out,
+    stdMin: signed[16] out,
+    stdMax: signed[16] out,
+    // The same, written by hand.
+    ownAbs: signed[16] out,
+    ownNeg: unsigned[8] out,
+    ownClampLow: signed[16] out,
+    ownClampHigh: signed[16] out,
+    ownClampMid: signed[16] out,
+    // The control: the identical comparison with no call around it, which was
+    // always right and must stay so.
+    inlineNeg: unsigned[8] out,
+    // And a positive argument, so the fix cannot be "always signed" hiding a
+    // second error.
+    posAbs: signed[16] out
+}
+impl Calc {
+    let n: integer = 0 - 5;
+    let p: integer = 7;
+
+    stdAbs = signed[16](abs(n));
+    stdMin = signed[16](min(127, n));
+    stdMax = signed[16](max(0 - 128, n));
+
+    ownAbs = signed[16](myabs(n));
+    ownNeg = if isneg(n) == 1 { 1 } else { 0 };
+    ownClampLow  = signed[16](clamp(n, 0 - 2, 3));
+    ownClampHigh = signed[16](clamp(200, 0 - 2, 3));
+    ownClampMid  = signed[16](clamp(1, 0 - 2, 3));
+
+    inlineNeg = if n < 0 { 1 } else { 0 };
+    posAbs = signed[16](myabs(p));
+}
+
+#[test]
+entity IntegerParamSignedTest {}
+impl IntegerParamSignedTest {
+    let c: Calc = {};
+    await 1ns;
+
+    // std, on -5.
+    assert!(c.stdAbs == 5, "abs(-5) is 5");
+    assert!(c.stdMin == -5, "min(127, -5) is -5");
+    assert!(c.stdMax == -5, "max(-128, -5) is -5");
+
+    // The same bodies written by hand: the bug is in the calling convention,
+    // not in std's source.
+    assert!(c.ownAbs == 5, "a user abs gives 5 too");
+    assert!(c.ownNeg == 1, "and a bare sign test is true for -5");
+
+    // Clamping exercises both comparisons in one body, and both directions.
+    assert!(c.ownClampLow == -2, "-5 clamps up to the low bound");
+    assert!(c.ownClampHigh == 3, "200 clamps down to the high bound");
+    assert!(c.ownClampMid == 1, "and a value inside the range is unchanged");
+
+    // The control, and a positive argument.
+    assert!(c.inlineNeg == 1, "the inline comparison was always right");
+    assert!(c.posAbs == 7, "abs(7) is 7 — signedness did not break the easy case");
+
+    // The testbench engine evaluates these bodies itself, in C, where the
+    // values are signed. It was right while hardware was wrong, so the two
+    // are compared against each other as well as against the arithmetic.
+    let n: integer = 0 - 5;
+    assert!(abs(n) == 5, "the testbench agrees on abs");
+    assert!(myabs(n) == 5, "and on a user abs");
+    assert!(min(127, n) == -5, "and on min");
+    assert!(clamp(n, 0 - 2, 3) == -2, "and on clamping up to the low bound");
+    assert!(signed[16](abs(n)) == c.stdAbs, "both engines agree on abs");
+    assert!(signed[16](myabs(n)) == c.ownAbs, "and on a user abs");
+    assert!(signed[16](min(127, n)) == c.stdMin, "and on min");
+}
