@@ -1,0 +1,158 @@
+// A `match` expression whose arms are structs.
+//
+// Writing a decoder as one `match` producing a control struct is the natural
+// spelling, and it drove nothing at all: every field read as its power-on
+// value, with only "signal never driven" to say so. The `Val` lowering had
+// arms for `if`-expressions and struct literals but none for `match`, so a
+// struct-valued match fell through to the scalar lowering, which builds one
+// `Select` chain over whole values and has nowhere to put a struct.
+//
+// The neighbouring spellings both worked, which is what makes this a bug
+// rather than an unsupported form: the same decode written as an
+// `if`-expression, or as a `match` *statement* with each arm assigning, was
+// correct. Only the expression form was wrong, and silently.
+//
+// The testbench engine could not run it either, for its own reason — it writes
+// a composite from a name, a literal or a spread, and a conditional is none of
+// those. There it distributes over the fields: one scalar `match` per field.
+//
+// The expected table is the decode rules stated in prose below, worked out
+// independently rather than read back from a run.
+module match_struct_value_test;
+
+using std::bits::{unsigned};
+using std::logic::{Bit};
+
+//   0, 1    -> Alu,    writes, no immediate
+//   2..5    -> Logic,  writes, no immediate
+//   6, 7    -> Imm,    writes, immediate
+//   8       -> Branch, no write, immediate
+//   9..12   -> Mem,    writes, immediate
+//   else    -> Nop,    no write, no immediate
+enum Kind { Alu, Logic, Imm, Branch, Mem, Nop }
+struct Ctrl { kind: Kind, writes: Bit, usesImm: Bit }
+
+entity Decoder {
+    op: unsigned[4] in,
+    kind: unsigned[8] out,
+    writes: Bit out,
+    usesImm: Bit out,
+    // The same decode as an `if`-expression chain, which always worked and is
+    // here to be compared against.
+    altKind: unsigned[8] out,
+    altWrites: Bit out,
+    altImm: Bit out
+}
+impl Decoder {
+    // Or-patterns, ranges, a bare literal and a wildcard, all producing a
+    // struct.
+    let c: Ctrl;
+    c = match op {
+        0 | 1  => Ctrl { .kind = Kind::Alu,    .writes = '1', .usesImm = '0' },
+        2..5   => Ctrl { .kind = Kind::Logic,  .writes = '1', .usesImm = '0' },
+        6 | 7  => Ctrl { .kind = Kind::Imm,    .writes = '1', .usesImm = '1' },
+        8      => Ctrl { .kind = Kind::Branch, .writes = '0', .usesImm = '1' },
+        9..12  => Ctrl { .kind = Kind::Mem,    .writes = '1', .usesImm = '1' },
+        _      => Ctrl { .kind = Kind::Nop,    .writes = '0', .usesImm = '0' }
+    };
+    kind = unsigned[8](c.kind);
+    writes = c.writes;
+    usesImm = c.usesImm;
+
+    let alt: Ctrl;
+    alt = if op < 2 { Ctrl { .kind = Kind::Alu, .writes = '1', .usesImm = '0' } }
+          else { Ctrl { .kind = Kind::Nop, .writes = '0', .usesImm = '0' } };
+    altKind = unsigned[8](alt.kind);
+    altWrites = alt.writes;
+    altImm = alt.usesImm;
+}
+
+#[test]
+entity MatchStructValueTest {}
+impl MatchStructValueTest {
+    let op: unsigned[4] = 0;
+    let kind: unsigned[8]; let writes: Bit; let usesImm: Bit;
+    let altKind: unsigned[8]; let altWrites: Bit; let altImm: Bit;
+    let d: Decoder = { .op = op, .kind = kind, .writes = writes,
+                       .usesImm = usesImm, .altKind = altKind, .altWrites = altWrites, .altImm = altImm };
+
+    // Alu: the two lowest opcodes, reached by an or-pattern.
+    op = 0; await 1ns;
+    assert!(kind == 0, "opcode 0 decodes as Alu");
+    assert!(writes == '1', "which writes a register");
+    assert!(usesImm == '0', "and takes no immediate");
+    op = 1; await 1ns;
+    assert!(kind == 0, "and so does opcode 1, through the same arm");
+
+    // Logic: a range.
+    op = 2; await 1ns; assert!(kind == 1, "opcode 2 decodes as Logic");
+    op = 5; await 1ns;
+    assert!(kind == 1, "and so does the top of the range");
+    assert!(writes == '1', "Logic writes a register");
+    assert!(usesImm == '0', "and takes no immediate");
+
+    // Imm: an or-pattern that differs from Alu only in the immediate flag, so
+    // a decode that collapsed the struct to one field would not show it.
+    op = 6; await 1ns;
+    assert!(kind == 2, "opcode 6 decodes as Imm");
+    assert!(writes == '1', "Imm writes");
+    assert!(usesImm == '1', "and takes an immediate");
+
+    // Branch: a bare literal, and the only arm that writes no register while
+    // still taking an immediate.
+    op = 8; await 1ns;
+    assert!(kind == 3, "opcode 8 decodes as Branch");
+    assert!(writes == '0', "Branch writes no register");
+    assert!(usesImm == '1', "but does take an immediate");
+
+    // Mem: the last range, checked at both ends.
+    op = 9; await 1ns; assert!(kind == 4, "opcode 9 decodes as Mem");
+    op = 12; await 1ns;
+    assert!(kind == 4, "and so does opcode 12");
+    assert!(writes == '1', "Mem writes");
+    assert!(usesImm == '1', "and takes an immediate");
+
+    // The wildcard.
+    op = 13; await 1ns;
+    assert!(kind == 5, "opcode 13 falls to the wildcard");
+    assert!(writes == '0', "Nop writes nothing");
+    assert!(usesImm == '0', "and takes no immediate");
+    op = 15; await 1ns; assert!(kind == 5, "and so does the last opcode");
+
+    // The `if`-expression spelling of the same first rule agrees.
+    op = 1; await 1ns; assert!(altKind == 0, "the if-expression form agrees on Alu");
+    op = 7; await 1ns;
+    assert!(altKind == 5, "and on the default");
+    assert!(altWrites == '0', "including its write flag");
+    assert!(altImm == '0', "and its immediate flag");
+
+    // The same match evaluated by the testbench engine, which reaches it a
+    // different way — by distributing the arms over the fields.
+    let sel: unsigned[4] = 6;
+    let c: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
+    c = match sel {
+        0 | 1  => Ctrl { .kind = Kind::Alu,    .writes = '1', .usesImm = '0' },
+        2..5   => Ctrl { .kind = Kind::Logic,  .writes = '1', .usesImm = '0' },
+        6 | 7  => Ctrl { .kind = Kind::Imm,    .writes = '1', .usesImm = '1' },
+        _      => Ctrl { .kind = Kind::Nop,    .writes = '0', .usesImm = '0' }
+    };
+    await 1ns;
+    assert!(unsigned[8](c.kind) == 2, "the testbench decodes opcode 6 as Imm");
+    assert!(c.writes == '1', "with the write flag");
+    assert!(c.usesImm == '1', "and the immediate flag");
+
+    // And the same opcode through the DUT, so the two engines are compared
+    // against each other and not only against the table.
+    op = 6; await 1ns;
+    assert!(unsigned[8](c.kind) == kind, "both engines agree on the kind");
+    assert!(c.writes == writes, "and on the write flag");
+    assert!(c.usesImm == usesImm, "and on the immediate flag");
+
+    // A struct-valued `if` on the testbench side too.
+    let e: Ctrl = { .kind = Kind::Nop, .writes = '0', .usesImm = '0' };
+    e = if sel > 1 { Ctrl { .kind = Kind::Mem, .writes = '1', .usesImm = '1' } }
+        else { Ctrl { .kind = Kind::Alu, .writes = '1', .usesImm = '0' } };
+    await 1ns;
+    assert!(unsigned[8](e.kind) == 4, "a struct-valued if picks the Mem arm");
+    assert!(e.usesImm == '1', "with its immediate flag");
+}
