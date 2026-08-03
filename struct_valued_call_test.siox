@@ -36,6 +36,8 @@ impl Vec2 {
 }
 fn twice(v: Vec2) -> Vec2 { return Vec2 { .x = v.x * 2, .y = v.y * 2 }; }
 fn nested(v: Vec2) -> Vec2 { return twice(v) + v; }
+// A body that returns another call directly, with no literal of its own.
+fn passthru(v: Vec2) -> Vec2 { return twice(v); }
 
 entity Calc {
     mx: unsigned[8] out, my: unsigned[8] out,   // method
@@ -101,4 +103,82 @@ impl StructValuedCallTest {
     assert!(c.cy == 15, "and y");
     assert!(c.cx == c.nx, "in a body or in place, the same result");
     assert!(c.cy == c.ny, "on both fields");
+}
+
+// The same computations on the testbench side, which is a separate C emitter.
+//
+// It wrote a composite from a name, a literal or a spread; any *computed*
+// struct fell through to the scalar path, which looked the destination up as
+// one signal, found none (a struct is many) and reported "unknown signal `s`"
+// — blaming a local that works on the line above. A computed struct now
+// reduces to the literal its body returns, expressed in the caller's terms,
+// which is the literal case that already worked.
+#[test]
+entity StructValuedCallTestbenchTest {}
+impl StructValuedCallTestbenchTest {
+    let c: Calc = {};
+    let a: Vec2 = { .x = 3, .y = 5 };
+    await 1ns;
+
+    // An operator, evaluated by the testbench engine.
+    let o: Vec2 = { .x = 0, .y = 0 };
+    o = a + a;
+    await 1ns;
+    assert!(o.x == 6, "the testbench evaluates a user operator: x");
+    assert!(o.y == 10, "and y");
+    assert!(o.x == c.ox, "and agrees with hardware on x");
+    assert!(o.y == c.oy, "and on y");
+
+    // A method.
+    let m: Vec2 = { .x = 0, .y = 0 };
+    m = a.doubled();
+    await 1ns;
+    assert!(m.x == 6, "a struct-returning method: x");
+    assert!(m.y == 10, "and y");
+    assert!(m.x == c.mx, "matching hardware on x");
+    assert!(m.y == c.my, "and on y");
+
+    // A free function — the shape that read as zero in hardware and as
+    // "unknown signal" here, so neither engine could run it.
+    let f: Vec2 = { .x = 0, .y = 0 };
+    f = twice(a);
+    await 1ns;
+    assert!(f.x == 6, "a struct-returning function: x");
+    assert!(f.y == 10, "and y");
+    assert!(f.x == c.fx, "matching hardware on x");
+    assert!(f.y == c.fy, "and on y");
+
+    // A call feeding an operator: substituting the argument leaves a field
+    // read of a call behind, which has to be folded to the field's own value
+    // before it can be emitted.
+    let n: Vec2 = { .x = 0, .y = 0 };
+    n = twice(a) + a;
+    await 1ns;
+    assert!(n.x == 9, "a call feeding an operator: x");
+    assert!(n.y == 15, "and y");
+    assert!(n.x == c.cx, "matching hardware on x");
+    assert!(n.y == c.cy, "and on y");
+
+    // The same composition inside a function body.
+    let d: Vec2 = { .x = 0, .y = 0 };
+    d = nested(a);
+    await 1ns;
+    assert!(d.x == 9, "the same composition in a body: x");
+    assert!(d.y == 15, "and y");
+    assert!(d.x == c.nx, "matching hardware on x");
+    assert!(d.y == c.ny, "and on y");
+
+    // A call as another call's argument.
+    let q: Vec2 = { .x = 0, .y = 0 };
+    q = twice(twice(a));
+    await 1ns;
+    assert!(q.x == 12, "a call as an argument doubles twice: x");
+    assert!(q.y == 20, "and y");
+
+    // A body with no literal of its own, which returns another call.
+    let p: Vec2 = { .x = 0, .y = 0 };
+    p = passthru(a);
+    await 1ns;
+    assert!(p.x == 6, "a pass-through body forwards the call: x");
+    assert!(p.y == 10, "and y");
 }
