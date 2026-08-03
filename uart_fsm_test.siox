@@ -1,0 +1,150 @@
+// A UART transmitter: an FSM with a datapath, checked against the protocol.
+//
+// The corpus had one FSM, and it is a state register and nothing else — three
+// states, four edges, one input, and the state itself as the only output. This
+// one combines what a real controller does: an enum state driven by `match`
+// inside a clocked block, a shift register and a counter advanced by the same
+// edge, a synchronous reset, a Moore output (`busy`, from the state alone) and
+// a registered data output.
+//
+// The expected serial stream is the RS-232 framing of one byte, not anything
+// the compiler produced: a start bit 0, eight data bits least-significant
+// first, then a stop bit 1. For 0xA5 (10100101) the data bits are therefore
+// 1, 0, 1, 0, 0, 1, 0, 1.
+//
+// Writing this found `Bit(sh[0])` — the obvious way to move a bit out of a
+// vector — typechecking and then failing after every stage reported success.
+// There is no `From<Logic> for Bit` and there should not be, since `Bit` has
+// nowhere to put `'X'` or `'Z'`. The line is a `Logic`, which is what a pin is.
+module uart_fsm_test;
+
+using std::logic::{Bit, Logic};
+using std::bits::{unsigned};
+
+enum TxState { Idle, Start, Data, Stop }
+
+entity Uart {
+    clk: Bit in,
+    rst: Bit in,
+    send: Bit in,
+    dataIn: unsigned[8] in,
+    tx: Logic out,
+    busy: Bit out
+}
+impl Uart {
+    let state: TxState = TxState::Idle;
+    let sh: unsigned[8] = 0;
+    let cnt: unsigned[4] = 0;
+    let txr: Logic = '1';
+
+    if clk.rising() {
+        if rst == '1' {
+            state = TxState::Idle;
+            txr = '1';
+            cnt = 0;
+        } else {
+            match state {
+                TxState::Idle => {
+                    txr = '1';
+                    if send == '1' { sh = dataIn; state = TxState::Start; }
+                }
+                TxState::Start => { txr = '0'; cnt = 0; state = TxState::Data; }
+                TxState::Data => {
+                    // Next-state semantics: `txr` takes the *old* low bit while
+                    // `sh` takes the old value shifted, so the two do not race.
+                    txr = sh[0];
+                    sh = sh >> 1;
+                    if cnt == 7 { state = TxState::Stop; } else { cnt = cnt + 1; }
+                }
+                TxState::Stop => { txr = '1'; state = TxState::Idle; }
+            }
+        }
+    }
+
+    tx = txr;
+    busy = if state == TxState::Idle { '0' } else { '1' };
+}
+
+#[test]
+entity UartFsmTest {}
+impl UartFsmTest {
+    let clk: Bit = '0';
+    let rst: Bit = '0';
+    let send: Bit = '0';
+    let d: unsigned[8] = 0;
+    let tx: Logic;
+    let busy: Bit;
+    let u: Uart = { .clk = clk, .rst = rst, .send = send, .dataIn = d,
+                    .tx = tx, .busy = busy };
+    clk = not clk after 5ns;
+
+    // 0xA5 = 10100101. Least-significant bit first: 1 0 1 0 0 1 0 1.
+    d = 165;
+    send = '1';
+    await clk.rising(); await 1ns;
+    assert!(tx == '1', "the line idles high while the byte is loaded");
+    assert!(busy == '1', "and the machine leaves Idle on the same edge");
+
+    send = '0';
+    await clk.rising(); await 1ns;
+    assert!(tx == '0', "the start bit is low");
+
+    await clk.rising(); await 1ns; assert!(tx == '1', "d0 = 1");
+    await clk.rising(); await 1ns; assert!(tx == '0', "d1 = 0");
+    await clk.rising(); await 1ns; assert!(tx == '1', "d2 = 1");
+    await clk.rising(); await 1ns; assert!(tx == '0', "d3 = 0");
+    await clk.rising(); await 1ns; assert!(tx == '0', "d4 = 0");
+    await clk.rising(); await 1ns; assert!(tx == '1', "d5 = 1");
+    await clk.rising(); await 1ns; assert!(tx == '0', "d6 = 0");
+    await clk.rising(); await 1ns; assert!(tx == '1', "d7 = 1");
+    assert!(busy == '1', "still busy through the last data bit");
+
+    await clk.rising(); await 1ns;
+    assert!(tx == '1', "the stop bit is high");
+    assert!(busy == '0', "and the machine is back in Idle");
+}
+
+// The reset path: asserting `rst` mid-frame abandons the byte and returns the
+// line to idle, rather than finishing the transmission.
+#[test]
+entity UartResetTest {}
+impl UartResetTest {
+    let clk: Bit = '0';
+    let rst: Bit = '0';
+    let send: Bit = '0';
+    let d: unsigned[8] = 0;
+    let tx: Logic;
+    let busy: Bit;
+    let u: Uart = { .clk = clk, .rst = rst, .send = send, .dataIn = d,
+                    .tx = tx, .busy = busy };
+    clk = not clk after 5ns;
+
+    d = 165;
+    send = '1';
+    await clk.rising(); await 1ns;     // load
+    send = '0';
+    await clk.rising(); await 1ns;     // start bit
+    assert!(tx == '0', "mid-frame, the start bit has gone out");
+    assert!(busy == '1', "and the machine is busy");
+
+    // Reset while the frame is in flight.
+    rst = '1';
+    await clk.rising(); await 1ns;
+    assert!(tx == '1', "reset returns the line to idle high");
+    assert!(busy == '0', "and the machine to Idle");
+
+    // It stays there while reset is held, rather than resuming the byte.
+    await clk.rising(); await 1ns;
+    assert!(tx == '1', "and it stays idle while reset is held");
+    assert!(busy == '0', "with no state advance");
+
+    // Released and re-sent, the frame starts over from the start bit.
+    rst = '0';
+    send = '1';
+    await clk.rising(); await 1ns;
+    send = '0';
+    await clk.rising(); await 1ns;
+    assert!(tx == '0', "a new frame begins with its own start bit");
+    await clk.rising(); await 1ns;
+    assert!(tx == '1', "and d0 of the byte again");
+}
