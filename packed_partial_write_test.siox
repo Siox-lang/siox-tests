@@ -1,0 +1,182 @@
+// Several partial writes to one packed vector must compose.
+//
+// Every write to a packed signal produces a *whole* new value for it, and the
+// backend keeps only the last one that fires: event-block updates are staged
+// from the pre-commit state and committed in order, and combinational drivers
+// fold as `val = cond ? expr : val`. So each read-modify-write has to merge
+// over the value its predecessors left behind. It did not:
+//
+//   * a clocked partial write merged over `Current(sig)` — the value *before*
+//     the block — so `word[1] = '1'; word[3] = '1';` set bit 3 alone. Three
+//     writes kept only the third; two disjoint slices kept only the second;
+//     and `word = 15; word[7] = '1';` threw the 15 away and produced 128.
+//   * combinationally, a constant bit index started routing through the
+//     runtime-index expansion, which pushed a driver guarded by a constant-true
+//     `hit`. Nothing then found the unconditional driver to merge over, so the
+//     same statements produced 8 instead of 10 — and `word` drew an inferred
+//     latch warning (W-P002) for a write that is not conditional at all.
+//
+// The testbench engine evaluates these statements sequentially in C and was
+// right throughout, so each entity's result is asserted equal to the same
+// arithmetic done there, as well as to the value Python computes.
+module packed_partial_write_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+// Combinational: two disjoint constant bit writes.
+entity Comb {
+    q: unsigned[8] out
+}
+impl Comb {
+    let word: unsigned[8] = 0;
+    word[1] = '1';
+    word[3] = '1';
+    q = word;
+}
+
+// Clocked: three writes, then disjoint slices, then a whole-signal write
+// followed by a bit write.
+entity Clocked {
+    clk: Bit in,
+    three: unsigned[8] out,
+    slices: unsigned[8] out,
+    wholeThenBit: unsigned[8] out
+}
+impl Clocked {
+    let a: unsigned[8] = 0;
+    let b: unsigned[8] = 0;
+    let c: unsigned[8] = 0;
+    if clk.rising() {
+        a[0] = '1';
+        a[1] = '1';
+        a[2] = '1';
+
+        b[3..0] = "1111";
+        b[7..4] = "1010";
+
+        c = 15;
+        c[7] = '1';
+    }
+    three = a;
+    slices = b;
+    wholeThenBit = c;
+}
+
+// Two runtime indices with no clock at all. This is the case that needs the
+// *combinational* half of the fix on its own: a runtime index produces a real
+// guard, so neither write leaves an unconditional driver to merge over, and
+// scanning for one finds only the `word = 0` default. Both writes then started
+// from 0 and the second erased the first.
+entity CombRuntime {
+    i: unsigned[4] in,
+    j: unsigned[4] in,
+    q: unsigned[8] out
+}
+impl CombRuntime {
+    let word: unsigned[8] = 0;
+    word = 0;
+    word[i] = '1';
+    word[j] = '1';
+    q = word;
+}
+
+// Two *runtime* indices in one clocked block, and a runtime write beside a
+// constant one. `word[i]` and `word[j]` are separate bits whenever i != j.
+entity Runtime {
+    clk: Bit in,
+    i: unsigned[4] in,
+    j: unsigned[4] in,
+    two: unsigned[8] out,
+    mixed: unsigned[8] out
+}
+impl Runtime {
+    let w: unsigned[8] = 0;
+    let m: unsigned[8] = 0;
+    if clk.rising() {
+        w[i] = '1';
+        w[j] = '1';
+
+        m[i] = '1';
+        m[0] = '1';
+    }
+    two = w;
+    mixed = m;
+}
+
+#[test]
+entity PackedPartialWriteTest {}
+impl PackedPartialWriteTest {
+    let clk: Bit = '0';
+
+    let cq: unsigned[8];
+    let comb: Comb = { .q = cq };
+
+    let three: unsigned[8];
+    let slices: unsigned[8];
+    let wtb: unsigned[8];
+    let seq: Clocked = {
+        .clk = clk,
+        .three = three,
+        .slices = slices,
+        .wholeThenBit = wtb,
+    };
+
+    let i: unsigned[4] = 1;
+    let j: unsigned[4] = 3;
+    let two: unsigned[8];
+    let mixed: unsigned[8];
+    let rt: Runtime = { .clk = clk, .i = i, .j = j, .two = two, .mixed = mixed };
+
+    let ri: unsigned[4] = 1;
+    let rj: unsigned[4] = 3;
+    let rq: unsigned[8];
+    let cr: CombRuntime = { .i = ri, .j = rj, .q = rq };
+
+    await 1ns;
+    // Combinational, with no clock at all: bit 1 and bit 3 are both set.
+    assert!(cq == 10, "two combinational bit writes both land — this gave 8");
+    assert!(rq == 10, "and two combinational *runtime* writes do too");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    // Three writes to three bits of one register: 0b00000111.
+    assert!(three == 7, "three clocked bit writes compose — this gave 4");
+    // 0xA0 | 0x0F: the high nibble and the low nibble.
+    assert!(slices == 175, "two disjoint slice writes compose — this gave 160");
+    // The whole-signal write is a base the bit write merges over, not
+    // something a later partial write discards.
+    assert!(wtb == 143, "`c = 15; c[7] = '1'` keeps the 15 — this gave 128");
+
+    // Runtime indices, on distinct bits.
+    assert!(two == 10, "two runtime bit writes both land — this gave 8");
+    // A runtime write and a constant write to the same register.
+    assert!(mixed == 3, "a runtime write survives a later constant one");
+
+    // The same index twice: the second write is the one that decides the bit,
+    // and it must not disturb bit 1 written on the previous edge.
+    i = 5; j = 5; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(two == 42, "the same runtime index twice sets the bit once");
+
+    // An out-of-range runtime index is a no-op and must not wipe the register.
+    i = 2; j = 9; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(two == 46, "an out-of-range runtime write changes nothing else");
+
+    // The testbench engine runs the same statements sequentially in C. It was
+    // right while hardware was wrong, so it is the independent check here.
+    // (A *slice* write to a testbench local — `u[3..0] = "1111"` — is still
+    // "unsupported assignment target" in the C emitter, so the testbench half
+    // stays on the bit-write forms it does accept.)
+    let t: unsigned[8] = 0;
+    t[1] = '1';
+    t[3] = '1';
+    let v: unsigned[8] = 15;
+    v[7] = '1';
+    await 1ns;
+    assert!(t == 10, "the testbench composes bit writes too");
+    assert!(v == 143, "and a bit write over a whole-signal write");
+    assert!(t == cq, "and both engines agree on the combinational form");
+    assert!(v == wtb, "and on the whole-then-bit form");
+}
