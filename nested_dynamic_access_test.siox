@@ -1,0 +1,60 @@
+module examples::nested_dynamic_access_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+// A two-dimensional register file. Both subscripts are runtime signals; the
+// compiler expands the read into a nested mux and the clocked write into one
+// condition per flattened scalar cell.
+entity Matrix {
+    clk: Bit in,
+    row: unsigned[2] in,
+    col: unsigned[2] in,
+    d: unsigned[8] in,
+    q: unsigned[8] out
+}
+
+impl Matrix {
+    let mem: unsigned[8][3][2];
+
+    if clk.rising() {
+        mem[row][col] = d;
+    }
+
+    q = mem[row][col];
+}
+
+#[test]
+entity NestedDynamicAccessTest {}
+
+impl NestedDynamicAccessTest {
+    let clk: Bit = '0';
+    let row: unsigned[2] = 0;
+    let col: unsigned[2] = 0;
+    let d: unsigned[8] = 0;
+    let q: unsigned[8];
+    let dut: Matrix = { .clk = clk, .row = row, .col = col, .d = d, .q = q };
+
+    // Write two different coordinates.
+    row = 0; col = 0; d = 11;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    row = 1; col = 2; d = 22;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    row = 0; col = 0; await 1ns;
+    assert!(q == 11, "nested runtime read returns [0][0]");
+
+    row = 1; col = 2; await 1ns;
+    assert!(q == 22, "nested runtime read returns [1][2]");
+
+    // Runtime reads retain the one-dimensional rule at every level: an
+    // out-of-range index selects that dimension's last element. Writes match
+    // no element and therefore leave the matrix unchanged.
+    row = 3; col = 3; d = 99;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(q == 22, "out-of-range read falls back to the last nested cell");
+
+    row = 1; col = 2; await 1ns;
+    assert!(q == 22, "out-of-range nested write is a no-op");
+}
