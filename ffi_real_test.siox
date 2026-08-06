@@ -21,7 +21,10 @@ extern "C" {
     pub fn fabs(v: real) -> real;
     pub fn pow(b: real, e: real) -> real;
     pub fn fmax(a: real, b: real) -> real;
-    pub fn ldexp(x: real, e: integer) -> real;   // (double, int) -> double
+    // `integer` is C `int64_t`; on the supported LP64 toolchain that matches
+    // `long int`, which is what C99 `scalbln` takes. `ldexp` takes a 32-bit
+    // `int` and therefore cannot be declared with siox `integer`.
+    pub fn scalbln(x: real, e: integer) -> real;
     pub fn labs(v: integer) -> integer;
 }
 
@@ -56,7 +59,7 @@ impl Calc {
     // registers under the C ABI, so a marshalling slip shows up here and not
     // in the single-type calls above.
     let m: real;
-    m = ldexp(3.0, 4);
+    m = scalbln(3.0, 4);
     mixedArgs = unsigned[8](integer(m));
 
     let i: integer;
@@ -90,7 +93,7 @@ impl FfiRealTest {
     assert!(integer(sqrt(16.0)) == 4, "the testbench marshals a real argument");
     assert!(integer(fabs(0.0 - 2.5)) == 2, "and a computed one");
     assert!(integer(pow(2.0, 10.0)) == 1024, "and two of them");
-    assert!(integer(ldexp(3.0, 4)) == 48, "and a mixed argument list");
+    assert!(integer(scalbln(3.0, 4)) == 48, "and a mixed argument list");
     assert!(labs(0 - 7) == 7, "and an integer-only call");
     assert!(integer(fmax(2.5, 7.5)) == 7, "matching the hardware side throughout");
 }
