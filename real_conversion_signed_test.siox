@@ -1,0 +1,89 @@
+// `integer(r) < 0` — comparing the result of a real conversion, directly.
+//
+// `integer(r)` truncates a `real` toward zero and produces a *signed* kernel
+// value: `integer(-2.9)` is -2. Assigning it to a signed signal was already
+// right. But comparing it in place — `if integer(r) < 0` — was false for every
+// negative `r`, in *both* engines, because neither recognised the `integer(x)`
+// conversion as a kernel-integer operand:
+//
+//   * hardware widened the operands for a signed compare and then *zero*-
+//     extended the -2, so the SLt saw a huge positive; and it only reached a
+//     signed compare at all once the conversion was marked kernel-integer.
+//     The two are interdependent — a signed compare that zero-extends its
+//     operand is no better than an unsigned one.
+//   * the testbench compared with C's unsigned `sx_value`, so `-2 < 0` was
+//     `0xFFFF...FFFE < 0` = false, while the same value stored in an `integer`
+//     local first compared correctly.
+//
+// So both `integer(r) < 0` in an entity and in a testbench are exercised, and
+// asserted equal to each other as well as to what Python's `math.trunc` gives.
+module real_conversion_signed_test;
+
+using std::bits::{signed, unsigned};
+using std::math::{abs};
+
+entity Cross {
+    // r = -2.9 -> -2
+    lt: unsigned[8] out, gt: unsigned[8] out, mag: signed[16] out,
+    // r = 2.9 -> 2
+    posLt: unsigned[8] out,
+    // r = -128.0 -> -128 (the floor of a signed byte)
+    floorLt: unsigned[8] out,
+    // r = -0.5 -> 0 (truncation toward zero lands exactly on zero)
+    zeroLt: unsigned[8] out,
+    // the control: assigning the conversion to a signed signal always worked
+    val: signed[16] out
+}
+impl Cross {
+    let r: real; r = 0.0 - 2.9;
+    lt  = if integer(r) < 0 { 1 } else { 0 };
+    gt  = if integer(r) > 0 { 1 } else { 0 };
+    mag = signed[16](abs(integer(r)));
+    val = signed[16](integer(r));
+
+    let p: real; p = 2.9;
+    posLt = if integer(p) < 0 { 1 } else { 0 };
+
+    let f: real; f = 0.0 - 128.0;
+    floorLt = if integer(f) < 0 { 1 } else { 0 };
+
+    let z: real; z = 0.0 - 0.5;
+    zeroLt = if integer(z) < 0 { 1 } else { 0 };
+}
+
+#[test]
+entity RealConversionSignedTest {}
+impl RealConversionSignedTest {
+    let c: Cross = {};
+    await 1ns;
+
+    // Hardware, against the Python oracle.
+    assert!(c.val == -2, "integer(-2.9) truncates toward zero to -2");
+    assert!(c.lt == 1, "and -2 < 0 is true — this was false for every negative r");
+    assert!(c.gt == 0, "and -2 > 0 is false");
+    assert!(c.mag == 2, "abs of the conversion is 2");
+    assert!(c.posLt == 0, "integer(2.9) is 2, not < 0");
+    assert!(c.floorLt == 1, "integer(-128.0) is -128, which is < 0");
+    assert!(c.zeroLt == 0, "integer(-0.5) truncates to 0, which is not < 0");
+
+    // The testbench engine evaluates the same conversions itself, in C. It had
+    // the same bug for its own reason, so the two are compared against each
+    // other as well as against the arithmetic.
+    let r: real; r = 0.0 - 2.9;
+    let tv: signed[16] = signed[16](integer(r));
+    let tlt: unsigned[8] = if integer(r) < 0 { 1 } else { 0 };
+    let tgt: unsigned[8] = if integer(r) > 0 { 1 } else { 0 };
+    await 1ns;
+    assert!(tv == -2, "the testbench truncates toward zero too");
+    assert!(tlt == 1, "and -2 < 0 holds — this was false in the testbench");
+    assert!(tgt == 0, "and -2 > 0 does not");
+    assert!(tv == c.val, "both engines agree on the value");
+    assert!(tlt == c.lt, "and on the sign test");
+    assert!(tgt == c.gt, "in both directions");
+
+    // A positive real, on the testbench side, so "always signed" would not pass.
+    let p: real; p = 2.9;
+    let ptlt: unsigned[8] = if integer(p) < 0 { 1 } else { 0 };
+    await 1ns;
+    assert!(ptlt == 0, "a positive conversion is not < 0");
+}
