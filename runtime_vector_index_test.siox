@@ -1,0 +1,108 @@
+module examples::runtime_vector_index_test;
+
+using std::bits::unsigned;
+using std::logic::{Bit, Logic};
+
+// Runtime labels select packed storage bits. This vector deliberately uses a
+// nonzero declared range: label 8 is storage bit 0 and label 15 is bit 7.
+entity DynamicWord {
+    clk: Bit in,
+    index: unsigned[5] in,
+    data: Logic in,
+    q: Logic out
+}
+
+impl DynamicWord {
+    let word: unsigned[15..8] = "00000000";
+
+    if clk.rising() {
+        word[index] = data;
+    }
+
+    q = word[index];
+}
+
+// The same read-modify-write must cross ABI words without a 64-bit mask.
+entity WideWord {
+    clk: Bit in,
+    index: unsigned[8] in,
+    data: Logic in,
+    q: Logic out
+}
+
+impl WideWord {
+    let word: unsigned[128] = 0;
+
+    if clk.rising() {
+        word[index] = data;
+    }
+
+    q = word[index];
+}
+
+#[test]
+entity RuntimeVectorIndexTest {}
+
+impl RuntimeVectorIndexTest {
+    let clk: Bit = '0';
+
+    let index: unsigned[5] = 8;
+    let data: Logic = '0';
+    let q: Logic;
+    let dut: DynamicWord = {
+        .clk = clk,
+        .index = index,
+        .data = data,
+        .q = q,
+    };
+
+    let wide_index: unsigned[8] = 0;
+    let wide_data: Logic = '0';
+    let wide_q: Logic;
+    let wide: WideWord = {
+        .clk = clk,
+        .index = wide_index,
+        .data = wide_data,
+        .q = wide_q,
+    };
+
+    // The native testbench emitter supports the same runtime packed-local
+    // read/write form and maps declared labels onto zero-based storage.
+    let local: unsigned[15..8] = 0;
+    let local_index: unsigned[5] = 8;
+    local[local_index] = '1';
+    assert!(local[local_index] == '1', "runtime local write/read at label 8");
+    local_index = 15;
+    local[local_index] = '1';
+    assert!(local[15] == '1', "constant label 15 maps to the high storage bit");
+    assert!(local[8] == '1', "constant label 8 maps to the low storage bit");
+
+    // Write clean and metavalue elements at opposite declared labels.
+    index = 8; data = '1';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(q == '1', "runtime packed write/read at declared label 8");
+
+    index = 15; data = 'X';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(q == 'X', "runtime write preserves the Logic metavalue nibble");
+
+    // Out-of-range reads return 0 and writes are no-ops.
+    index = 7; data = '1';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(q == '0', "out-of-range packed read returns zero");
+    index = 8; await 1ns;
+    assert!(q == '1', "out-of-range packed write changes no bit");
+    index = 15; await 1ns;
+    assert!(q == 'X', "out-of-range packed write preserves metavalues too");
+
+    // Cross both the value and companion planes beyond one 64-bit ABI word.
+    wide_index = 100; wide_data = '1';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(wide_q == '1', "runtime bit 100 crosses the value-word boundary");
+
+    wide_index = 127; wide_data = 'X';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(wide_q == 'X', "wide runtime metavalue write crosses companion words");
+    wide_index = 100; await 1ns;
+    assert!(wide_q == '1', "wide writes preserve other ABI words");
+}
