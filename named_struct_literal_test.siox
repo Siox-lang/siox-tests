@@ -1,0 +1,97 @@
+// `let p: Pair = Pair { .a = 1 }` — naming the struct in its own literal.
+//
+// A `let` whose value is a *named* construction was filed as a sub-instance
+// declaration without ever checking that the name belongs to an entity. Every
+// other branch of that classification checks it; this one did not. So a struct
+// local written the way one ordinarily writes a struct literal created no field
+// signals at all, and reading a field came back as
+//
+//   error[E-P017]: `p.a` has no hardware form
+//
+// which describes a runtime-index problem the source does not have. The very
+// same literal written `{ .a = 1 }`, with the type left to the annotation,
+// worked — so the two spellings of one value disagreed, and the one that failed
+// is the explicit one.
+//
+// The controls matter as much as the case: entity instantiation is what that
+// classification exists for, and it has to keep working in all three spellings
+// (generic named, plain named, and brace-only).
+module named_struct_literal_test;
+
+using std::bits::unsigned;
+
+
+struct Pair { a: unsigned[8], b: unsigned[8] }
+struct Nest { inner: Pair, tag: unsigned[8] }
+
+entity Counter<W: integer> { d: unsigned[8] in, q: unsigned[8] out }
+impl<W: integer> Counter<W> { q = d + W; }
+
+entity Plain { d: unsigned[8] in, q: unsigned[8] out }
+impl Plain { q = d + 1; }
+
+entity Structs {
+    na: unsigned[8] out, nb: unsigned[8] out,   // named literal
+    ba: unsigned[8] out, bb: unsigned[8] out,   // brace-only literal, the control
+    sa: unsigned[8] out,                        // named literal with a spread
+    ia: unsigned[8] out, it: unsigned[8] out    // a nested named literal
+}
+impl Structs {
+    let named: Pair = Pair { .a = 6, .b = 7 };
+    na = named.a; nb = named.b;
+
+    let brace: Pair = { .a = 6, .b = 7 };
+    ba = brace.a; bb = brace.b;
+
+    let spread: Pair = Pair { ..named, .a = 9 };
+    sa = spread.a;
+
+    let nest: Nest = Nest { .inner = Pair { .a = 4, .b = 5 }, .tag = 3 };
+    ia = nest.inner.a; it = nest.tag;
+}
+
+// The control: entity instantiation, which is what the named-construction
+// classification is actually for.
+entity Instances { g: unsigned[8] out, p: unsigned[8] out, c: unsigned[8] out }
+impl Instances {
+    let d: unsigned[8] = 10;
+    let gen: Counter<W = 5> = Counter<W = 5> { .d = d, .q = g };
+    let named: Plain = Plain { .d = d, .q = p };
+    let brace: Plain = { .d = d, .q = c };
+}
+
+#[test]
+entity NamedStructLiteralTest {}
+impl NamedStructLiteralTest {
+    let na: unsigned[8]; let nb: unsigned[8];
+    let ba: unsigned[8]; let bb: unsigned[8];
+    let sa: unsigned[8];
+    let ia: unsigned[8]; let it: unsigned[8];
+    let s: Structs = {
+        .na = na, .nb = nb, .ba = ba, .bb = bb, .sa = sa, .ia = ia, .it = it,
+    };
+
+    let g: unsigned[8]; let p: unsigned[8]; let c: unsigned[8];
+    let i: Instances = { .g = g, .p = p, .c = c };
+
+    await 1ns;
+
+    // The case: naming the struct must seed the same fields the brace-only
+    // spelling seeds. Both of these were E-P017 rather than a value.
+    assert!(na == 6, "a named struct literal seeds its first field");
+    assert!(nb == 7, "and its second");
+    assert!(ba == 6, "the brace-only spelling always worked");
+    assert!(bb == 7, "in both fields");
+    assert!(na == ba, "and the two spellings agree");
+    assert!(nb == bb, "field by field");
+
+    // A spread base and a nested literal, both named.
+    assert!(sa == 9, "a named spread overrides the field it names");
+    assert!(ia == 4, "a nested named literal seeds the inner struct");
+    assert!(it == 3, "beside its own field");
+
+    // The controls: entity instantiation in all three spellings.
+    assert!(g == 15, "a generic named instantiation still elaborates");
+    assert!(p == 11, "a plain named one too");
+    assert!(c == 11, "as does the brace-only form");
+}
