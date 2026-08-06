@@ -63,6 +63,16 @@ impl Clocked {
     wholeThenBit = c;
 }
 
+// A plain feed-through, so the testbench can slice-write a *connected signal*
+// and read the result back out of an instance.
+entity Pass {
+    d: unsigned[8] in,
+    q: unsigned[8] out
+}
+impl Pass {
+    q = d;
+}
+
 // Two runtime indices with no clock at all. This is the case that needs the
 // *combinational* half of the fix on its own: a runtime index produces a real
 // guard, so neither write leaves an unconditional driver to merge over, and
@@ -133,6 +143,10 @@ impl PackedPartialWriteTest {
     let rq: unsigned[8];
     let cr: CombRuntime = { .i = ri, .j = rj, .q = rq };
 
+    let pd: unsigned[8] = 0;
+    let pq: unsigned[8];
+    let pass: Pass = { .d = pd, .q = pq };
+
     await 1ns;
     // Combinational, with no clock at all: bit 1 and bit 3 are both set.
     assert!(cq == 10, "two combinational bit writes both land — this gave 8");
@@ -166,9 +180,6 @@ impl PackedPartialWriteTest {
 
     // The testbench engine runs the same statements sequentially in C. It was
     // right while hardware was wrong, so it is the independent check here.
-    // (A *slice* write to a testbench local — `u[3..0] = "1111"` — is still
-    // "unsupported assignment target" in the C emitter, so the testbench half
-    // stays on the bit-write forms it does accept.)
     let t: unsigned[8] = 0;
     t[1] = '1';
     t[3] = '1';
@@ -179,4 +190,34 @@ impl PackedPartialWriteTest {
     assert!(v == 143, "and a bit write over a whole-signal write");
     assert!(t == cq, "and both engines agree on the combinational form");
     assert!(v == wtb, "and on the whole-then-bit form");
+
+    // A *slice* write to a testbench value was "unsupported assignment target"
+    // — no code, no span — after the frontend had accepted it, while hardware
+    // has lowered the same statement since ranges landed. Building a stimulus
+    // word a nibble at a time is the ordinary way to write one.
+    let u: unsigned[8] = 0;
+    u[3..0] = "1111";
+    u[7..4] = "1010";
+    await 1ns;
+    assert!(u == 175, "the testbench writes slices");
+    assert!(u == slices, "and places the same bits hardware does");
+
+    // A slice wider than a nibble, and a declared range that does not start at
+    // zero: `unsigned[15..8]` puts label 8 at storage bit 0, so `y[11..8]` is
+    // the low four bits.
+    let x: unsigned[16] = 0;
+    x[11..4] = 255;
+    let y: unsigned[15..8] = 0;
+    y[11..8] = "1111";
+    await 1ns;
+    assert!(x == 4080, "an eight-bit slice at offset four is 255 << 4");
+    assert!(y == 15, "declared labels map onto compact storage");
+
+    // The same slice writes on a *connected signal* rather than a local: the
+    // alias fan-out is a separate path in the emitter, so it needs its own
+    // case.
+    pd[3..0] = "1111";
+    pd[7..4] = "1010";
+    await 1ns;
+    assert!(pq == 175, "a slice write reaches a connected instance too");
 }
