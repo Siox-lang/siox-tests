@@ -63,6 +63,43 @@ impl Clocked {
     wholeThenBit = c;
 }
 
+// Partial writes in *separate* event blocks of one impl. An impl block is one
+// driver context (spec 3.14: override within, resolution across), so these
+// compose exactly as they would inside a single block — a later write overrides
+// only the bits it names. Each block still contributes only when its own event
+// fires, which is what the two clocks here check.
+entity Blocks {
+    a: Bit in, b: Bit in,
+    same: unsigned[8] out,     // both blocks on one clock
+    split: unsigned[8] out,    // one block per clock
+    whole: unsigned[8] out     // a whole-signal write, then a bit in another block
+}
+impl Blocks {
+    let s: unsigned[8] = 0;
+    if a.rising() { s[1] = '1'; }
+    if a.rising() { s[3] = '1'; }
+    same = s;
+
+    let p: unsigned[8] = 0;
+    if a.rising() { p[1] = '1'; }
+    if b.rising() { p[3] = '1'; }
+    split = p;
+
+    let w: unsigned[8] = 0;
+    if a.rising() { w = 15; }
+    if b.rising() { w[7] = '1'; }
+    whole = w;
+}
+
+// Two instances are two driver contexts and must not fold into each other.
+entity Cell { clk: Bit in, q: unsigned[8] out }
+impl Cell {
+    let w: unsigned[8] = 0;
+    if clk.rising() { w[0] = '1'; }
+    if clk.rising() { w[2] = '1'; }
+    q = w;
+}
+
 // A plain feed-through, so the testbench can slice-write a *connected signal*
 // and read the result back out of an instance.
 entity Pass {
@@ -147,6 +184,21 @@ impl PackedPartialWriteTest {
     let pq: unsigned[8];
     let pass: Pass = { .d = pd, .q = pq };
 
+    let ba: Bit = '0';
+    let bb: Bit = '0';
+    let bsame: unsigned[8];
+    let bsplit: unsigned[8];
+    let bwhole: unsigned[8];
+    let blocks: Blocks = {
+        .a = ba, .b = bb,
+        .same = bsame, .split = bsplit, .whole = bwhole,
+    };
+
+    let cell1q: unsigned[8];
+    let cell1: Cell = { .clk = ba, .q = cell1q };
+    let cell2q: unsigned[8];
+    let cell2: Cell = { .clk = bb, .q = cell2q };
+
     await 1ns;
     // Combinational, with no clock at all: bit 1 and bit 3 are both set.
     assert!(cq == 10, "two combinational bit writes both land — this gave 8");
@@ -220,4 +272,24 @@ impl PackedPartialWriteTest {
     pd[7..4] = "1010";
     await 1ns;
     assert!(pq == 175, "a slice write reaches a connected instance too");
+
+    // Separate event blocks of one impl. Only `a` rises first, so the blocks
+    // guarded by `b` must contribute nothing yet.
+    ba = '1'; await 1ns; ba = '0'; await 1ns;
+    assert!(bsame == 10, "two blocks on one clock compose — this gave 8");
+    assert!(bsplit == 2, "a block whose event has not fired contributes nothing");
+    assert!(bwhole == 15, "the whole-signal write lands on its own clock");
+    assert!(cell1q == 5, "and the same holds inside an instance");
+    assert!(cell2q == 0, "while a second instance is its own driver context");
+
+    // Now `b` rises: its bit joins, and the bit written on `a` survives.
+    bb = '1'; await 1ns; bb = '0'; await 1ns;
+    assert!(bsplit == 10, "the earlier block's bit survives the later one");
+    assert!(bwhole == 143, "a bit write in another block keeps the 15");
+    assert!(cell2q == 5, "the second instance now composes its own two blocks");
+
+    // Both events in one delta: the later block still merges over the earlier.
+    ba = '1'; bb = '1'; await 1ns; ba = '0'; bb = '0'; await 1ns;
+    assert!(bsplit == 10, "both blocks firing together set both bits");
+    assert!(bwhole == 143, "and the bit write still merges over the 15");
 }
