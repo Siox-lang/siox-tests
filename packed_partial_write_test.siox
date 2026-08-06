@@ -91,6 +91,44 @@ impl Blocks {
     whole = w;
 }
 
+// A *packed* vector whose elements carry Logic values keeps a four-bit
+// metavalue nibble per element in a separate companion plane, and that plane
+// has to compose exactly as the value plane does. Four writes in one block, one
+// of each kind: before the fix only the last survived, so `k0`..`k2` read back
+// as the initial '0'.
+//
+// It has to be a packed `unsigned[4]`, not a `Logic[4]`: the latter is an array
+// of four separate signals, whose writes never reach the packed companion path
+// at all.
+entity Meta {
+    clk: Bit in,
+    i: unsigned[4] in,
+    j: unsigned[4] in,
+    a: Logic in,
+    b: Logic in,
+    k0: Logic out, k1: Logic out, k2: Logic out, k3: Logic out,
+    r0: Logic out, r1: Logic out, r2: Logic out, r3: Logic out
+}
+impl Meta {
+    let w: unsigned[4] = "0000";
+    if clk.rising() {
+        w[0] = '1';
+        w[1] = 'X';
+        w[2] = 'Z';
+        w[3] = '0';
+    }
+    k0 = w[0]; k1 = w[1]; k2 = w[2]; k3 = w[3];
+
+    // The same, at runtime indices: a metavalue and a clean value, on two
+    // different elements of one vector in one block.
+    let v: unsigned[4] = "0000";
+    if clk.rising() {
+        v[i] = a;
+        v[j] = b;
+    }
+    r0 = v[0]; r1 = v[1]; r2 = v[2]; r3 = v[3];
+}
+
 // Two instances are two driver contexts and must not fold into each other.
 entity Cell { clk: Bit in, q: unsigned[8] out }
 impl Cell {
@@ -194,6 +232,17 @@ impl PackedPartialWriteTest {
         .same = bsame, .split = bsplit, .whole = bwhole,
     };
 
+    let mi: unsigned[4] = 0;
+    let mj: unsigned[4] = 2;
+    let ma: Logic = 'X';
+    let mb: Logic = '1';
+    let k0: Logic; let k1: Logic; let k2: Logic; let k3: Logic;
+    let r0: Logic; let r1: Logic; let r2: Logic; let r3: Logic;
+    let meta: Meta = {
+        .clk = ba, .i = mi, .j = mj, .a = ma, .b = mb,
+        .k0 = k0, .k1 = k1, .k2 = k2, .k3 = k3, .r0 = r0, .r1 = r1, .r2 = r2, .r3 = r3,
+    };
+
     let cell1q: unsigned[8];
     let cell1: Cell = { .clk = ba, .q = cell1q };
     let cell2q: unsigned[8];
@@ -281,6 +330,18 @@ impl PackedPartialWriteTest {
     assert!(bwhole == 15, "the whole-signal write lands on its own clock");
     assert!(cell1q == 5, "and the same holds inside an instance");
     assert!(cell2q == 0, "while a second instance is its own driver context");
+
+    // The Logic metavalue plane composes with the value plane. Only the last
+    // of these four survived, so the first three read back as '0'.
+    assert!(k0 == '1', "a clean 1 written first survives");
+    assert!(k1 == 'X', "an X keeps its metavalue nibble");
+    assert!(k2 == 'Z', "and so does a Z");
+    assert!(k3 == '0', "while the last write is a clean 0");
+    // Runtime indices, one metavalue and one clean value in one block.
+    assert!(r0 == 'X', "a runtime metavalue write survives a later one");
+    assert!(r2 == '1', "which lands on its own element");
+    assert!(r1 == '0', "and the elements between them are untouched");
+    assert!(r3 == '0', "at both ends");
 
     // Now `b` rises: its bit joins, and the bit written on `a` survives.
     bb = '1'; await 1ns; bb = '0'; await 1ns;
