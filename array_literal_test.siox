@@ -26,6 +26,17 @@ using std::bits::unsigned;
 struct Pair { a: unsigned[8], b: unsigned[8] }
 struct Holder { xs: unsigned[8][2], tag: unsigned[8] }
 
+// An array crossing a function boundary. The inliner binds a parameter to a
+// value, and a value is a scalar or a set of named fields -- an array is
+// neither, its elements being separate signals. So nothing bound, and the
+// body's `v[0]` reported "has no hardware form" with help about runtime
+// indices, pointing inside the callee at a line the caller never wrote. Both an
+// array signal and an array literal failed.
+fn sum2(v: unsigned[8][2]) -> unsigned[8] { return v[0] + v[1]; }
+fn pick(v: unsigned[8][4], i: unsigned[8]) -> unsigned[8] { return v[i]; }
+fn firstA(ps: Pair[2]) -> unsigned[8] { return ps[0].a + ps[1].b; }
+impl Pair { fn plusSecond(self, v: unsigned[8][2]) -> unsigned[8] { return self.a + v[1]; } }
+
 entity Sink {
     v: unsigned[8][2] in,
     q: unsigned[8] out
@@ -38,7 +49,12 @@ entity Arrays {
     port: unsigned[8] out,      // an array literal on a composite port
     field: unsigned[8] out,     // an array literal as a struct field
     ofstruct: unsigned[8] out,  // an array of structs
-    ranged: unsigned[8] out     // a non-zero-based array
+    ranged: unsigned[8] out,    // a non-zero-based array
+    argSig: unsigned[8] out,    // an array signal as an argument
+    argLit: unsigned[8] out,    // an array literal as an argument
+    argIdx: unsigned[8] out,    // a runtime index from a sibling parameter
+    argStruct: unsigned[8] out, // an array of structs as an argument
+    argMethod: unsigned[8] out  // the same, through a method
 }
 impl Arrays {
     let d: unsigned[8][2] = [1, 2];
@@ -61,6 +77,20 @@ impl Arrays {
     // and the literal seeds those, not 0 and 1.
     let r: unsigned[8][4..5] = [8, 9];
     ranged = r[4] * 10 + r[5];
+
+    // Across a function boundary, in the forms that reach it.
+    argSig = sum2(d);            // 1 + 2
+    argLit = sum2([10, 20]);     // 30
+
+    // The index comes from another parameter, so it has to be substituted
+    // alongside the array or it reads as an unknown name.
+    let q: unsigned[8][4] = [1, 2, 3, 4];
+    let idx: unsigned[8] = 2;
+    argIdx = pick(q, idx);       // q[2]
+
+    argStruct = firstA(ps);      // 4 + 7
+    let one: Pair = { .a = 20, .b = 0 };
+    argMethod = one.plusSecond(d);  // 20 + 2
 }
 
 #[test]
@@ -68,9 +98,13 @@ entity ArrayLiteralTest {}
 impl ArrayLiteralTest {
     let decl: unsigned[8]; let asg: unsigned[8]; let port: unsigned[8];
     let field: unsigned[8]; let ofstruct: unsigned[8]; let ranged: unsigned[8];
+    let argSig: unsigned[8]; let argLit: unsigned[8]; let argIdx: unsigned[8];
+    let argStruct: unsigned[8]; let argMethod: unsigned[8];
     let a: Arrays = {
         .decl = decl, .asg = asg, .port = port,
         .field = field, .ofstruct = ofstruct, .ranged = ranged,
+        .argSig = argSig, .argLit = argLit, .argIdx = argIdx,
+        .argStruct = argStruct, .argMethod = argMethod,
     };
     await 1ns;
 
@@ -80,4 +114,12 @@ impl ArrayLiteralTest {
     assert!(field == 23, "an array literal as a struct field seeds its elements");
     assert!(ofstruct == 47, "an array of structs seeds each element — this was 0");
     assert!(ranged == 89, "a non-zero-based array seeds its declared elements");
+
+    // An array crossing a function boundary. Every one of these reported
+    // `v[0]` as having no hardware form, inside the callee.
+    assert!(argSig == 3, "an array signal passes to a function");
+    assert!(argLit == 30, "and an array literal does too");
+    assert!(argIdx == 3, "a runtime index from a sibling parameter resolves");
+    assert!(argStruct == 11, "an array of structs passes whole");
+    assert!(argMethod == 22, "and a method takes one as well");
 }
