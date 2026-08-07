@@ -1,38 +1,83 @@
-module examples::array_literal_test;
+// Array literals where the destination is an aggregate.
+//
+// An array literal seeds a plain `let rom: unsigned[8][4] = [1, 2, 3, 4]`, and
+// two shapes next to it seeded nothing at all — silently, with no diagnostic
+// and every element left at zero:
+//
+//   * an array *of structs*, `let ps: Pair[2] = [{ .a = 4, .b = 5 }, ..]`. An
+//     element that is itself a struct has no scalar leaf of its own — its
+//     fields are `ps[0].a` — so the element lookup found nothing and the whole
+//     element was skipped.
+//   * an array literal connected to a composite *port*, `.v = [1, 9]`. The
+//     literal-connection path handled a struct literal and not an array one, so
+//     the connection was dropped and the child read its default. A scalar port
+//     has always accepted a literal there.
+//
+// The seeding walk also existed twice — once for a declaration and once for a
+// struct field — and only the second knew about the declared index range. They
+// are one walk now, so a non-zero-based array is seeded the same way from
+// either.
+//
+// Expected values are the arithmetic written beside them.
+module array_literal_test;
 
 using std::bits::unsigned;
 
-// An array literal `[..]` fills an array-typed signal one value per element,
-// making a lookup table. A runtime index reads it back.
-entity Lut {
-    sel: unsigned[8] in,
-    y: unsigned[8] out
-}
+struct Pair { a: unsigned[8], b: unsigned[8] }
+struct Holder { xs: unsigned[8][2], tag: unsigned[8] }
 
-impl Lut {
-    let table: unsigned[8][4];
-    table = [10, 20, 30, 40];
-    y = table[sel];
+entity Sink {
+    v: unsigned[8][2] in,
+    q: unsigned[8] out
+}
+impl Sink { q = v[0] * 10 + v[1]; }
+
+entity Arrays {
+    decl: unsigned[8] out,      // a plain array literal, which always worked
+    asg: unsigned[8] out,       // assigned rather than initialized
+    port: unsigned[8] out,      // an array literal on a composite port
+    field: unsigned[8] out,     // an array literal as a struct field
+    ofstruct: unsigned[8] out,  // an array of structs
+    ranged: unsigned[8] out     // a non-zero-based array
+}
+impl Arrays {
+    let d: unsigned[8][2] = [1, 2];
+    decl = d[0] * 10 + d[1];
+
+    let s: unsigned[8][2];
+    s = [5, 6];
+    asg = s[0] * 10 + s[1];
+
+    let k: Sink = { .v = [1, 9], .q = port };
+
+    let h: Holder = { .xs = [2, 3], .tag = 0 };
+    field = h.xs[0] * 10 + h.xs[1];
+
+    // Each element is a struct, so each seeds its own fields.
+    let ps: Pair[2] = [{ .a = 4, .b = 5 }, { .a = 6, .b = 7 }];
+    ofstruct = ps[0].a * 10 + ps[1].b;
+
+    // A declared range that does not start at zero: the elements are 4 and 5,
+    // and the literal seeds those, not 0 and 1.
+    let r: unsigned[8][4..5] = [8, 9];
+    ranged = r[4] * 10 + r[5];
 }
 
 #[test]
-entity LutTest {}
-
-impl LutTest {
-    let sel: unsigned[8];
-    let y: unsigned[8];
-
-    let dut: Lut = {
-        .sel = sel,
-        .y = y,
+entity ArrayLiteralTest {}
+impl ArrayLiteralTest {
+    let decl: unsigned[8]; let asg: unsigned[8]; let port: unsigned[8];
+    let field: unsigned[8]; let ofstruct: unsigned[8]; let ranged: unsigned[8];
+    let a: Arrays = {
+        .decl = decl, .asg = asg, .port = port,
+        .field = field, .ofstruct = ofstruct, .ranged = ranged,
     };
+    await 1ns;
 
-    sel = 0;
-    assert!(y == 10, "table[0]");
-    sel = 1;
-    assert!(y == 20, "table[1]");
-    sel = 2;
-    assert!(y == 30, "table[2]");
-    sel = 3;
-    assert!(y == 40, "table[3]");
+    assert!(decl == 12, "a plain array literal seeds its elements");
+    assert!(asg == 56, "and an assignment drives them");
+    assert!(port == 19, "an array literal reaches a composite port — this was 0");
+    assert!(field == 23, "an array literal as a struct field seeds its elements");
+    assert!(ofstruct == 47, "an array of structs seeds each element — this was 0");
+    assert!(ranged == 89, "a non-zero-based array seeds its declared elements");
 }
