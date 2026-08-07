@@ -49,7 +49,10 @@ entity Structs {
     fa: unsigned[8] out, fb: unsigned[8] out,   // free-function call initializer
     aa: unsigned[8] out, ab: unsigned[8] out,   // associated-function initializer
     ea: unsigned[8] out, eb: unsigned[8] out,   // the same call, assigned instead
-    da: unsigned[8] out                         // a default construction
+    da: unsigned[8] out,                        // a default construction
+    qa: unsigned[8] out, qb: unsigned[8] out,   // positional initializer
+    ra: unsigned[8] out, rb: unsigned[8] out,   // positional assignment
+    cat: unsigned[8] out                        // the control: still a concat
 }
 impl Structs {
     let named: Pair = Pair { .a = 6, .b = 7 };
@@ -81,6 +84,24 @@ impl Structs {
     // structural zeros are the right answer and must not be disturbed.
     let defaulted: Pair = Pair::new();
     da = defaulted.a;
+
+    // A positional literal. Which reading applies is decided by the assigned
+    // type: against a struct these braces are the named form without the field
+    // names, so they bind by declaration order. The initializer seeded nothing
+    // and the assignment was dropped outright -- its leaves then reported as
+    // never driven.
+    let positional: Pair = { 6, 7 };
+    qa = positional.a; qb = positional.b;
+
+    let assignedPositional: Pair;
+    assignedPositional = { 8, 9 };
+    ra = assignedPositional.a; rb = assignedPositional.b;
+
+    // The control: the identical braces against a packed vector stay a bit
+    // concatenation, because the assigned type is what decides.
+    let hi: unsigned[4] = 10;   // 1010
+    let lo: unsigned[4] = 3;    // 0011
+    cat = { hi, lo };           // 10100011
 }
 
 // The control: entity instantiation, which is what the named-construction
@@ -103,9 +124,12 @@ impl NamedStructLiteralTest {
     let fa: unsigned[8]; let fb: unsigned[8];
     let aa: unsigned[8]; let ab: unsigned[8];
     let ea: unsigned[8]; let eb: unsigned[8]; let da: unsigned[8];
+    let qa: unsigned[8]; let qb: unsigned[8];
+    let ra: unsigned[8]; let rb: unsigned[8]; let cat: unsigned[8];
     let s: Structs = {
         .na = na, .nb = nb, .ba = ba, .bb = bb, .sa = sa, .ia = ia, .it = it,
         .fa = fa, .fb = fb, .aa = aa, .ab = ab, .ea = ea, .eb = eb, .da = da,
+        .qa = qa, .qb = qb, .ra = ra, .rb = rb, .cat = cat,
     };
 
     let g: unsigned[8]; let p: unsigned[8]; let c: unsigned[8];
@@ -137,6 +161,15 @@ impl NamedStructLiteralTest {
     assert!(fb == eb, "field for field");
     // A default construction keeps its structural zeros.
     assert!(da == 0, "`Pair::new()` is still the structural default");
+
+    // A positional literal binds by declaration order, in both an initializer
+    // and an assignment. The first seeded nothing; the second was dropped.
+    assert!(qa == 6, "a positional initializer binds the first field");
+    assert!(qb == 7, "and the second");
+    assert!(ra == 8, "a positional assignment binds the first field");
+    assert!(rb == 9, "and the second");
+    // The control: the assigned type decides, so a vector target concatenates.
+    assert!(cat == 163, "the same braces against a vector still concatenate");
 
     // The controls: entity instantiation in all three spellings.
     assert!(g == 15, "a generic named instantiation still elaborates");
