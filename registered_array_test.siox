@@ -1,0 +1,125 @@
+// Assigning a whole array in a clocked block, and returning one from a
+// function.
+//
+// An array signal is many element signals and no single id, so the target
+// lookup returns nothing for it. The combinational path has long expanded a
+// whole-array assignment element by element; the clocked path had no such
+// expansion at all, so *every* array assignment in an event block —
+//
+//     if clk.rising() { g = src; }        // from another array
+//     if clk.rising() { g = [3, 4]; }     // from a literal
+//     if clk.rising() { g = gives(); }    // from a call
+//
+// — fell through to the target check and reported `g` as something that cannot
+// be assigned to (E-P018). Registering an array is the ordinary way to write a
+// pipeline, and the message named the innocent half of the statement.
+//
+// Separately, an array-returning function had no array form of its own: the
+// inliner's result is a scalar or a set of named fields, and an array is
+// neither. `g = gives()` reported that `gives()` had no element-wise form. A
+// call now stands for the expression it returns, with the arguments
+// substituted, so the literal it returns is driven exactly as one written at
+// the assignment would be.
+//
+// Every expected value is the arithmetic written beside it.
+module registered_array_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+fn constant2() -> unsigned[8][2] { return [3, 4]; }
+fn scaled2(k: unsigned[8]) -> unsigned[8][2] { return [k, k * 2]; }
+fn passthru2(v: unsigned[8][2]) -> unsigned[8][2] { return v; }
+
+entity Regs {
+    clk: Bit in,
+    din: unsigned[8] in,
+    fromArray: unsigned[16] out,   // registered from another array
+    fromLit: unsigned[16] out,     // registered from a literal
+    fromCall: unsigned[16] out,    // registered from a call
+    fromScaled: unsigned[16] out,  // registered from a call with an argument
+    fromThru: unsigned[16] out,    // a call that returns its own parameter
+    stage: unsigned[16] out,       // a two-deep pipeline of arrays
+    combCall: unsigned[16] out     // the same call, driven combinationally
+}
+impl Regs {
+    let src: unsigned[8][2] = [7, 8];
+
+    let a: unsigned[8][2] = [0, 0];
+    let b: unsigned[8][2] = [0, 0];
+    let c: unsigned[8][2] = [0, 0];
+    let d: unsigned[8][2] = [0, 0];
+    let e: unsigned[8][2] = [0, 0];
+
+    if clk.rising() {
+        a = src;
+        b = [3, 4];
+        c = constant2();
+        d = scaled2(din);
+        e = passthru2(src);
+    }
+    fromArray = unsigned[16](a[0]) * 10 + unsigned[16](a[1]);
+    fromLit = unsigned[16](b[0]) * 10 + unsigned[16](b[1]);
+    fromCall = unsigned[16](c[0]) * 10 + unsigned[16](c[1]);
+    fromScaled = unsigned[16](d[0]) * 10 + unsigned[16](d[1]);
+    fromThru = unsigned[16](e[0]) * 10 + unsigned[16](e[1]);
+
+    // The combinational counterpart of `fromCall`: that path reduces a call
+    // to its returned expression in its own place, so it needs its own case.
+    let cb: unsigned[8][2];
+    cb = constant2();
+    combCall = unsigned[16](cb[0]) * 10 + unsigned[16](cb[1]);
+
+    // A pipeline: one array feeding the next on the same edge, which is what
+    // makes the pre-commit read matter — `p2` must take `p1`'s *old* value.
+    let p1: unsigned[8][2] = [0, 0];
+    let p2: unsigned[8][2] = [0, 0];
+    if clk.rising() {
+        p1 = [din, din];
+        p2 = p1;
+    }
+    stage = unsigned[16](p2[0]) * 10 + unsigned[16](p2[1]);
+}
+
+#[test]
+entity RegisteredArrayTest {}
+impl RegisteredArrayTest {
+    let clk: Bit = '0';
+    let din: unsigned[8] = 5;
+    let fromArray: unsigned[16]; let fromLit: unsigned[16]; let fromCall: unsigned[16];
+    let fromScaled: unsigned[16]; let fromThru: unsigned[16]; let stage: unsigned[16];
+    let combCall: unsigned[16];
+    let r: Regs = {
+        .clk = clk, .din = din,
+        .fromArray = fromArray, .fromLit = fromLit, .fromCall = fromCall,
+        .fromScaled = fromScaled, .fromThru = fromThru, .stage = stage,
+        .combCall = combCall,
+    };
+
+    await 1ns;
+    // Nothing has clocked yet, so every register holds its initial value.
+    assert!(fromArray == 0, "the registers power on at zero");
+    assert!(stage == 0, "including the pipeline");
+    // Combinational, so it is already settled before any edge.
+    assert!(combCall == 34, "a call drives an array combinationally too");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+
+    assert!(fromArray == 78, "an array registers from another array");
+    assert!(fromLit == 34, "and from a literal");
+    assert!(fromCall == 34, "and from a call returning a literal");
+    assert!(fromScaled == 60, "5*10 + 10, from a call taking an argument");
+    assert!(fromThru == 78, "and from a call returning its own parameter");
+
+    // One edge in: `p1` has the input, `p2` still has `p1`'s pre-commit value.
+    assert!(stage == 0, "the second stage lags by one edge");
+
+    din = 9; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    // Second edge: `p2` now carries what `p1` held after the first.
+    assert!(stage == 55, "the pipeline shifts one stage per edge (5,5)");
+    assert!(fromScaled == 108, "9*10 + 18 — the argument is re-read each edge");
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(stage == 99, "and again (9,9)");
+}
