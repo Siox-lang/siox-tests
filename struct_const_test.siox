@@ -1,0 +1,95 @@
+// A struct-typed `const`.
+//
+// `const K: Pair = { .a = 4, .b = 5 }` type-checked with no diagnostic and then
+// failed in both back ends, differently:
+//
+//   * hardware: `K.a` reported "has no hardware form" (E-P017) — a message
+//     about runtime indices, on a source containing no index — and reading `K`
+//     whole reported the name as unknown (E-P001);
+//   * the testbench: "references `K.a`, which siox build cannot translate yet".
+//
+// Nothing folded the declaration, so the constant never entered either engine's
+// table. A scalar `const N: unsigned[8] = 5` folded and worked in both.
+//
+// A struct constant is one folded value per field, keyed by the dotted path a
+// read spells, in both engines. Read whole it is those fields together, which
+// an assignment expands per leaf.
+//
+// Only the named form is covered. A positional literal `{ 6, 7 }` lexes as a
+// concat rather than a construction, and does not seed a struct-typed `let`
+// either, so that gap is wider than constants and is not this test's subject.
+//
+// Every expected value is the arithmetic written beside it, not a reading taken
+// from a run.
+module struct_const_test;
+
+using std::bits::unsigned;
+
+struct Pair { a: unsigned[8], b: unsigned[8] }
+struct Limits { lo: unsigned[8], hi: unsigned[8] }
+
+entity Consts {
+    fa: unsigned[8] out, fb: unsigned[8] out,   // field reads
+    sum: unsigned[8] out,                       // fields in arithmetic
+    wa: unsigned[8] out, wb: unsigned[8] out,   // assigned whole, then read
+    ia: unsigned[8] out, ib: unsigned[8] out,   // used as a `let` initializer
+    span: unsigned[8] out                       // a second constant, in a guard
+}
+impl Consts {
+    const K: Pair = { .a = 4, .b = 5 };
+    const L: Limits = { .lo = 2, .hi = 9 };
+
+    fa = K.a;
+    fb = K.b;
+    sum = K.a + K.b;
+
+    let whole: Pair;
+    whole = K;
+    wa = whole.a; wb = whole.b;
+
+    let seeded: Pair = K;
+    ia = seeded.a; ib = seeded.b;
+
+    // A constant's fields in a condition, which is the point of having one.
+    span = if L.hi > L.lo { L.hi - L.lo } else { 0 };
+}
+
+#[test]
+entity StructConstTest {}
+impl StructConstTest {
+    const T: Pair = { .a = 11, .b = 12 };
+
+    let fa: unsigned[8]; let fb: unsigned[8]; let sum: unsigned[8];
+    let wa: unsigned[8]; let wb: unsigned[8];
+    let ia: unsigned[8]; let ib: unsigned[8];
+    let span: unsigned[8];
+    let c: Consts = {
+        .fa = fa, .fb = fb, .sum = sum, .wa = wa, .wb = wb,
+        .ia = ia, .ib = ib, .span = span,
+    };
+
+    await 1ns;
+
+    // Hardware. Each of these was E-P017 or E-P001 before.
+    assert!(fa == 4, "a struct constant's field reads as its value");
+    assert!(fb == 5, "in both fields");
+    assert!(sum == 9, "and the fields take part in arithmetic");
+    assert!(wa == 4, "the constant read whole assigns per leaf");
+    assert!(wb == 5, "field for field");
+    assert!(ia == 4, "and seeds a `let` initializer");
+    assert!(ib == 5, "in both fields");
+    assert!(span == 7, "9 - 2, with the comparison on constant fields");
+
+    // The testbench engine folds its own constants, and refused this outright.
+    let x: unsigned[8];
+    let y: unsigned[8];
+    x = T.a;
+    y = T.a + T.b;
+    await 1ns;
+    assert!(x == 11, "the testbench reads a struct constant's field");
+    assert!(y == 23, "and uses it in arithmetic");
+
+    // The two engines on the same constant, so neither can drift alone.
+    assert!(fa == 4, "hardware still agrees");
+    assert!(x == 11, "and the testbench does too");
+}
