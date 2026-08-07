@@ -31,6 +31,10 @@ struct Nest { inner: Pair, tag: unsigned[8] }
 // struct has signals only under `name.field`. So every field powered on at zero
 // and nothing was said, while the same call as a separate assignment was right.
 fn make(v: unsigned[8]) -> Pair { return Pair { .a = v, .b = v + 1 }; }
+// A positional literal in the two other positions that know their destination's
+// type: a parameter, and a declared return.
+fn take(p: Pair) -> unsigned[8] { return p.a * 10 + p.b; }
+fn give() -> Pair { return { 3, 4 }; }
 impl Pair {
     fn twice(v: unsigned[8]) -> Pair { return Pair { .a = v * 2, .b = v * 2 + 1 }; }
 }
@@ -52,7 +56,11 @@ entity Structs {
     da: unsigned[8] out,                        // a default construction
     qa: unsigned[8] out, qb: unsigned[8] out,   // positional initializer
     ra: unsigned[8] out, rb: unsigned[8] out,   // positional assignment
-    cat: unsigned[8] out                        // the control: still a concat
+    cat: unsigned[8] out,                       // the control: still a concat
+    parm: unsigned[8] out,                      // positional as a call argument
+    retn: unsigned[8] out,                      // positional returned from a fn
+    conn: unsigned[8] out,                      // positional on a port connection
+    deep: unsigned[8] out                       // positional nested in a literal
 }
 impl Structs {
     let named: Pair = Pair { .a = 6, .b = 7 };
@@ -102,6 +110,32 @@ impl Structs {
     let hi: unsigned[4] = 10;   // 1010
     let lo: unsigned[4] = 3;    // 0011
     cat = { hi, lo };           // 10100011
+
+    // A parameter's declared type, a declared return type, a port's declared
+    // type and a field's declared type each decide the same way. Every one of
+    // these read the braces as a concatenation and produced nothing: the
+    // function body's `p.a` reported having no hardware form, and the other
+    // three left their destinations undriven.
+    parm = take({ 5, 6 });
+
+    let got: Pair;
+    got = give();
+    retn = got.a * 10 + got.b;
+
+    let sink: Feed = { .p = { 7, 8 }, .q = conn };
+
+    let deepLit: Nest = { .inner = { 1, 2 }, .tag = 0 };
+    deep = deepLit.inner.a * 10 + deepLit.inner.b;
+}
+
+// A struct-typed port, so a connection value has a declared type to be read
+// against.
+entity Feed {
+    p: Pair in,
+    q: unsigned[8] out
+}
+impl Feed {
+    q = p.a * 10 + p.b;
 }
 
 // The control: entity instantiation, which is what the named-construction
@@ -126,10 +160,13 @@ impl NamedStructLiteralTest {
     let ea: unsigned[8]; let eb: unsigned[8]; let da: unsigned[8];
     let qa: unsigned[8]; let qb: unsigned[8];
     let ra: unsigned[8]; let rb: unsigned[8]; let cat: unsigned[8];
+    let parm: unsigned[8]; let retn: unsigned[8];
+    let conn: unsigned[8]; let deep: unsigned[8];
     let s: Structs = {
         .na = na, .nb = nb, .ba = ba, .bb = bb, .sa = sa, .ia = ia, .it = it,
         .fa = fa, .fb = fb, .aa = aa, .ab = ab, .ea = ea, .eb = eb, .da = da,
         .qa = qa, .qb = qb, .ra = ra, .rb = rb, .cat = cat,
+        .parm = parm, .retn = retn, .conn = conn, .deep = deep,
     };
 
     let g: unsigned[8]; let p: unsigned[8]; let c: unsigned[8];
@@ -170,6 +207,12 @@ impl NamedStructLiteralTest {
     assert!(rb == 9, "and the second");
     // The control: the assigned type decides, so a vector target concatenates.
     assert!(cat == 163, "the same braces against a vector still concatenate");
+
+    // The four other positions whose destination type decides the reading.
+    assert!(parm == 56, "a positional argument binds the parameter's fields");
+    assert!(retn == 34, "a positional return binds the declared return's fields");
+    assert!(conn == 78, "a positional port connection reaches the child");
+    assert!(deep == 12, "a positional literal nested in a named one seeds too");
 
     // The controls: entity instantiation in all three spellings.
     assert!(g == 15, "a generic named instantiation still elaborates");
