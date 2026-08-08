@@ -28,13 +28,15 @@ struct Pair { a: unsigned[8], b: unsigned[8] }
 fn constant2() -> unsigned[8][2] { return [3, 4]; }
 fn sum2(v: unsigned[8][2]) -> unsigned[8] { return v[0] + v[1]; }
 fn makePair(k: unsigned[8]) -> Pair { return Pair { .a = k, .b = k + 1 }; }
+fn takesPair(p: Pair) -> unsigned[8] { return p.a * 10 + p.b; }
 
 entity Hw {
     call: unsigned[8] out,    // an array from a call
     arg: unsigned[8] out,     // an array signal as an argument
     argLit: unsigned[8] out,  // an array literal as an argument
     copy: unsigned[8] out,    // an array copied from another
-    structCall: unsigned[8] out
+    structCall: unsigned[8] out,
+    structArg: unsigned[8] out    // a struct literal as an argument
 }
 impl Hw {
     let c: unsigned[8][2];
@@ -51,16 +53,18 @@ impl Hw {
 
     let p: Pair = makePair(6);
     structCall = p.a * 10 + p.b;
+
+    structArg = takesPair({ 5, 6 });
 }
 
 #[test]
 entity TestbenchCompositeTest {}
 impl TestbenchCompositeTest {
     let call: unsigned[8]; let arg: unsigned[8]; let argLit: unsigned[8];
-    let copy: unsigned[8]; let structCall: unsigned[8];
+    let copy: unsigned[8]; let structCall: unsigned[8]; let structArg: unsigned[8];
     let h: Hw = {
         .call = call, .arg = arg, .argLit = argLit,
-        .copy = copy, .structCall = structCall,
+        .copy = copy, .structCall = structCall, .structArg = structArg,
     };
     await 1ns;
 
@@ -70,6 +74,7 @@ impl TestbenchCompositeTest {
     assert!(argLit == 3, "1 + 2, an array literal as an argument");
     assert!(copy == 78, "an array copied from another");
     assert!(structCall == 67, "6 and 7, a struct from a call");
+    assert!(structArg == 56, "5 and 6, a struct literal as an argument");
 
     // The testbench engine, evaluating the same forms in C.
     let tc: unsigned[8][2];
@@ -80,11 +85,19 @@ impl TestbenchCompositeTest {
     let tp: Pair = makePair(6);
     let tcall: unsigned[8]; let targ: unsigned[8]; let targLit: unsigned[8];
     let tcopy: unsigned[8]; let tstruct: unsigned[8];
+    // No spelling of a struct literal reached a struct parameter here: named,
+    // named with its own type, and positional all came back as an unsupported
+    // expression, the positional one complaining about the width of a part
+    // because braces with no field names lex as a concatenation.
+    let targNamed: unsigned[8]; let targTyped: unsigned[8]; let targPos: unsigned[8];
     tcall = tc[0] * 10 + tc[1];
     targ = sum2(td);
     targLit = sum2([1, 2]);
     tcopy = tcp[0] * 10 + tcp[1];
     tstruct = tp.a * 10 + tp.b;
+    targNamed = takesPair({ .a = 5, .b = 6 });
+    targTyped = takesPair(Pair { .a = 5, .b = 6 });
+    targPos = takesPair({ 5, 6 });
     await 1ns;
 
     assert!(tcall == 34, "the testbench takes an array from a call");
@@ -92,6 +105,9 @@ impl TestbenchCompositeTest {
     assert!(targLit == 3, "and an array literal as one");
     assert!(tcopy == 78, "and copies an array");
     assert!(tstruct == 67, "and initializes a struct from a call — this was 0");
+    assert!(targNamed == 56, "a named struct literal reaches a parameter");
+    assert!(targTyped == 56, "so does one naming its own type");
+    assert!(targPos == 56, "and a positional one");
 
     // The two engines on the same source, so neither can drift alone.
     assert!(tcall == call, "both engines agree on the array call");
@@ -99,4 +115,5 @@ impl TestbenchCompositeTest {
     assert!(targLit == argLit, "on an array literal argument");
     assert!(tcopy == copy, "on an array copy");
     assert!(tstruct == structCall, "and on a struct from a call");
+    assert!(targPos == structArg, "and on a struct literal argument");
 }
