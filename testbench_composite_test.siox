@@ -1,0 +1,102 @@
+// Composite values in the testbench engine, against the same source in
+// hardware.
+//
+// The two engines are separate implementations, so a form fixed in one can stay
+// broken in the other. Four did:
+//
+//   * `let p: Pair = makePair(6);` — a struct local initialized from a *call*
+//     read back as zero in every field. **Silently**: the declaration knew a
+//     struct literal and nothing else, while the same call written as a
+//     separate assignment was right, and while hardware folds the identical
+//     initializer.
+//   * `x = constant2();` — an array assigned from a call was "unknown signal
+//     `x`". The call-to-literal reduction asked only whether the return named a
+//     field-aggregate struct, and `unsigned[8][2]` heads on `unsigned`, a
+//     newtype with no named fields.
+//   * `sum2(d)` — an array signal as an argument was "no value named `d`", and
+//   * `sum2([7, 8])` — an array literal as one was "unsupported testbench
+//     expression". An array parameter has no single C value, so it binds per
+//     element, the way a struct parameter already bound per field.
+//
+// Every value below is asserted in both engines and against the arithmetic.
+module testbench_composite_test;
+
+using std::bits::unsigned;
+
+struct Pair { a: unsigned[8], b: unsigned[8] }
+
+fn constant2() -> unsigned[8][2] { return [3, 4]; }
+fn sum2(v: unsigned[8][2]) -> unsigned[8] { return v[0] + v[1]; }
+fn makePair(k: unsigned[8]) -> Pair { return Pair { .a = k, .b = k + 1 }; }
+
+entity Hw {
+    call: unsigned[8] out,    // an array from a call
+    arg: unsigned[8] out,     // an array signal as an argument
+    argLit: unsigned[8] out,  // an array literal as an argument
+    copy: unsigned[8] out,    // an array copied from another
+    structCall: unsigned[8] out
+}
+impl Hw {
+    let c: unsigned[8][2];
+    c = constant2();
+    call = c[0] * 10 + c[1];
+
+    let d: unsigned[8][2] = [7, 8];
+    arg = sum2(d);
+    argLit = sum2([1, 2]);
+
+    let cp: unsigned[8][2];
+    cp = d;
+    copy = cp[0] * 10 + cp[1];
+
+    let p: Pair = makePair(6);
+    structCall = p.a * 10 + p.b;
+}
+
+#[test]
+entity TestbenchCompositeTest {}
+impl TestbenchCompositeTest {
+    let call: unsigned[8]; let arg: unsigned[8]; let argLit: unsigned[8];
+    let copy: unsigned[8]; let structCall: unsigned[8];
+    let h: Hw = {
+        .call = call, .arg = arg, .argLit = argLit,
+        .copy = copy, .structCall = structCall,
+    };
+    await 1ns;
+
+    // Hardware, against the arithmetic.
+    assert!(call == 34, "an array from a call");
+    assert!(arg == 15, "7 + 8, an array signal as an argument");
+    assert!(argLit == 3, "1 + 2, an array literal as an argument");
+    assert!(copy == 78, "an array copied from another");
+    assert!(structCall == 67, "6 and 7, a struct from a call");
+
+    // The testbench engine, evaluating the same forms in C.
+    let tc: unsigned[8][2];
+    tc = constant2();
+    let td: unsigned[8][2] = [7, 8];
+    let tcp: unsigned[8][2];
+    tcp = td;
+    let tp: Pair = makePair(6);
+    let tcall: unsigned[8]; let targ: unsigned[8]; let targLit: unsigned[8];
+    let tcopy: unsigned[8]; let tstruct: unsigned[8];
+    tcall = tc[0] * 10 + tc[1];
+    targ = sum2(td);
+    targLit = sum2([1, 2]);
+    tcopy = tcp[0] * 10 + tcp[1];
+    tstruct = tp.a * 10 + tp.b;
+    await 1ns;
+
+    assert!(tcall == 34, "the testbench takes an array from a call");
+    assert!(targ == 15, "and an array signal as an argument");
+    assert!(targLit == 3, "and an array literal as one");
+    assert!(tcopy == 78, "and copies an array");
+    assert!(tstruct == 67, "and initializes a struct from a call — this was 0");
+
+    // The two engines on the same source, so neither can drift alone.
+    assert!(tcall == call, "both engines agree on the array call");
+    assert!(targ == arg, "on an array argument");
+    assert!(targLit == argLit, "on an array literal argument");
+    assert!(tcopy == copy, "on an array copy");
+    assert!(tstruct == structCall, "and on a struct from a call");
+}
