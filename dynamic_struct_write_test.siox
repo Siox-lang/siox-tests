@@ -1,0 +1,99 @@
+// A whole struct written to an array element chosen at runtime.
+//
+// `slots[i] = { .tag = t, .val = v }` was `cannot assign to slots[i]` (E-P017).
+// The element has no signal of its own — its fields are `slots[0].tag`,
+// `slots[0].val` — so the leaf lookup the runtime-index expansion depends on
+// found nothing and the statement was reported as an unassignable target.
+//
+// Everything around it lowered, which is what made it worth finding: the same
+// write at a *constant* index, a single *field* of it at a runtime index, and a
+// runtime index into an array of scalars. Only the whole-struct case failed.
+//
+// It now produces one update per element per field, each gated on the index
+// matching that element — the same shape the scalar expansion produces.
+//
+// The design is a small slot table: a write port selects a slot by index, and
+// the neighbouring slots must be left alone.
+module dynamic_struct_write_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+struct Slot { tag: unsigned[8], val: unsigned[8] }
+struct Ctx { count: unsigned[8], acc: unsigned[8] }
+
+entity Table {
+    clk: Bit in,
+    idx: unsigned[8] in,
+    din: unsigned[8] in,
+    t0: unsigned[8] out, v0: unsigned[8] out,
+    t1: unsigned[8] out, v1: unsigned[8] out,
+    t2: unsigned[8] out, v2: unsigned[8] out,
+    // A spread update in a clocked block, beside it: keep one field, change
+    // the other, reading the register's own previous value.
+    keep: unsigned[8] out, grown: unsigned[8] out
+}
+impl Table {
+    let slots: Slot[3] = [{ .tag = 0, .val = 0 },
+                          { .tag = 0, .val = 0 },
+                          { .tag = 0, .val = 0 }];
+    if clk.rising() {
+        slots[idx] = { .tag = idx + 100, .val = din };
+    }
+    t0 = slots[0].tag; v0 = slots[0].val;
+    t1 = slots[1].tag; v1 = slots[1].val;
+    t2 = slots[2].tag; v2 = slots[2].val;
+
+    let ctx: Ctx = { .count = 7, .acc = 0 };
+    if clk.rising() {
+        ctx = { ..ctx, .acc = ctx.acc + din };
+    }
+    keep = ctx.count;
+    grown = ctx.acc;
+}
+
+#[test]
+entity DynamicStructWriteTest {}
+impl DynamicStructWriteTest {
+    let clk: Bit = '0';
+    let idx: unsigned[8] = 1;
+    let din: unsigned[8] = 5;
+    let t0: unsigned[8]; let v0: unsigned[8];
+    let t1: unsigned[8]; let v1: unsigned[8];
+    let t2: unsigned[8]; let v2: unsigned[8];
+    let keep: unsigned[8]; let grown: unsigned[8];
+    let tb: Table = {
+        .clk = clk, .idx = idx, .din = din,
+        .t0 = t0, .v0 = v0, .t1 = t1, .v1 = v1, .t2 = t2, .v2 = v2,
+        .keep = keep, .grown = grown,
+    };
+
+    await 1ns;
+    assert!(v1 == 0, "the table powers on at zero");
+
+    // Write slot 1.
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(t1 == 101, "the selected slot takes the tag");
+    assert!(v1 == 5, "and the value");
+    assert!(v0 == 0, "its neighbours are untouched");
+    assert!(v2 == 0, "on both sides");
+    // The spread update kept one field and changed the other.
+    assert!(keep == 7, "a spread update keeps the field it does not name");
+    assert!(grown == 5, "and accumulates into the one it does");
+
+    // Write slot 2, and slot 1 must keep what it has.
+    idx = 2; din = 9; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(t2 == 102, "a second slot takes its own tag");
+    assert!(v2 == 9, "and its own value");
+    assert!(v1 == 5, "while the first keeps what it held");
+    assert!(v0 == 0, "and the untouched one stays zero");
+    assert!(grown == 14, "the spread accumulates across edges");
+
+    // An index outside the table changes nothing.
+    idx = 7; din = 3; await 1ns;
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(v0 == 0, "an out-of-range index writes no slot");
+    assert!(v1 == 5, "leaving every slot as it was");
+    assert!(v2 == 9, "across the whole table");
+}
