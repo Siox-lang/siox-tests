@@ -1,0 +1,87 @@
+// Runtime-indexed writes in a native testbench.
+//
+// Native storage flattens every aggregate leaf into a C local. Before this
+// regression, only constant indices could name those locals: every dynamic
+// scalar, field, or whole-struct target reached the emitter as an unsupported
+// assignment target. The declared labels matter too — a range such as 4..2
+// is not the storage position 0..2.
+module testbench_dynamic_array_write_test;
+
+using std::bits::unsigned;
+
+struct Slot { tag: unsigned[8], val: unsigned[8] }
+
+#[test]
+entity TestbenchDynamicArrayWriteTest {}
+impl TestbenchDynamicArrayWriteTest {
+    // Scalar elements, a descending non-zero declared range, and a runtime
+    // local as the index.
+    let values: unsigned[8][4..2] = [10, 20, 30];
+    let index: integer = 3;
+    values[index] = 99;
+    assert!(values[4] == 10, "a dynamic scalar write leaves the first element");
+    assert!(values[3] == 99, "and selects by the declared label");
+    assert!(values[2] == 30, "without disturbing the last element");
+
+    // The ordinary stimulus form: a loop variable indexes an array.
+    for i in 2..4 {
+        values[i] = i + 40;
+    }
+    assert!(values[2] == 42, "a loop writes label 2");
+    assert!(values[3] == 43, "a loop writes label 3");
+    assert!(values[4] == 44, "a loop writes label 4");
+
+    // An index outside the declaration writes nothing.
+    index = 9;
+    values[index] = 255;
+    assert!(values[2] == 42, "an out-of-range write is a no-op");
+    assert!(values[3] == 43, "for every element");
+    assert!(values[4] == 44, "of the array");
+
+    // A field and then the whole struct through a runtime index. The final
+    // update swaps fields from the selected element, proving that all RHS
+    // leaves are read before either destination leaf is written.
+    let slots: Slot[5..6] = [
+        { .tag = 1, .val = 2 },
+        { .tag = 3, .val = 4 },
+    ];
+    index = 6;
+    slots[index].val = 8;
+    assert!(slots[6].tag == 3, "a field write preserves its neighbour");
+    assert!(slots[6].val == 8, "and reaches a runtime-selected struct field");
+    slots[index] = { .tag = slots[index].val, .val = slots[index].tag };
+    assert!(slots[6].tag == 8, "a whole runtime-selected struct stages tag");
+    assert!(slots[6].val == 3, "and stages val before either write lands");
+    assert!(slots[5].tag == 1, "the other struct is untouched");
+    assert!(slots[5].val == 2, "including all of its fields");
+
+    // A runtime-selected composite is also a value, both directly and as a
+    // spread base. These copies overlap the same flattened storage table and
+    // therefore rely on leaf staging too.
+    let source: integer = 6;
+    index = 5;
+    slots[index] = slots[source];
+    assert!(slots[5].tag == 8, "a dynamic whole-struct source copies tag");
+    assert!(slots[5].val == 3, "and copies val");
+    slots[index] = { ..slots[source], .tag = 55 };
+    assert!(slots[5].tag == 55, "a dynamic spread source can override a field");
+    assert!(slots[5].val == 3, "and keeps the field supplied by the spread");
+
+    // More than one flattened dimension and a packed bit below a runtime
+    // array selection use the same access walk.
+    let matrix: unsigned[8][2][7..6] = [[1, 2], [3, 4]];
+    let row: integer = 6;
+    let column: integer = 1;
+    matrix[row][column] = 77;
+    assert!(matrix[6][0] == 3, "a nested write keeps the sibling column");
+    assert!(matrix[6][1] == 77, "and follows both runtime dimensions");
+    assert!(matrix[7][1] == 2, "without selecting the other row");
+
+    let words: unsigned[8][2] = [0, 0];
+    let word: integer = 1;
+    let bit: integer = 5;
+    words[word][bit] = '1';
+    assert!(words[1] == 32, "a runtime bit write follows a runtime array index");
+    assert!(words[word][bit] == '1', "the same nested runtime access reads back");
+    assert!(words[0] == 0, "and leaves the other packed word alone");
+}
