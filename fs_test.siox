@@ -3,9 +3,9 @@ module examples::fs_test;
 using std::text::{unicode};
 
 // std::fs is Rust-shaped: functions returning values, no handles, no modes,
-// nothing to close. In initializer position the COMPILER reads the file
-// (include_bytes! style) — the contents bake into the design, so the native
-// binary carries its ROM even if the file disappears.
+// nothing to close. A hardware initializer is read by the COMPILER
+// (include_bytes! style), so its contents bake into the design. A #[test]
+// local is opened by the generated executable when the test runs instead.
 entity Rom { addr: unsigned[2] in, data: unsigned[8] out }
 impl Rom {
     let mem: unsigned[8][4] = read("rom.bin");
@@ -18,16 +18,15 @@ impl FsTest {
     let addr: unsigned[2] = 0; let data: unsigned[8];
     let d: Rom = { .addr = addr, .data = data };
 
-    // Runtime read in the testbench (runner-side).
+    // Runtime read in the native test executable.
     let s: string = read_to_string("banner.txt");
 
     await 1ns;
     assert!(data == 17, "rom.bin[0] = 0x11, baked at compile time");
     assert!(unicode(s[0]) == 72, "banner 'H'");
     assert!(unicode(s[1]) == 105, "banner 'i'");
-    // The file is read at build time, so its length is a compile-time
-    // constant like any other array's — it used to be computed, used to lay
-    // out the storage, and then thrown away.
+    assert!(s == "Hi", "runtime string value");
+    // The runtime-owned string retains the decoded code-point length.
     assert!(s'length == 2, "banner.txt is 2 chars");
     assert!(exists("rom.bin") == true, "exists");
     assert!(exists("nope.bin") == false, "not exists");
