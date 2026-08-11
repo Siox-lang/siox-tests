@@ -11,9 +11,26 @@ using std::bits::unsigned;
 
 struct Slot { tag: unsigned[8], val: unsigned[8] }
 
+// The hardware and native engines must use the same aggregate fallback. A
+// packed-vector bit has a different, explicit zero fallback.
+entity AggregateFallback {
+    index: unsigned[4] in,
+    value: unsigned[8] out,
+}
+impl AggregateFallback {
+    let values: unsigned[8][4..2] = [10, 20, 30];
+    value = values[index];
+}
+
 #[test]
 entity TestbenchDynamicArrayWriteTest {}
 impl TestbenchDynamicArrayWriteTest {
+    let hw_index: unsigned[4] = 9;
+    let hw_value: unsigned[8];
+    let hardware: AggregateFallback = { .index = hw_index, .value = hw_value };
+    await 1ns;
+    assert!(hw_value == 30, "hardware falls back to the last declared element");
+
     // Scalar elements, a descending non-zero declared range, and a runtime
     // local as the index.
     let values: unsigned[8][4..2] = [10, 20, 30];
@@ -37,6 +54,8 @@ impl TestbenchDynamicArrayWriteTest {
     assert!(values[2] == 42, "an out-of-range write is a no-op");
     assert!(values[3] == 43, "for every element");
     assert!(values[4] == 44, "of the array");
+    assert!(values[index] == 42,
+            "a native read falls back to the last declared element too");
 
     // A field and then the whole struct through a runtime index. The final
     // update swaps fields from the selected element, proving that all RHS
@@ -76,6 +95,9 @@ impl TestbenchDynamicArrayWriteTest {
     assert!(matrix[6][0] == 3, "a nested write keeps the sibling column");
     assert!(matrix[6][1] == 77, "and follows both runtime dimensions");
     assert!(matrix[7][1] == 2, "without selecting the other row");
+    row = 9; column = 9;
+    assert!(matrix[row][column] == 77,
+            "every out-of-range dimension falls back to its last element");
 
     let words: unsigned[8][2] = [0, 0];
     let word: integer = 1;
