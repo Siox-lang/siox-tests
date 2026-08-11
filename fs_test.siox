@@ -8,7 +8,7 @@ using std::text::{unicode};
 // local is opened by the generated executable when the test runs instead.
 entity Rom { addr: unsigned[2] in, data: unsigned[8] out }
 impl Rom {
-    let mem: unsigned[8][4] = read("rom.bin");
+    let mem: unsigned[8][4] = read<unsigned[8]>("rom.bin");
     data = mem[0];
 }
 
@@ -19,7 +19,7 @@ impl FsTest {
     let d: Rom = { .addr = addr, .data = data };
 
     // Runtime read in the native test executable.
-    let s: string = read_to_string("banner.txt");
+    let s: string = read<string>("banner.txt");
 
     await 1ns;
     assert!(data == 17, "rom.bin[0] = 0x11, baked at compile time");

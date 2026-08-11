@@ -31,7 +31,7 @@ so a regression in the compiler shows up as a failing `sioxc` build.
 ## Layout
 
 - `*.siox` — one program per file (the file name says what it exercises).
-- `*.bin` / `*.txt` — data files a few programs read (`read`/`read_to_string`).
+- `*.bin` / `*.txt` — data files a few programs read (`read<T>`).
 
 ## License
 
