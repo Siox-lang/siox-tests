@@ -1,0 +1,29 @@
+// W-P014 applies to hardware driver contexts, not sequential testbench
+// stimulus. Each connected-signal write settles before the next one, so an
+// adjacent high/low pair can deliberately create an observable clock pulse.
+module testbench_lint_scope_test;
+
+using std::bits::unsigned;
+using std::logic::Bit;
+
+entity EdgeCounter {
+    clk: Bit in,
+    pulses: unsigned[8] out,
+}
+impl EdgeCounter {
+    let count: unsigned[8] = 0;
+    if clk.rising() { count = count + 1; }
+    pulses = count;
+}
+
+#[test]
+entity TestbenchLintScopeTest {}
+impl TestbenchLintScopeTest {
+    let clk: Bit = '0';
+    let pulses: unsigned[8];
+    let counter: EdgeCounter = { .clk = clk, .pulses = pulses };
+
+    clk = '1'; clk = '0';
+    for i in 0..1 { clk = '1'; clk = '0'; }
+    assert!(pulses == 3, "adjacent stimulus writes produce three DUT-visible pulses");
+}
