@@ -1,7 +1,7 @@
 module examples::ffi_test;
 
-using CWord = integer;
-using CInteger = CWord;
+pub using CWord = integer;
+pub using CInteger = CWord;
 
 extern "C" {
     pub fn labs(v: CInteger) -> CInteger;
