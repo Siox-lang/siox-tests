@@ -6,8 +6,8 @@ using std::bits::unsigned;
 // A struct-typed signal flattens to one scalar signal per field, so each field
 // gets its own trace path in the waveform.
 struct Packet {
-    valid: Bit,
-    data: unsigned[8]
+    pub valid: Bit,
+    pub data: unsigned[8]
 }
 
 entity Sink {

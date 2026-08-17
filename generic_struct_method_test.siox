@@ -14,11 +14,11 @@ module generic_struct_method_test;
 using std::bits::{unsigned};
 using std::logic::{Bit};
 
-struct Box<T> { v: T, tag: Bit }
+struct Box<T> { pub v: T, pub tag: Bit }
 impl<T> Box<T> {
-    fn set(self, x: T) { self.v = x; }
-    fn tagit(self) { self.tag = '1'; }
-    fn doubled(self) -> T { return self.v + self.v; }
+    pub fn set(self, x: T) { self.v = x; }
+    pub fn tagit(self) { self.tag = '1'; }
+    pub fn doubled(self) -> T { return self.v + self.v; }
 }
 
 // The same shape without the parameter.
@@ -26,11 +26,11 @@ impl<T> Box<T> {
 // method call, and it was dropped in a testbench the same way.
 fn store(p: Plain, x: unsigned[8]) { p.v = x; }
 
-struct Plain { v: unsigned[8], tag: Bit }
+struct Plain { pub v: unsigned[8], pub tag: Bit }
 impl Plain {
-    fn set(self, x: unsigned[8]) { self.v = x; }
-    fn tagit(self) { self.tag = '1'; }
-    fn doubled(self) -> unsigned[8] { return self.v + self.v; }
+    pub fn set(self, x: unsigned[8]) { self.v = x; }
+    pub fn tagit(self) { self.tag = '1'; }
+    pub fn doubled(self) -> unsigned[8] { return self.v + self.v; }
 }
 
 entity Uses {

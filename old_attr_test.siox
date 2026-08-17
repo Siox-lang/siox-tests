@@ -12,7 +12,7 @@ module old_attr_test;
 
 using std::bits::{unsigned};
 
-struct Pkt { valid: Bit, data: unsigned[8] }
+struct Pkt { pub valid: Bit, pub data: unsigned[8] }
 
 entity Edges {
     clk: Bit in,

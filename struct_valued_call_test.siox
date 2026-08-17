@@ -21,7 +21,7 @@ module struct_valued_call_test;
 using std::bits::{unsigned};
 using std::ops::{Operator};
 
-struct Vec2 { x: unsigned[8], y: unsigned[8] }
+struct Vec2 { pub x: unsigned[8], pub y: unsigned[8] }
 
 impl Operator<"+", Vec2, Vec2> for Vec2 {
     fn apply(self, rhs: Vec2) -> Vec2 {
@@ -32,7 +32,7 @@ impl Operator<"+", Vec2, Vec2> for Vec2 {
 // The same computation three ways: as a method, as a free function, and as a
 // free function whose body combines a call with an operator.
 impl Vec2 {
-    fn doubled(self) -> Vec2 { return Vec2 { .x = self.x * 2, .y = self.y * 2 }; }
+    pub fn doubled(self) -> Vec2 { return Vec2 { .x = self.x * 2, .y = self.y * 2 }; }
 }
 fn twice(v: Vec2) -> Vec2 { return Vec2 { .x = v.x * 2, .y = v.y * 2 }; }
 fn nested(v: Vec2) -> Vec2 { return twice(v) + v; }

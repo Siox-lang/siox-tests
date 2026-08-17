@@ -6,7 +6,7 @@ using std::math::{sqrt, pow, floor, PI};
 // Unconnected real-valued testbench storage still uses the simulator's
 // bit-pattern representation. Operations must decode it to floating point and
 // encode their result again, just like connected real signals.
-struct Sample { value: real }
+struct Sample { pub value: real }
 
 const HALF_PI: real = PI / 2.0;
 
@@ -14,7 +14,7 @@ fn half(value: real) -> real { return value / 2.0; }
 fn one() -> real { return 1; }
 
 impl Sample {
-    fn half(self) -> real { return self.value / 2.0; }
+    pub fn half(self) -> real { return self.value / 2.0; }
 }
 
 #[test]

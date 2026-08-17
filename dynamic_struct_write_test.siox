@@ -19,8 +19,8 @@ module dynamic_struct_write_test;
 using std::bits::unsigned;
 using std::logic::Bit;
 
-struct Slot { tag: unsigned[8], val: unsigned[8] }
-struct Ctx { count: unsigned[8], acc: unsigned[8] }
+struct Slot { pub tag: unsigned[8], pub val: unsigned[8] }
+struct Ctx { pub count: unsigned[8], pub acc: unsigned[8] }
 
 entity Table {
     clk: Bit in,

@@ -12,9 +12,9 @@ using std::attrs::{test};
 // An encoding table, VHDL's `'pos`/`'val` made explicit and table-scoped.
 struct Ascii {}
 impl Ascii {
-    fn code(c: integer) -> integer { return c; }        // 'pos
-    fn char(n: integer) -> integer { return n; }        // 'val
-    fn is_digit(c: integer) -> integer {
+    pub fn code(c: integer) -> integer { return c; }        // 'pos
+    pub fn char(n: integer) -> integer { return n; }        // 'val
+    pub fn is_digit(c: integer) -> integer {
         if c >= 48 and c <= 57 { return 1; }
         return 0;
     }
@@ -23,7 +23,7 @@ impl Ascii {
 // Associated fns compose and const-fold, so they work as widths/params too.
 struct Bits {}
 impl Bits {
-    fn mask(n: integer) -> integer { return (1 << n) - 1; }
+    pub fn mask(n: integer) -> integer { return (1 << n) - 1; }
 }
 
 entity Probe {

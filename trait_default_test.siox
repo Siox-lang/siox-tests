@@ -26,13 +26,13 @@ trait Meter {
 }
 
 // Inherits both defaults.
-struct Plain { v: unsigned[8] }
+struct Plain { pub v: unsigned[8] }
 impl Meter for Plain {
     fn raw(self) -> unsigned[8] { return self.v; }
 }
 
 // Overrides one default, inherits the other.
-struct Custom { v: unsigned[8] }
+struct Custom { pub v: unsigned[8] }
 impl Meter for Custom {
     fn raw(self) -> unsigned[8] { return self.v; }
     fn scaled(self) -> unsigned[8] { return self.raw() * 10; }

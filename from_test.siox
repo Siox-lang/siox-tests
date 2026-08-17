@@ -1,7 +1,7 @@
 module examples::from_test;
 using std::logic::{ULogic};
 
-struct Pair { lo: unsigned[8], hi: unsigned[8] }
+struct Pair { pub lo: unsigned[8], pub hi: unsigned[8] }
 
 impl From<integer> for Pair {
     fn from(v: integer) -> Pair {

@@ -4,7 +4,7 @@ using std::bits::unsigned;
 
 // A struct-literal assignment (`p = { .x = 10, .y = 20 }`) writes each field of
 // a connected struct port — on the interpreter, JIT, and native binary alike.
-struct Pt { x: unsigned[8], y: unsigned[8] }
+struct Pt { pub x: unsigned[8], pub y: unsigned[8] }
 
 entity Sum { p: Pt in, s: unsigned[8] out }
 impl Sum { s = p.x + p.y; }

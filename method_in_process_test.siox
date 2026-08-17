@@ -17,10 +17,10 @@ module method_in_process_test;
 using std::bits::{unsigned};
 using std::logic::{Bit};
 
-struct Counter { n: unsigned[8] }
+struct Counter { pub n: unsigned[8] }
 impl Counter {
-    fn bump(self, by: unsigned[8]) { self.n = self.n + by; }
-    fn set(self, x: unsigned[8]) { self.n = x; }
+    pub fn bump(self, by: unsigned[8]) { self.n = self.n + by; }
+    pub fn set(self, x: unsigned[8]) { self.n = x; }
 }
 
 // A free function mutating through its argument.

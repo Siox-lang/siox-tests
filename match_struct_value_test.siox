@@ -30,7 +30,7 @@ using std::logic::{Bit};
 //   9..12   -> Mem,    writes, immediate
 //   else    -> Nop,    no write, no immediate
 enum Kind { Alu, Logic, Imm, Branch, Mem, Nop }
-struct Ctrl { kind: Kind, writes: Bit, usesImm: Bit }
+struct Ctrl { pub kind: Kind, pub writes: Bit, pub usesImm: Bit }
 
 // An arm may be a call rather than a literal, so each branch has to be reduced
 // to its literal before the fields can be distributed.

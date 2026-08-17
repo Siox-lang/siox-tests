@@ -6,8 +6,8 @@ module struct_port_literal_test;
 
 using std::bits::{unsigned};
 
-struct Inner { lo: unsigned[8], hi: unsigned[8] }
-struct Outer { tag: Bit, body: Inner }
+struct Inner { pub lo: unsigned[8], pub hi: unsigned[8] }
+struct Outer { pub tag: Bit, pub body: Inner }
 
 entity Pick {
     o: Outer in,

@@ -7,7 +7,7 @@ using std::bits::{unsigned};
 // every field at its default, so `r.a` silently read 0.
 
 enum Sel { A, B }
-struct Pair { a: unsigned[8], b: unsigned[8] }
+struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 
 #[test]
 entity StructValueTest {}

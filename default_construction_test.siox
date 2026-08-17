@@ -9,7 +9,7 @@ using std::bits::{unsigned, signed};
 // there, and `Enum::new()` resolved as a variant lookup and failed.
 
 enum Phase { Idle, Run, Done }
-struct Pair { a: unsigned[8], b: signed[8] }
+struct Pair { pub a: unsigned[8], pub b: signed[8] }
 
 entity Defaults { e: Phase out, u: unsigned[8] out, s: signed[8] out }
 impl Defaults {

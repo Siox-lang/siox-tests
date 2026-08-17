@@ -19,9 +19,9 @@ module composite_self_assign_test;
 
 using std::bits::{unsigned};
 
-struct P { a: unsigned[8], b: unsigned[8] }
-struct Inner { p: unsigned[8], q: unsigned[8] }
-struct Outer { i: Inner, k: unsigned[8] }
+struct P { pub a: unsigned[8], pub b: unsigned[8] }
+struct Inner { pub p: unsigned[8], pub q: unsigned[8] }
+struct Outer { pub i: Inner, pub k: unsigned[8] }
 
 fn swap(v: P) -> P { return P { .a = v.b, .b = v.a }; }
 

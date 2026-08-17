@@ -24,10 +24,10 @@ fn write<Bus: Writable, Value>(bus: Bus, value: Value) {
 // SPI has one data lane in each direction. The controller owns clock and
 // select; the peripheral observes them.
 struct Spi {
-    clock: Bit,
-    select: Bit,
-    controller_data: unsigned[8],
-    peripheral_data: unsigned[8]
+    pub clock: Bit,
+    pub select: Bit,
+    pub controller_data: unsigned[8],
+    pub peripheral_data: unsigned[8]
 }
 
 view SpiController for Spi {
@@ -121,9 +121,9 @@ impl SpiLink {
 // I2C endpoints never drive SDA high. Each side contributes a "drive low"
 // intent; the sampled line is high only when neither endpoint pulls it low.
 struct I2c {
-    scl: Bit,
-    controller_drive_low: Bit,
-    target_drive_low: Bit
+    pub scl: Bit,
+    pub controller_drive_low: Bit,
+    pub target_drive_low: Bit
 }
 
 view I2cController for I2c {

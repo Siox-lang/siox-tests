@@ -1,8 +1,8 @@
 module examples::compose_nested_test;
-struct A { x: Bit, y: unsigned[4] }
-struct B { a: A, z: unsigned[4] }
-struct C { items: A[2], tag: unsigned[4] }
-struct D { label: string[3], code: unsigned[4] }
+struct A { pub x: Bit, pub y: unsigned[4] }
+struct B { pub a: A, pub z: unsigned[4] }
+struct C { pub items: A[2], pub tag: unsigned[4] }
+struct D { pub label: string[3], pub code: unsigned[4] }
 
 entity E { v: Bit in, oy: unsigned[4] out, oz: unsigned[4] out }
 impl E {

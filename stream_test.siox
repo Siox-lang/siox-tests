@@ -6,7 +6,7 @@ using std::bits::unsigned;
 // A struct-typed port carries a whole bundle (a valid/data handshake) across an
 // instance boundary in one connection. Each field wires independently: the
 // producer drives `link.valid`/`link.data`, the consumer reads them.
-struct Stream { valid: Logic, data: unsigned[8] }
+struct Stream { pub valid: Logic, pub data: unsigned[8] }
 
 entity Producer { s: Stream out }
 impl Producer {

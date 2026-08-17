@@ -4,8 +4,8 @@ using std::bits::unsigned;
 using std::ops::{Index, IndexAssign, Range};
 
 struct Pair {
-    first: unsigned[8],
-    second: unsigned[8]
+    pub first: unsigned[8],
+    pub second: unsigned[8]
 }
 
 impl Index<integer, unsigned> for Pair {

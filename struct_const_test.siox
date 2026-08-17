@@ -27,8 +27,8 @@ module struct_const_test;
 
 using std::bits::unsigned;
 
-struct Pair { a: unsigned[8], b: unsigned[8] }
-struct Limits { lo: unsigned[8], hi: unsigned[8] }
+struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
+struct Limits { pub lo: unsigned[8], pub hi: unsigned[8] }
 
 entity Consts {
     fa: unsigned[8] out, fb: unsigned[8] out,   // field reads

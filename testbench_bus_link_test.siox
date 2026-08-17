@@ -6,7 +6,7 @@ using std::logic::{Bit};
 // flattened into leaves, so the scalar port lookup found nothing and the
 // binding was dropped, leaving each instance with a private copy. The same
 // design wired inside an entity always worked.
-struct Stream { valid: Bit, ready: Bit, data: signed[8] }
+struct Stream { pub valid: Bit, pub ready: Bit, pub data: signed[8] }
 view Source for Stream { valid out, ready in, data out }
 view Sink   for Stream { valid in, ready out, data in }
 

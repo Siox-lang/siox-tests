@@ -7,7 +7,7 @@ module examples::stream_bus_test;
 using std::logic::{Bit};
 using std::bits::unsigned;
 
-struct Stream { valid: Bit, ready: Bit, data: unsigned[8] }
+struct Stream { pub valid: Bit, pub ready: Bit, pub data: unsigned[8] }
 
 view Source for Stream { valid out, data out, ready in }
 view Sink for Stream { valid in, data in, ready out }

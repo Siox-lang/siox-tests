@@ -3,8 +3,8 @@ module examples::derive_test;
 // Structure is composition (§3.28): a struct holds the one it builds on as a
 // field rather than extending it, so `pkt.header.valid` says where the field
 // lives. Derivation (`:`) only ever makes a newtype.
-struct Header { valid: Bit, kind: unsigned[4] }
-struct Packet { header: Header, data: unsigned[8] }
+struct Header { pub valid: Bit, pub kind: unsigned[4] }
+struct Packet { pub header: Header, pub data: unsigned[8] }
 
 entity Rx { p_valid: Bit in, p_kind: unsigned[4] in, p_data: unsigned[8] in,
             ok: Bit out, d: unsigned[8] out }

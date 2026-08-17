@@ -22,18 +22,18 @@ const K: unsigned[8] = 5;
 fn twice(n: unsigned[8]) -> unsigned[8] { return n * 2; }
 
 // Aggregates seed the same way, leaf by leaf.
-struct Pair { x: unsigned[8], s: Logic }
+struct Pair { pub x: unsigned[8], pub s: Logic }
 
 // A `Char` field, to seed a character through the aggregate path too.
-struct Tagged { c: Char, n: unsigned[8] }
+struct Tagged { pub c: Char, pub n: unsigned[8] }
 
 // A struct inside a struct: the outer literal names no leaf at `.inner`, so
 // seeding has to recurse into it rather than skip it.
-struct Deep { inner: Pair, flag: unsigned[8] }
+struct Deep { pub inner: Pair, pub flag: unsigned[8] }
 
 // Field values that are themselves aggregates: each names no leaf of its own,
 // so seeding has to descend rather than skip.
-struct Holder { arr: unsigned[8][3], name: string[3], n: unsigned[8] }
+struct Holder { pub arr: unsigned[8][3], pub name: string[3], pub n: unsigned[8] }
 
 entity Seeds {
     fromLiteral: unsigned[8] out,

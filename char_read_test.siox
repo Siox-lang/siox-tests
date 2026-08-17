@@ -3,7 +3,7 @@ module examples::char_read_test;
 using std::text::{string, unicode};
 using std::attrs::{test};
 
-struct CharacterBox { value: Char }
+struct CharacterBox { pub value: Char }
 
 // A string is a `Char` array; each element reads as its Unicode code point.
 // Exercised on all three engines, including the native binary.

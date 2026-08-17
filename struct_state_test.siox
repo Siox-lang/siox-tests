@@ -6,8 +6,8 @@ module struct_state_test;
 
 using std::bits::{unsigned};
 
-struct Pair { a: unsigned[8], b: unsigned[8] }
-struct Acc { total: unsigned[8], count: unsigned[8] }
+struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
+struct Acc { pub total: unsigned[8], pub count: unsigned[8] }
 
 entity Swapper {
     clk: Bit in,

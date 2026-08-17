@@ -21,8 +21,8 @@ module named_struct_literal_test;
 using std::bits::unsigned;
 
 
-struct Pair { a: unsigned[8], b: unsigned[8] }
-struct Nest { inner: Pair, tag: unsigned[8] }
+struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
+struct Nest { pub inner: Pair, pub tag: unsigned[8] }
 
 // A struct-typed `let` may also be initialized from a call. An initializer is a
 // power-on value folded at elaboration, and the scalar path folds one
@@ -36,7 +36,7 @@ fn make(v: unsigned[8]) -> Pair { return Pair { .a = v, .b = v + 1 }; }
 fn take(p: Pair) -> unsigned[8] { return p.a * 10 + p.b; }
 fn give() -> Pair { return { 3, 4 }; }
 impl Pair {
-    fn twice(v: unsigned[8]) -> Pair { return Pair { .a = v * 2, .b = v * 2 + 1 }; }
+    pub fn twice(v: unsigned[8]) -> Pair { return Pair { .a = v * 2, .b = v * 2 + 1 }; }
 }
 
 entity Counter<W: integer> { d: unsigned[8] in, q: unsigned[8] out }

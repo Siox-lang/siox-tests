@@ -7,9 +7,9 @@ using std::logic::Bit;
 // Both views flatten onto the same Stream net; only their permissions and
 // implementations differ.
 struct Stream {
-    valid: Bit,
-    ready: Bit,
-    data: unsigned[8]
+    pub valid: Bit,
+    pub ready: Bit,
+    pub data: unsigned[8]
 }
 
 view Source for Stream {
@@ -89,9 +89,9 @@ impl StreamLink {
 
 // Small buses use the same struct-plus-view model as larger protocols.
 struct StatusSignals {
-    enabled: Bit,
-    active: Bit,
-    value: unsigned[8]
+    pub enabled: Bit,
+    pub active: Bit,
+    pub value: unsigned[8]
 }
 
 view StatusBus for StatusSignals {

@@ -4,8 +4,8 @@ using std::attrs::{test};
 using std::text::{string};
 
 struct WidePair {
-    value: unsigned[128],
-    character: Char
+    pub value: unsigned[128],
+    pub character: Char
 }
 
 #[test]

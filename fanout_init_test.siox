@@ -8,7 +8,7 @@ using std::bits::{unsigned};
 // assignment to the same name reached them all — one clock or reset feeding
 // two DUTs is the common shape of this.
 
-struct Cfg { lo: unsigned[8], hi: unsigned[8] }
+struct Cfg { pub lo: unsigned[8], pub hi: unsigned[8] }
 
 entity Inc { a: unsigned[8] in, y: unsigned[8] out }
 entity UseCfg { c: Cfg in, y: unsigned[8] out }

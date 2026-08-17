@@ -21,13 +21,13 @@ module aggregate_event_test;
 using std::bits::{unsigned};
 using std::logic::{Bit};
 
-struct Pkt { valid: Bit, data: unsigned[8] }
+struct Pkt { pub valid: Bit, pub data: unsigned[8] }
 
 // Nesting, because the leaves of an aggregate are found by walking the
 // flattened signal names: a struct inside a struct, and a struct holding an
 // array, both have to reach every leaf and no others.
-struct Inner { a: unsigned[8], b: unsigned[8] }
-struct Outer { flag: Bit, inner: Inner }
+struct Inner { pub a: unsigned[8], pub b: unsigned[8] }
+struct Outer { pub flag: Bit, pub inner: Inner }
 
 entity Watch {
     p: Pkt in,

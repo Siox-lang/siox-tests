@@ -16,7 +16,7 @@ module registered_struct_test;
 using std::bits::{unsigned};
 using std::logic::{Bit};
 
-struct Entry { tag: unsigned[4], data: unsigned[8] }
+struct Entry { pub tag: unsigned[4], pub data: unsigned[8] }
 
 // One pipeline stage: the whole entry is registered on the edge, as a unit.
 entity Stage {

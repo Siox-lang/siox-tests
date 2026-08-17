@@ -8,7 +8,7 @@ using std::attrs::{test};
 // as in a testbench. Previously only the testbench interpreter honoured it, so
 // an entity-level struct local silently powered on at 0.
 
-struct Config { mode: unsigned[8], enable: Bit }
+struct Config { pub mode: unsigned[8], pub enable: Bit }
 
 entity Holder {
     mode: unsigned[8] out,

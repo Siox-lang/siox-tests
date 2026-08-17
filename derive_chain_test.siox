@@ -17,8 +17,8 @@ impl From<Base> for Extended {
     }
 }
 
-struct Header { valid: Bit, kind: unsigned[4] }
-struct Packet { header: Header, data: unsigned[8] }
+struct Header { pub valid: Bit, pub kind: unsigned[4] }
+struct Packet { pub header: Header, pub data: unsigned[8] }
 
 entity DUT {
     u: ULogic in,

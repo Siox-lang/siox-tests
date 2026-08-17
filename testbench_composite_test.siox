@@ -23,7 +23,7 @@ module testbench_composite_test;
 
 using std::bits::unsigned;
 
-struct Pair { a: unsigned[8], b: unsigned[8] }
+struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 
 fn constant2() -> unsigned[8][2] { return [3, 4]; }
 fn sum2(v: unsigned[8][2]) -> unsigned[8] { return v[0] + v[1]; }

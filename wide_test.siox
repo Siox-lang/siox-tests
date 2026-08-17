@@ -27,8 +27,8 @@ impl WideAdder {
     }
 }
 
-struct WideBox { value: unsigned[128] }
-struct NarrowWideBox { value: unsigned[80] }
+struct WideBox { pub value: unsigned[128] }
+struct NarrowWideBox { pub value: unsigned[80] }
 
 #[test]
 entity WideTest {}
