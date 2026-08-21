@@ -1,0 +1,76 @@
+// A struct local that is *also* wired to an instance port.
+//
+// `named_struct_literal_test.siox` fixed one half of this: a `let` whose value
+// is a named construction was filed as a sub-instance declaration without
+// checking that the name belongs to an entity. The native testbench emitter
+// classified the same way and was not corrected, so the bug survived wherever
+// the emitter's path is the one that runs.
+//
+// It only shows when the local is connected. An unconnected struct local is
+// declared and initialized by one routine; a connected one is deliberately
+// handed to the general `let` path instead, because its storage is the DUT's
+// port signals. That path opened by skipping any typed construction as "an
+// instance" — so the two halves each believed the other had written the
+// initializer, and
+//
+//   let p: Packet = Packet { .id = 1, .payload = 100 };
+//
+// powered on at zero the moment `p` was passed to a port. Nothing failed: the
+// testbench read zero, the design read zero, and a testbench written this way
+// silently exercised the wrong stimulus.
+//
+// All three spellings of the literal are checked, because the one that broke is
+// the explicit one, and the controls below matter as much as the case: entity
+// instantiation is what that classification exists for.
+module connected_struct_initializer_test;
+
+using std::bits::unsigned;
+
+struct Packet { pub id: unsigned[8], pub payload: unsigned[32] }
+
+entity Pass {
+    inp: Packet in,
+    res: Packet out
+}
+
+impl Pass {
+    res = inp;
+}
+
+#[test]
+entity ConnectedStructInitializerTest {}
+
+impl ConnectedStructInitializerTest {
+    // The three ways to spell the same value.
+    let named: Packet = Packet { .id = 1, .payload = 100 };
+    let positional: Packet = Packet { 2, 200 };
+    let braced: Packet = { .id = 3, .payload = 300 };
+
+    let from_named: Packet;
+    let from_positional: Packet;
+    let from_braced: Packet;
+
+    // Brace-only instantiation, and the named spelling as a control: skipping
+    // an entity construction here is what the classification is *for*.
+    let a: Pass = { .inp = named, .res = from_named };
+    let b: Pass = { .inp = positional, .res = from_positional };
+    let c: Pass = Pass { .inp = braced, .res = from_braced };
+
+    await 1ns;
+
+    // The local kept its initializer ...
+    assert!(named.id == 1, "named literal keeps its id");
+    assert!(named.payload == 100, "named literal keeps its payload");
+    assert!(positional.id == 2, "positional literal keeps its id");
+    assert!(positional.payload == 200, "positional literal keeps its payload");
+    assert!(braced.id == 3, "brace-only literal keeps its id");
+    assert!(braced.payload == 300, "brace-only literal keeps its payload");
+
+    // ... and the value actually reached the design through the port.
+    assert!(from_named.id == 1, "the named literal reached the instance");
+    assert!(from_named.payload == 100, "payload too");
+    assert!(from_positional.id == 2, "the positional literal reached the instance");
+    assert!(from_positional.payload == 200, "payload too");
+    assert!(from_braced.id == 3, "the brace-only literal reached the instance");
+    assert!(from_braced.payload == 300, "payload too");
+}
