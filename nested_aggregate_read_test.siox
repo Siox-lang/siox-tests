@@ -1,0 +1,87 @@
+// Reading a nested aggregate as one value: `outer.inner`, `w[0]`.
+//
+// A whole struct or array *named at the top level* was already readable —
+// `a = b` copies every leaf. One nested inside another was not. Only a bare
+// name reached the aggregate read, so a struct-typed field and an element of a
+// struct array were lowered as ordinary scalars, which an aggregate has none
+// of, and rejected with
+//
+//   error[E-P017]: `seed.inner` has no hardware form
+//
+// whose help talks about runtime indices — on a path whose indices are literal.
+//
+// Writing already worked, which is what made the shape so lopsided: `w[0] = a`
+// compiled and `a = w[0]` did not, so a struct array could be filled but never
+// read back, and a nested struct could be built but not copied out.
+//
+// Both directions are asserted here, and the scalar-field spellings that always
+// worked are kept beside them: the fix must not change what a `.field` read of
+// a leaf already meant.
+module nested_aggregate_read_test;
+
+using std::bits::unsigned;
+
+struct Inner { pub lo: unsigned[8], pub hi: unsigned[8] }
+struct Outer { pub tag: unsigned[8], pub inner: Inner }
+
+entity E {
+    seed: Outer in,
+    // a struct field read whole
+    copy_lo: unsigned[8] out,
+    copy_hi: unsigned[8] out,
+    // an array element read whole, then copied element to element
+    first_lo: unsigned[8] out,
+    second_lo: unsigned[8] out,
+    // the leaf spellings that always worked
+    leaf_tag: unsigned[8] out
+}
+
+impl E {
+    // A struct-typed field, copied as one value.
+    let cp: Inner;
+    cp = seed.inner;
+
+    // An array of structs: fill element 0 from a whole-value write, then copy
+    // element 0 to element 1 as a whole value.
+    let w: Inner[2];
+    w[0] = cp;
+    w[1] = w[0];
+
+    copy_lo = cp.lo;
+    copy_hi = cp.hi;
+    first_lo = w[0].lo;
+    second_lo = w[1].lo;
+    leaf_tag = seed.tag;
+}
+
+#[test]
+entity NestedAggregateReadTest {}
+
+impl NestedAggregateReadTest {
+    let seed: Outer = Outer { .tag = 1, .inner = Inner { .lo = 7, .hi = 8 } };
+    let copy_lo: unsigned[8];
+    let copy_hi: unsigned[8];
+    let first_lo: unsigned[8];
+    let second_lo: unsigned[8];
+    let leaf_tag: unsigned[8];
+
+    let d: E = {
+        .seed = seed,
+        .copy_lo = copy_lo, .copy_hi = copy_hi,
+        .first_lo = first_lo, .second_lo = second_lo,
+        .leaf_tag = leaf_tag
+    };
+
+    await 1ns;
+
+    // A struct-typed field read whole carries every leaf, not just the first.
+    assert!(copy_lo == 7, "the nested struct's low field survives the copy");
+    assert!(copy_hi == 8, "and its high field");
+
+    // An array element written whole, and read whole into its neighbour.
+    assert!(first_lo == 7, "element 0 took the whole struct");
+    assert!(second_lo == 7, "element 1 read element 0 as one value");
+
+    // The leaf spelling is unchanged.
+    assert!(leaf_tag == 1, "a scalar field still reads as itself");
+}
