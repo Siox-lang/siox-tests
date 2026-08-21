@@ -1,0 +1,143 @@
+// A sub-instance declared inside a generate block, fed a struct-array element.
+//
+// A generate `for` is defined by unrolling: writing the instances out by hand
+// must give the same design. It did not. These two bodies
+//
+//   let s0: Bump = { .i = w[0], .o = w[1] };      // worked
+//   for i in 0..0 { let s: Bump = { .i = w[i], .o = w[i+1] }; }   // E-P017
+//
+// disagreed, the second reporting "`w[0]` has no hardware form" — a message
+// about runtime indices, on an index that is a literal by the time it is read.
+//
+// The instance itself is lowered structurally, before the behavioural walk ever
+// sees it. That walk skipped the *assignment* spelling of a generated instance
+// (`stage[i] = Sub { .. }`) but not the `let` spelling, so it lowered the
+// declaration a second time as if it were data. A scalar connection survives
+// that: `w[i]` on an `unsigned[8][N]` still has a value, and the result is
+// simply unused. An element of a *struct* array has no scalar form at all, so
+// the second lowering had nothing to produce and rejected the program.
+//
+// Both spellings are built here and their results compared, because agreeing
+// with each other is the property that was broken — not the value alone.
+//
+// The chains end by reading `w[N].v` and `w[N].tag` rather than `w[N]`: copying
+// a whole struct-array *element* has no hardware form yet, at the root as much
+// as in a loop, so it is a separate gap and deliberately not what this covers.
+module generate_struct_connection_test;
+
+using std::bits::unsigned;
+
+struct Beat { pub v: unsigned[8], pub tag: unsigned[4] }
+
+entity Bump {
+    i: Beat in,
+    o: Beat out
+}
+
+impl Bump {
+    o = Beat { .v = i.v + 1, .tag = i.tag };
+}
+
+// Three stages wired by a generate loop.
+entity Generated {
+    seed: Beat in,
+    v: unsigned[8] out,
+    tag: unsigned[4] out
+}
+
+impl Generated {
+    let w: Beat[4];
+    w[0] = seed;
+    for i in 0..2 {
+        let s: Bump = { .i = w[i], .o = w[i+1] };
+    }
+    v = w[3].v;
+    tag = w[3].tag;
+}
+
+// The same three stages, written out.
+entity Unrolled {
+    seed: Beat in,
+    v: unsigned[8] out,
+    tag: unsigned[4] out
+}
+
+impl Unrolled {
+    let w: Beat[4];
+    w[0] = seed;
+    let s0: Bump = { .i = w[0], .o = w[1] };
+    let s1: Bump = { .i = w[1], .o = w[2] };
+    let s2: Bump = { .i = w[2], .o = w[3] };
+    v = w[3].v;
+    tag = w[3].tag;
+}
+
+// A generate *if* takes the same path as a generate loop.
+entity Conditional {
+    seed: Beat in,
+    v: unsigned[8] out,
+    tag: unsigned[4] out
+}
+
+impl Conditional {
+    let w: Beat[2];
+    w[0] = seed;
+    if 1 == 1 {
+        let s: Bump = { .i = w[0], .o = w[1] };
+    }
+    v = w[1].v;
+    tag = w[1].tag;
+}
+
+// A generate block holds both kinds of `let`. Only the instance one is
+// structural; a block-local is ordinary data and must still be lowered, so the
+// skip has to distinguish them rather than pass over every declaration.
+entity Mixed {
+    seed: Beat in,
+    v: unsigned[8] out,
+    doubled: unsigned[8] out
+}
+
+impl Mixed {
+    let w: Beat[2];
+    let d: unsigned[8][2];
+    w[0] = seed;
+    d[0] = seed.v;
+    for i in 0..0 {
+        let step: unsigned[8] = d[i] * 2;
+        let s: Bump = { .i = w[i], .o = w[i+1] };
+        d[i+1] = step;
+    }
+    v = w[1].v;
+    doubled = d[1];
+}
+
+#[test]
+entity GenerateStructConnectionTest {}
+
+impl GenerateStructConnectionTest {
+    let seed: Beat = Beat { .v = 10, .tag = 3 };
+    let gv: unsigned[8]; let gt: unsigned[4];
+    let uv: unsigned[8]; let ut: unsigned[4];
+    let cv: unsigned[8]; let ct: unsigned[4];
+
+    let mv: unsigned[8]; let md: unsigned[8];
+    let mix: Mixed = { .seed = seed, .v = mv, .doubled = md };
+    let gen: Generated = { .seed = seed, .v = gv, .tag = gt };
+    let unr: Unrolled = { .seed = seed, .v = uv, .tag = ut };
+    let con: Conditional = { .seed = seed, .v = cv, .tag = ct };
+
+    await 1ns;
+
+    assert!(gv == 13, "three generated stages add one each");
+    assert!(gt == 3, "the tag rides through the generated chain");
+    assert!(uv == 13, "and the hand-written chain agrees");
+    assert!(gv == uv, "a generate loop is its unrolling");
+    assert!(gt == ut, "for every field");
+    assert!(cv == 11, "one stage behind a generate if");
+    assert!(ct == 3, "tag rides through that too");
+    // The instance in that loop still ran ...
+    assert!(mv == 11, "the instance beside a block-local still connects");
+    // ... and so did the block-local beside it.
+    assert!(md == 20, "a block-local in a generate block is still lowered");
+}
