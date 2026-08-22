@@ -34,6 +34,7 @@ entity Ops {
 impl Ops {
     let mv: unsigned[8] = "0000X100";   // element 3 unknown
     let hl: unsigned[8] = "0000H100";   // element 3 a weak 1
+    let uv: unsigned[8] = "0000U100";   // element 3 never driven
     let b: unsigned[8] = "00000101";
 
     y = match sel {
@@ -47,6 +48,10 @@ impl Ops {
         7 => hl and b,
         8 => hl or b,
         9 => hl + b,
+        10 => uv or b,
+        11 => not uv,
+        12 => uv and b,
+        13 => uv + b,
         _ => mv and b,
     };
 }
@@ -101,4 +106,24 @@ impl XzVectorOpsTest {
     sel = 9; await 1ns;
     assert!(y[4..4] == '1', "add: H counts as 1, so 12 + 5 is 17");
     assert!(y[0..0] == '1', "add: and the sum is a number, not poison");
+
+    // `'U'` dominates `'X'`: an unforced logical result with a `'U'` operand is
+    // `'U'`, which is what distinguishes "never driven" from "driven to
+    // conflict". Reporting `'X'` for both throws that away.
+    sel = 10; await 1ns;
+    assert!(y[3..3] == 'U', "or: U or 0 stays U, not X");
+    assert!(y[0..0] == '1', "or: and a forced element is still forced");
+    sel = 11; await 1ns;
+    assert!(y[3..3] == 'U', "not: not U is U");
+    assert!(y[2..2] == '0', "not: its neighbour inverts normally");
+
+    // Forcing still wins over the domination rule ...
+    sel = 12; await 1ns;
+    assert!(y[3..3] == '0', "and: U and 0 is forced to 0");
+
+    // ... and arithmetic still poisons to `'X'`, which is what nvc gives for a
+    // `'U'` operand: the domination rule belongs to the logical tables only.
+    sel = 13; await 1ns;
+    assert!(y[3..3] == 'X', "add: a U operand poisons to X, not U");
+    assert!(y[0..0] == 'X', "add: across the whole vector");
 }
