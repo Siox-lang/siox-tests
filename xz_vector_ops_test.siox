@@ -1,0 +1,104 @@
+// Vector operations on metavalues, against `nvc`.
+//
+// The scalar `std_logic_1164` tables were checked against `nvc` long ago. The
+// *vector* path was not, and a generated differential -- 13 operations over 11
+// operand patterns, read per element -- disagreed on 80 of 143 results, from
+// three causes.
+//
+// **Logical operators poisoned the whole vector.** std spells `xor` as
+// `(a or b) - (a and b)` and the complements as a subtraction from an all-ones
+// mask. Right for two-valued data, but the metavalue companion then sees a
+// subtraction and applies the *arithmetic* rule, so `not "0000X100"` came back
+// all `'X'` instead of `1111X011`. Only `and` and `or` were per-element,
+// because only they are core operators.
+//
+// **Shifts dropped the metavalue.** The companion had no shift case at all, so
+// the result carried none and the metavalue was silently replaced by the value
+// plane's bit for it.
+//
+// **`'L'` and `'H'` counted as unknowns.** They are a weak 0 and a weak 1;
+// `H and 0` is `'0'` and `"0000H100" + b` is ordinary arithmetic. Testing the
+// discriminant range at or above `'Z'` swept them in, so a vector holding a
+// pull-up's `'H'` poisoned every operation applied to it -- including `add`,
+// `and` and `or`, which were otherwise correct.
+module xz_vector_ops_test;
+
+using std::logic::{Logic};
+using std::bits::unsigned;
+
+entity Ops {
+    sel: unsigned[4] in,
+    y: unsigned[8] out
+}
+
+impl Ops {
+    let mv: unsigned[8] = "0000X100";   // element 3 unknown
+    let hl: unsigned[8] = "0000H100";   // element 3 a weak 1
+    let b: unsigned[8] = "00000101";
+
+    y = match sel {
+        0 => not mv,
+        1 => mv xor b,
+        2 => mv nand b,
+        3 => mv nor b,
+        4 => mv xnor b,
+        5 => mv << 2,
+        6 => mv >> 2,
+        7 => hl and b,
+        8 => hl or b,
+        9 => hl + b,
+        _ => mv and b,
+    };
+}
+
+#[test]
+entity XzVectorOpsTest {}
+
+impl XzVectorOpsTest {
+    let sel: unsigned[4] = 0;
+    let y: unsigned[8];
+    let d: Ops = { .sel = sel, .y = y };
+
+    // `not "0000X100"` -> 1111X011: inverted per element, unknown only where
+    // the operand was unknown.
+    sel = 0; await 1ns;
+    assert!(y[7..7] == '1', "not: clean element inverts");
+    assert!(y[3..3] == 'X', "not: the unknown element stays unknown");
+    assert!(y[2..2] == '0', "not: and its neighbour does not");
+
+    // `"0000X100" xor "00000101"` -> 0000X001.
+    sel = 1; await 1ns;
+    assert!(y[3..3] == 'X', "xor: unknown in, unknown out");
+    assert!(y[2..2] == '0', "xor: 1 xor 1 is 0, not poisoned");
+    assert!(y[0..0] == '1', "xor: 0 xor 1 is 1");
+
+    // The complements follow, since each is its base operation inverted.
+    // `nand` resolves the unknown rather than keeping it: `and`'s forcing
+    // value is 0, so `X and 0` is `'0'` and the complement is `'1'`. nvc gives
+    // 11111011 here, and getting this wrong is how a test can look stricter
+    // than the semantics actually are.
+    sel = 2; await 1ns; assert!(y[3..3] == '1', "nand: X and 0 is forced, so nand is 1");
+    sel = 2; await 1ns; assert!(y[2..2] == '0', "nand: 1 nand 1 is 0");
+    sel = 3; await 1ns; assert!(y[3..3] == 'X', "nor: per element");
+    sel = 4; await 1ns; assert!(y[3..3] == 'X', "xnor: per element");
+    sel = 4; await 1ns; assert!(y[2..2] == '1', "xnor: 1 xnor 1 is 1");
+
+    // A shift moves elements, so it moves their discriminants.
+    sel = 5; await 1ns;
+    assert!(y[5..5] == 'X', "shl: the unknown moved up two places");
+    assert!(y[4..4] == '1', "shl: and so did its neighbour");
+    assert!(y[1..1] == '0', "shl: zeroes shift in");
+    sel = 6; await 1ns;
+    assert!(y[1..1] == 'X', "shr: the unknown moved down two places");
+    assert!(y[7..7] == '0', "shr: zeroes shift in at the top");
+
+    // `'H'` is a weak 1, not an unknown: it must not poison anything.
+    sel = 7; await 1ns;
+    assert!(y[3..3] == '0', "and: H and 0 is 0");
+    assert!(y[2..2] == '1', "and: the rest of the vector is untouched");
+    sel = 8; await 1ns;
+    assert!(y[3..3] == '1', "or: H or 0 is 1");
+    sel = 9; await 1ns;
+    assert!(y[4..4] == '1', "add: H counts as 1, so 12 + 5 is 17");
+    assert!(y[0..0] == '1', "add: and the sum is a number, not poison");
+}
