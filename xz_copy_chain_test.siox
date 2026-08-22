@@ -1,0 +1,91 @@
+// A metavalue survives a copy, and a testbench can see it.
+//
+// Checked against `nvc` (IEEE 1076-2019 `std_logic_1164`/`numeric_std`), which
+// is the reference for siox's value system. Two defects showed up under it.
+//
+// **Propagation stopped after one hop.** The pass that gives a signal its
+// metavalue companion collected its work using the companions that existed
+// *before* it ran, then created more — so a companion made during the pass was
+// invisible to any driver copying that signal. With
+//
+//     t = mv;   // literal carrying 'X'  -> t got a companion
+//     u = t;    // copy of a signal      -> u got none
+//
+// `u` did not merely lose the `'X'`: it read back as `'1'`, the value plane's
+// bit for it. VHDL carries the `'X'` across `u <= t`.
+//
+// **A testbench could not see one at all.** Reading one element of a vector
+// compiled to a value-plane bit compared against a discriminant, so
+// `y[7..7] == 'X'` became `bit == 3` — which one bit can never satisfy — while
+// `y[7..7] == '0'` was true whenever the bit was 0. A testbench could therefore
+// confirm a value the design does not hold, on hardware the entity-side read
+// correctly reported as poisoned. That asymmetry is what this file pins: the
+// same element is read from inside the entity and from the testbench, and the
+// two must agree.
+module xz_copy_chain_test;
+
+using std::logic::{Logic};
+using std::bits::unsigned;
+
+entity Chain {
+    // element 2 of each stage, read from inside the entity
+    from_literal: Logic out,
+    from_signal: Logic out,
+    from_signal_twice: Logic out,
+    // the whole vector, for the testbench to read the same element itself
+    vec: unsigned[4] out
+}
+
+impl Chain {
+    // Element 2 is a metavalue; elements 0 and 3 are a clean `'1'`. The clean
+    // ones matter: a reconstruction that always trusts the companion nibble,
+    // rather than only when it names a metavalue, reads a clean `'1'` back as
+    // `'0'` -- and a vector of only `'0'`s and one `'X'` cannot tell the two
+    // rules apart.
+    let mv: unsigned[4] = "1X01";
+    let t: unsigned[4];
+    let u: unsigned[4];
+    let v: unsigned[4];
+
+    t = mv;   // one hop from the literal
+    u = t;    // two hops -- this is the one that used to read back '1'
+    v = u;    // three, to show the fixed point is not a one-off
+
+    from_literal = t[2..2];
+    from_signal = u[2..2];
+    from_signal_twice = v[2..2];
+    vec = v;
+}
+
+#[test]
+entity XzCopyChainTest {}
+
+impl XzCopyChainTest {
+    let from_literal: Logic;
+    let from_signal: Logic;
+    let from_signal_twice: Logic;
+    let vec: unsigned[4];
+
+    let d: Chain = {
+        .from_literal = from_literal,
+        .from_signal = from_signal,
+        .from_signal_twice = from_signal_twice,
+        .vec = vec
+    };
+
+    await 1ns;
+
+    // The metavalue survives every hop.
+    assert!(from_literal == 'X', "a copy of a literal carries its metavalue");
+    assert!(from_signal == 'X', "and so does a copy of that signal");
+    assert!(from_signal_twice == 'X', "at any depth");
+
+    // The testbench sees the same element as the entity does.
+    assert!(vec[2..2] == 'X', "the testbench reads the metavalue too");
+    assert!(not (vec[2..2] == '0'), "and does not read it as a plain bit");
+
+    // The clean elements are untouched: poisoning must not spread.
+    assert!(vec[0..0] == '1', "a clean `1` stays a clean `1`");
+    assert!(vec[3..3] == '1', "on both sides of the metavalue");
+    assert!(vec[1..1] == '0', "and a clean `0` stays a clean `0`");
+}
