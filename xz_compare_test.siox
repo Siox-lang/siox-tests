@@ -1,0 +1,92 @@
+// Comparing a vector that holds a metavalue, through every operator.
+//
+// `numeric_std` answers false when either operand holds an unknown, and true
+// for `/=`, since unknown operands are definitely not equal. `simulation.md`
+// states the same rule. The value plane cannot express it: an `'X'` element
+// still has a bit there, so `"0000X000" < "00001100"` compared 8 against 12 and
+// answered *true* -- a testbench checking a poisoned result against an expected
+// number passed.
+//
+// A guard existed, but only over the finished expression, where it could match
+// `<` and `>` -- whose operands are still bare signal reads. `<=`, `>=`, `==`
+// and `/=` reach their answer through `<=>` and an `Ordering`, so nothing in
+// the built expression looks like a vector comparison and they went unguarded.
+// It also asked `companion != 0`, which counts `'L'` and `'H'` -- a weak 0 and
+// a weak 1 that compare like any other value -- so a vector holding a pull-up's
+// `'H'` compared false against everything, including itself.
+//
+// The operand here is *computed* rather than a literal, which is the case that
+// decides where the rule can be applied: a computed signal has no metavalue
+// companion until propagation has run, so a guard emitted while lowering skips
+// exactly the operands worth guarding. Checked against `nvc`.
+module xz_compare_test;
+
+using std::logic::{Bit};
+using std::bits::unsigned;
+
+entity Cmp {
+    sel: unsigned[4] in,
+    lt: Bit out, le: Bit out, gt: Bit out, ge: Bit out, eq: Bit out, ne: Bit out
+}
+
+impl Cmp {
+    // Numerically 8 on the value plane, so an unguarded `<` against 12 answers
+    // true rather than false.
+    let x: unsigned[8] = "0000X000";
+    let u: unsigned[8] = "0000U100";
+    let z: unsigned[8] = "0000Z100";
+    let h: unsigned[8] = "0000H000";   // weak 1: numerically 8, and definite
+    let b: unsigned[8] = "00001100";   // 12
+
+    // `a` is driven, not declared with a literal: its companion does not exist
+    // until propagation.
+    let a: unsigned[8];
+    a = match sel {
+        0 => x,
+        1 => u,
+        2 => z,
+        _ => h,
+    };
+
+    lt = if a < b  { '1' } else { '0' };
+    le = if a <= b { '1' } else { '0' };
+    gt = if a > b  { '1' } else { '0' };
+    ge = if a >= b { '1' } else { '0' };
+    eq = if a == b { '1' } else { '0' };
+    ne = if a != b { '1' } else { '0' };
+}
+
+#[test]
+entity XzCompareTest {}
+
+impl XzCompareTest {
+    let sel: unsigned[4] = 0;
+    let lt: Bit; let le: Bit; let gt: Bit; let ge: Bit; let eq: Bit; let ne: Bit;
+    let d: Cmp = {
+        .sel = sel, .lt = lt, .le = le, .gt = gt, .ge = ge, .eq = eq, .ne = ne
+    };
+
+    // `'X'`, `'U'` and `'Z'` are all unknowns: every comparison is false except
+    // `!=`, which is true.
+    for i in 0..2 {
+        sel = i;
+        await 1ns;
+        assert!(lt == '0', "unknown: `<` is false, not 8 < 12");
+        assert!(le == '0', "unknown: `<=` is false too");
+        assert!(gt == '0', "unknown: `>` is false");
+        assert!(ge == '0', "unknown: `>=` is false");
+        assert!(eq == '0', "unknown: `==` is false");
+        assert!(ne == '1', "unknown: `!=` is true, not false");
+    }
+
+    // A weak 1 is not an unknown, so the comparison actually happens: `'H'`
+    // reads as 1, `a` is 8, and 8 < 12.
+    sel = 3;
+    await 1ns;
+    assert!(lt == '1', "weak: H compares as 1, so 8 < 12");
+    assert!(le == '1', "weak: and `<=` agrees");
+    assert!(gt == '0', "weak: 8 is not greater than 12");
+    assert!(ge == '0', "weak: nor greater-or-equal");
+    assert!(eq == '0', "weak: 8 is not 12");
+    assert!(ne == '1', "weak: so they differ");
+}
