@@ -1,0 +1,8 @@
+module identity_common;
+
+pub struct Bus {
+    pub data: integer,
+    pub ready: integer
+}
+
+pub struct Acc(integer);

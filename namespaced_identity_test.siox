@@ -1,0 +1,67 @@
+module examples::namespaced_identity_test;
+
+using identity_common::{Acc, Bus};
+using identity_a::Left;
+using identity_b::Right;
+
+// Equal view leaves in separate modules may expose different directions over
+// the same physical representation.
+entity DirectionProbe {
+    left: Bus identity_a::Endpoint,
+    right: Bus identity_b::Endpoint,
+    left_seen: integer out,
+    right_seen: integer out
+}
+
+impl DirectionProbe {
+    left.data = 11;
+    left_seen = left.ready;
+    right.ready = 22;
+    right_seen = right.data;
+}
+
+// Equal right-operand leaves must remain distinct during overload selection.
+impl Operator<"+", identity_a::Token, integer> for Acc {
+    fn apply(self, rhs: identity_a::Token) -> integer {
+        return 41;
+    }
+}
+
+impl Operator<"+", identity_b::Token, integer> for Acc {
+    fn apply(self, rhs: identity_b::Token) -> integer {
+        return 42;
+    }
+}
+
+#[test]
+entity NamespacedIdentityTest {}
+
+impl NamespacedIdentityTest {
+    let left_bus: Bus;
+    let right_bus: Bus;
+    let left_seen: integer;
+    let right_seen: integer;
+    let probe: DirectionProbe = {
+        .left = left_bus,
+        .right = right_bus,
+        .left_seen = left_seen,
+        .right_seen = right_seen,
+    };
+
+    let acc: Acc;
+    let a_token: identity_a::Token;
+    let b_token: identity_b::Token;
+
+    left_bus.ready = 31;
+    right_bus.data = 32;
+    await 1ns;
+
+    assert!(left_bus.data == 11, "module a view drives data");
+    assert!(left_seen == 31, "module a view reads ready");
+    assert!(right_bus.ready == 22, "module b view drives ready");
+    assert!(right_seen == 32, "module b view reads data");
+    assert!(Left::tag() == 11, "module a trait default remains selected");
+    assert!(Right::tag() == 22, "module b trait default remains selected");
+    assert!(acc + a_token == 41, "module a operand selects its overload");
+    assert!(acc + b_token == 42, "module b operand selects its overload");
+}

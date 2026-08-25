@@ -1,0 +1,19 @@
+module identity_a;
+
+using identity_common::Bus;
+
+pub trait Measure {
+    fn tag() -> integer {
+        return 11;
+    }
+}
+
+pub struct Left(integer);
+pub struct Token(integer);
+
+impl Measure for Left {}
+
+pub view Endpoint for Bus {
+    data out,
+    ready in
+}
