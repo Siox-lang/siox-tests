@@ -8,10 +8,17 @@ pub trait Measure {
     }
 }
 
+pub trait From {
+    fn hook_name() -> integer {
+        return 222;
+    }
+}
+
 pub struct Right(integer);
 pub struct Token(integer);
 
 impl Measure for Right {}
+impl From for Right {}
 
 pub view Endpoint for Bus {
     data in,

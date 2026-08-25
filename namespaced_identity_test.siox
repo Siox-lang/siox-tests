@@ -62,6 +62,8 @@ impl NamespacedIdentityTest {
     assert!(right_seen == 32, "module b view reads data");
     assert!(Left::tag() == 11, "module a trait default remains selected");
     assert!(Right::tag() == 22, "module b trait default remains selected");
+    assert!(Left::hook_name() == 111, "a custom From is not std::ops::From");
+    assert!(Right::hook_name() == 222, "b custom From is not std::ops::From");
     assert!(acc + a_token == 41, "module a operand selects its overload");
     assert!(acc + b_token == 42, "module b operand selects its overload");
 }
