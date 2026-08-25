@@ -1,0 +1,60 @@
+module examples::metavalue_state_test;
+
+// Regression coverage for value/discriminant-plane lockstep. A clean
+// source-order override must clear an earlier metavalue in both combinational
+// and clocked logic, and narrowing a computed arithmetic result must inspect
+// the entire wide operand before slicing the poisoned result.
+entity MetaState {
+    clk: Bit in,
+    clear: Bit in,
+    comb: unsigned[4] out,
+    reg: unsigned[4] out,
+    narrowed: unsigned[4] out
+}
+
+impl MetaState {
+    let dirty4: unsigned[4] = "X000";
+    let dirty8: unsigned[8] = "X0000000";
+    let zero8: unsigned[8] = 0;
+
+    comb = dirty4;
+    if clear { comb = "0000"; }
+
+    if clk.rising() {
+        reg = "X000";
+        if clear { reg = "0000"; }
+    }
+
+    narrowed = (dirty8 + zero8)[3..0];
+}
+
+#[test]
+entity MetavalueStateTest {}
+
+impl MetavalueStateTest {
+    let clk: Bit = '0';
+    let clear: Bit = '0';
+    let comb: unsigned[4];
+    let reg: unsigned[4];
+    let narrowed: unsigned[4];
+    let dut: MetaState = {
+        .clk = clk,
+        .clear = clear,
+        .comb = comb,
+        .reg = reg,
+        .narrowed = narrowed
+    };
+
+    await 1ns;
+    assert!(comb[3..3] == 'X', "dirty combinational value is visible");
+    assert!(narrowed[0..0] == 'X', "wide arithmetic poisons before narrowing");
+
+    clk = '1'; await 1ns;
+    assert!(reg[3..3] == 'X', "clocked metavalue literal retains its metadata");
+    clk = '0'; await 1ns;
+
+    clear = '1'; await 1ns;
+    assert!(comb == 0, "clean combinational override clears stale metadata");
+    clk = '1'; await 1ns;
+    assert!(reg == 0, "clean clocked override clears stale metadata");
+}
