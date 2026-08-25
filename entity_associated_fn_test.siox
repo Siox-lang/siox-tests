@@ -1,0 +1,35 @@
+module examples::entity_associated_fn_test;
+
+using std::attrs::{test};
+
+// An entity can own ordinary namespaced functions when they have no `self`.
+// No instance boundary is crossed and no ports are generated for the call.
+entity Arithmetic {}
+
+impl Arithmetic {
+    pub fn add_two(value: integer) -> integer {
+        return value + 2;
+    }
+}
+
+entity EntityAssociatedProbe {
+    input: integer in,
+    output: integer out,
+}
+
+impl EntityAssociatedProbe {
+    output = Arithmetic::add_two(input);
+}
+
+#[test]
+entity EntityAssociatedFnTest {}
+
+impl EntityAssociatedFnTest {
+    let input: integer = 40;
+    let output: integer;
+    let dut: EntityAssociatedProbe = { .input = input, .output = output };
+
+    assert!(output == 42, "entity-associated function lowers in hardware");
+    assert!(Arithmetic::add_two(5) == 7,
+            "entity-associated function evaluates in the testbench");
+}
