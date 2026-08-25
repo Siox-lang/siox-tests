@@ -3,7 +3,6 @@ module examples::vector_resolve_test;
 // `Word` receives element-wise Resolve/and/or/not from the constrained T[]
 // implementations because its packed representation is Logic[].
 struct Word(Logic[]);
-impl Vector for Word {}
 
 entity VectorBus {
     en_a: Bit in,
