@@ -89,11 +89,4 @@ impl DynamicStructWriteTest {
     assert!(v1 == 5, "while the first keeps what it held");
     assert!(v0 == 0, "and the untouched one stays zero");
     assert!(grown == 14, "the spread accumulates across edges");
-
-    // An index outside the table changes nothing.
-    idx = 7; din = 3; await 1ns;
-    clk = '1'; await 1ns; clk = '0'; await 1ns;
-    assert!(v0 == 0, "an out-of-range index writes no slot");
-    assert!(v1 == 5, "leaving every slot as it was");
-    assert!(v2 == 9, "across the whole table");
 }

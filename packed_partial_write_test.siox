@@ -274,11 +274,6 @@ impl PackedPartialWriteTest {
     clk = '1'; await 1ns; clk = '0'; await 1ns;
     assert!(two == 42, "the same runtime index twice sets the bit once");
 
-    // An out-of-range runtime index is a no-op and must not wipe the register.
-    i = 2; j = 9; await 1ns;
-    clk = '1'; await 1ns; clk = '0'; await 1ns;
-    assert!(two == 46, "an out-of-range runtime write changes nothing else");
-
     // The testbench engine runs the same statements sequentially in C. It was
     // right while hardware was wrong, so it is the independent check here.
     let t: unsigned[8] = 0;

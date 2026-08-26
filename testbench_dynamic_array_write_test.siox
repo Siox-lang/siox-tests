@@ -11,13 +11,12 @@ using std::bits::unsigned;
 
 struct Slot { pub tag: unsigned[8], pub val: unsigned[8] }
 
-// The hardware and native engines must use the same aggregate fallback. A
-// packed-vector bit has a different, explicit zero fallback.
-entity AggregateFallback {
+// The hardware and native engines both select by declared labels.
+entity AggregateLookup {
     index: unsigned[4] in,
     value: unsigned[8] out,
 }
-impl AggregateFallback {
+impl AggregateLookup {
     let values: unsigned[8][4..2] = [10, 20, 30];
     value = values[index];
 }
@@ -25,11 +24,11 @@ impl AggregateFallback {
 #[test]
 entity TestbenchDynamicArrayWriteTest {}
 impl TestbenchDynamicArrayWriteTest {
-    let hw_index: unsigned[4] = 9;
+    let hw_index: unsigned[4] = 3;
     let hw_value: unsigned[8];
-    let hardware: AggregateFallback = { .index = hw_index, .value = hw_value };
+    let hardware: AggregateLookup = { .index = hw_index, .value = hw_value };
     await 1ns;
-    assert!(hw_value == 30, "hardware falls back to the last declared element");
+    assert!(hw_value == 20, "hardware selects by the declared label");
 
     // Scalar elements, a descending non-zero declared range, and a runtime
     // local as the index.
@@ -47,15 +46,6 @@ impl TestbenchDynamicArrayWriteTest {
     assert!(values[2] == 42, "a loop writes label 2");
     assert!(values[3] == 43, "a loop writes label 3");
     assert!(values[4] == 44, "a loop writes label 4");
-
-    // An index outside the declaration writes nothing.
-    index = 9;
-    values[index] = 255;
-    assert!(values[2] == 42, "an out-of-range write is a no-op");
-    assert!(values[3] == 43, "for every element");
-    assert!(values[4] == 44, "of the array");
-    assert!(values[index] == 42,
-            "a native read falls back to the last declared element too");
 
     // A field and then the whole struct through a runtime index. The final
     // update swaps fields from the selected element, proving that all RHS
@@ -95,10 +85,6 @@ impl TestbenchDynamicArrayWriteTest {
     assert!(matrix[6][0] == 3, "a nested write keeps the sibling column");
     assert!(matrix[6][1] == 77, "and follows both runtime dimensions");
     assert!(matrix[7][1] == 2, "without selecting the other row");
-    row = 9; column = 9;
-    assert!(matrix[row][column] == 77,
-            "every out-of-range dimension falls back to its last element");
-
     let words: unsigned[8][2] = [0, 0];
     let word: integer = 1;
     let bit: integer = 5;

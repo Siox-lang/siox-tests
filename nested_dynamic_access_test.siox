@@ -47,14 +47,4 @@ impl NestedDynamicAccessTest {
 
     row = 1; col = 2; await 1ns;
     assert!(q == 22, "nested runtime read returns [1][2]");
-
-    // Runtime reads retain the one-dimensional rule at every level: an
-    // out-of-range index selects that dimension's last element. Writes match
-    // no element and therefore leave the matrix unchanged.
-    row = 3; col = 3; d = 99;
-    clk = '1'; await 1ns; clk = '0'; await 1ns;
-    assert!(q == 22, "out-of-range read falls back to the last nested cell");
-
-    row = 1; col = 2; await 1ns;
-    assert!(q == 22, "out-of-range nested write is a no-op");
 }

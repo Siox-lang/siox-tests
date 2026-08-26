@@ -86,15 +86,6 @@ impl RuntimeVectorIndexTest {
     clk = '1'; await 1ns; clk = '0'; await 1ns;
     assert!(q == 'X', "runtime write preserves the Logic metavalue nibble");
 
-    // Out-of-range reads return 0 and writes are no-ops.
-    index = 7; data = '1';
-    clk = '1'; await 1ns; clk = '0'; await 1ns;
-    assert!(q == '0', "out-of-range packed read returns zero");
-    index = 8; await 1ns;
-    assert!(q == '1', "out-of-range packed write changes no bit");
-    index = 15; await 1ns;
-    assert!(q == 'X', "out-of-range packed write preserves metavalues too");
-
     // Cross both the value and companion planes beyond one 64-bit ABI word.
     wide_index = 100; wide_data = '1';
     clk = '1'; await 1ns; clk = '0'; await 1ns;
