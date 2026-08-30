@@ -9,7 +9,6 @@ impl Pll { locked = true; }
 entity Ram { clk: Bit in, ok: Bool out }
 impl Ram { ok = true; }
 
-#[top]
 entity Top { clk: Bit in, l: Bool out, o: Bool out }
 impl Top {
     #[external_clock = true]

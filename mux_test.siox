@@ -2,7 +2,7 @@ module examples::mux_test;
 
 using std::logic::Bit;
 
-// A 2:1 mux, written both ways: default-then-override drivers (spec 3.14),
+// A 2:1 mux, written both ways: default-then-override in one process (spec 3.14),
 // and the equivalent Rust-style if-expression — both lower to one select.
 entity Mux {
     sel: Bit in,
@@ -13,10 +13,11 @@ entity Mux {
 }
 
 impl Mux {
-    y = b;
-
-    if sel {
-        y = a;
+    process select_y {
+        y = b;
+        if sel {
+            y = a;
+        }
     }
 
     z = if sel { a } else { b };

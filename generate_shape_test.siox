@@ -63,8 +63,10 @@ impl Shapes {
 
     // A range whose bounds are equal is one iteration, not none.
     let one: unsigned[16][4];
-    for k in 0..3 { one[k] = 0; }
-    for k in 2..2 { one[k] = 5; }
+    process single_value {
+        for k in 0..3 { one[k] = 0; }
+        for k in 2..2 { one[k] = 5; }
+    }
     single = one[0]+one[1]+one[2]+one[3];
 
     // A loop nested inside a clocked block, which unrolls by a different path

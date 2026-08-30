@@ -1,13 +1,12 @@
 module examples::top_counter;
 
 // A concrete top-level design: a fixed-width free-running counter with reset.
-// `sioxc build` compiles this (rooted at the #[top]) to a native object —
+// `sioxc` compiles this sole structural root to a native object —
 // no testbench involved.
 
 using std::logic::{Logic};
 using std::bits::{unsigned};
 
-#[top]
 entity Counter8 {
     clk: Bit in,
     rst: Logic in,
@@ -17,11 +16,13 @@ entity Counter8 {
 impl Counter8 {
     let value: unsigned[8] = 0;
 
-    if clk.rising() {
-        if rst == '1' {
-            value = 0;
-        } else {
-            value = value + 1;
+    process update {
+        if clk.rising() {
+            if rst == '1' {
+                value = 0;
+            } else {
+                value = value + 1;
+            }
         }
     }
 

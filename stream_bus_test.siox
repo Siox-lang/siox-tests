@@ -26,7 +26,6 @@ impl Consumer {
     seen = bus.valid;
 }
 
-#[top]
 entity Link { d: unsigned[8] in, go: Bit in, accept: Bit in,
               got: unsigned[8] out, seen: Bit out, canpush: Bit out }
 impl Link {

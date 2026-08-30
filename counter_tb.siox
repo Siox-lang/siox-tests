@@ -14,19 +14,20 @@ entity Counter<W: integer> {
 impl<W: integer> Counter<W> {
     let value: unsigned[W] = 0;
 
-    if clk.rising() {
-        if rst == '1' {
-            value = 0;
-        } else if en {
-            value = value + 1;
+    process update {
+        if clk.rising() {
+            if rst == '1' {
+                value = 0;
+            } else if en {
+                value = value + 1;
+            }
         }
     }
 
     count = value;
 }
 
-// A concrete top-level harness that instantiates the counter at W = 8.
-#[top]
+// A concrete structural-root harness that instantiates the counter at W = 8.
 entity Harness {}
 
 impl Harness {

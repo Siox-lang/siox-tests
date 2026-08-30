@@ -22,19 +22,21 @@ impl Alu {
     let sh: unsigned[32];
     sh = b and 31;                 // shift amount is the low 5 bits
     let r: unsigned[32];
-    r = 0;                         // default (also covers invalid op codes)
+    process select_result {
+        r = 0;                     // default (also covers invalid op codes)
 
-    match op {
-        AluOp::Add  => { r = a + b; }
-        AluOp::Sub  => { r = a - b; }
-        AluOp::Sll  => { r = a << sh; }
-        AluOp::Slt  => { r = if signed[32](a) < signed[32](b) { 1 } else { 0 }; }
-        AluOp::Sltu => { r = if a < b { 1 } else { 0 }; }
-        AluOp::Xor  => { r = a xor b; }
-        AluOp::Srl  => { r = a >> sh; }
-        AluOp::Sra  => { r = unsigned[32](signed[32](a) >> signed[32](sh)); }
-        AluOp::Or   => { r = a or b; }
-        AluOp::And  => { r = a and b; }
+        match op {
+            AluOp::Add  => { r = a + b; }
+            AluOp::Sub  => { r = a - b; }
+            AluOp::Sll  => { r = a << sh; }
+            AluOp::Slt  => { r = if signed[32](a) < signed[32](b) { 1 } else { 0 }; }
+            AluOp::Sltu => { r = if a < b { 1 } else { 0 }; }
+            AluOp::Xor  => { r = a xor b; }
+            AluOp::Srl  => { r = a >> sh; }
+            AluOp::Sra  => { r = unsigned[32](signed[32](a) >> signed[32](sh)); }
+            AluOp::Or   => { r = a or b; }
+            AluOp::And  => { r = a and b; }
+        }
     }
 
     y = r;
