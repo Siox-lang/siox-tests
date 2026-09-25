@@ -1,0 +1,44 @@
+module examples::char_literal_test;
+// A character literal is a `Char`, so where a `Char` is consumed it is its
+// Unicode code point: in a conversion, as an argument to a `Char` parameter,
+// and in hardware as well as in a testbench.
+//
+// Only the forms that bind the literal to a typed local first
+// (`let c: Char = 'A'`, as in char_fn_return_test) ever worked. A bare literal
+// fell through to the logic-literal reading, and `'A'` -- no `Logic` value --
+// read 0: `integer('A')`, `unicode('A')` and `ascii('A')` all returned 0 on the
+// default runtime and in hardware. Expected values are Unicode's, not siox's:
+// 'A' is U+0041, 'B' is U+0042, '1' is U+0031, 'é' is U+00E9.
+using std::text::{unicode, ascii, char_of};
+
+entity Codes {
+    conv: integer out,
+    uni: integer out,
+    asc: integer out,
+    wide: integer out
+}
+impl Codes {
+    conv = integer('A');
+    uni = unicode('B');
+    asc = ascii('A');
+    wide = ascii('é');
+}
+
+#[test]
+entity CharLiteralTest {}
+impl CharLiteralTest {
+    let hw: Codes = {};
+    await 1ns;
+
+    assert!(integer('A') == 65, "integer of a literal is its code point");
+    assert!(integer('1') == 49, "a digit character is a Char, not a Logic value");
+    assert!(unicode('A') == 65, "a literal argument to a Char parameter");
+    assert!(ascii('A') == 65, "ascii of an in-table literal");
+    assert!(ascii('é') == 0 - 1, "ascii of an out-of-table literal");
+    assert!(char_of(integer('A') + 1) == 'B', "code points round-trip");
+
+    assert!(hw.conv == 65, "hardware: integer('A')");
+    assert!(hw.uni == 66, "hardware: unicode('B')");
+    assert!(hw.asc == 65, "hardware: ascii('A')");
+    assert!(hw.wide == 0 - 1, "hardware: ascii of an out-of-table literal");
+}
