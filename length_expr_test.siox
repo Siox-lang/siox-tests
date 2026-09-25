@@ -1,0 +1,24 @@
+module examples::length_expr_test;
+// A testbench local's width may be any constant expression, not only a
+// literal or a named constant. The native harness read only those two forms,
+// so `w'length` on `unsigned[2 + 1]` or `unsigned[clog2(8)]` failed the build
+// ("`w'length` is not known here") while the direct runtime and hardware read
+// 3 -- and the width also governs how assignments wrap.
+using std::bits::{unsigned};
+using std::numeric::{clog2};
+
+#[test]
+entity LengthExprTest {}
+impl LengthExprTest {
+    let lit: unsigned[3];
+    let sum: unsigned[2 + 1];
+    let call: unsigned[clog2(8)];
+    await 1ns;
+
+    assert!(lit'length == 3, "a literal width");
+    assert!(sum'length == 3, "an arithmetic width");
+    assert!(call'length == 3, "a width from a constant function");
+
+    call = 9;
+    assert!(call == 1, "the computed width wraps assignments too");
+}
