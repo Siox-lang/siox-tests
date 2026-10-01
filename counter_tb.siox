@@ -14,7 +14,7 @@ entity Counter<W: integer> {
 impl<W: integer> Counter<W> {
     let value: unsigned[W] = 0;
 
-    process update {
+    update: process {
         if clk.rising() {
             if rst == '1' {
                 value = 0;

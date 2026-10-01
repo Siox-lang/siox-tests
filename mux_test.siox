@@ -13,7 +13,7 @@ entity Mux {
 }
 
 impl Mux {
-    process select_y {
+    select_y: process {
         y = b;
         if sel {
             y = a;
