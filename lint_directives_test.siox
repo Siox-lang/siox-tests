@@ -1,0 +1,28 @@
+module examples::lint_directives_test;
+#![deny(warnings)]
+
+// Lint directives, as in rustc. The inner `#![deny(warnings)]` makes every
+// warning in this module an error, so this program only builds because the
+// one deliberate warning is allowed where it occurs: a probe signal nothing
+// drives, kept for the waveform.
+
+entity Doubler { a: unsigned[8] in, y: unsigned[8] out }
+impl Doubler {
+    #[allow(undriven_output)]
+    let probe: unsigned[8];
+    y = a + a;
+}
+
+#[test]
+entity LintDirectivesTest {}
+impl LintDirectivesTest {
+    let a: unsigned[8];
+    let y: unsigned[8];
+    let dut: Doubler = { .a = a, .y = y };
+
+    process {
+        a = 21;
+        await 1ns;
+        assert!(y == 42, "the allowed probe changes nothing else");
+    }
+}
