@@ -1,5 +1,5 @@
 module examples::logic_ninevalue_test;
-using std::logic::Logic;
+use std::logic::Logic;
 
 // The 9-value std_ulogic operators (IEEE 1076-2019 / std_logic_1164), spot-
 // checked against the reference tables: a forcing low (0/L) dominates AND even

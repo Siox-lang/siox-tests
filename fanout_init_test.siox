@@ -1,6 +1,6 @@
 module examples::fanout_init_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 // A testbench local wired to several instances has one entry in the signal
 // map and all of its ports in the alias list. The initializer seeded only the

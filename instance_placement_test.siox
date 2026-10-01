@@ -9,7 +9,7 @@
 // exactly these.
 module instance_placement_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Cell { i: unsigned[8] in, o: unsigned[8] out }
 impl Cell { o = i + 1; }

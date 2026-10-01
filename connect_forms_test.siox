@@ -1,6 +1,6 @@
 module examples::connect_forms_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // An entity port is connected in one of two struct-style block forms:
 // explicit (`.a = x`) or positional (`x` by order) — spec 3.12 has no bare

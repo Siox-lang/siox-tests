@@ -12,7 +12,7 @@
 // doubles, not what the compiler produced.
 module real_conversion_test;
 
-using std::bits::{unsigned, signed};
+use std::bits::{unsigned, signed};
 
 entity Cross {
     fromConst: unsigned[8] out,

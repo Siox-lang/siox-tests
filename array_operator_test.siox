@@ -7,7 +7,7 @@
 // unassignable — while `y = a` on the same target was fine.
 module array_operator_test;
 
-using std::ops::{Operator};
+use std::ops::Operator;
 
 // A user element type, to check the blanket impl lifts a user's own operator
 // and not just the ones std defines for Logic.

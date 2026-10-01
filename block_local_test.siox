@@ -3,7 +3,7 @@
 // at build claiming the name was unknown.
 module block_local_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 #[test]
 entity BlockLocalTest {}

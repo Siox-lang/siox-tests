@@ -14,8 +14,8 @@
 // compiler's own reading of it.
 module method_in_process_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 struct Counter { pub n: unsigned[8] }
 impl Counter {

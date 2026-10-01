@@ -1,6 +1,6 @@
 module examples::default_construction_test;
 
-using std::bits::{unsigned, signed};
+use std::bits::{unsigned, signed};
 
 // Every signal holds a value: a declaration with no initializer takes its
 // type's default (spec 3.29), and `T()` / `T::new()` are the explicit

@@ -23,8 +23,8 @@
 // `and` and `or`, which were otherwise correct.
 module xz_vector_ops_test;
 
-using std::logic::{Logic};
-using std::bits::unsigned;
+use std::logic::Logic;
+use std::bits::unsigned;
 
 entity Ops {
     sel: unsigned[4] in,

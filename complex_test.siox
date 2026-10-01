@@ -3,8 +3,8 @@ module examples::complex_test;
 // Complex arithmetic from the standard library: `+` on std::math::Complex
 // resolves to `Operator<"+", Complex, Complex>`, inlined into the IR per field.
 
-using std::math::{Complex};
-using std::attrs::{test};
+use std::math::Complex;
+use std::attrs::test;
 
 entity Adder {
     a: Complex in,

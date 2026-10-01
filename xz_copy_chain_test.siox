@@ -24,8 +24,8 @@
 // two must agree.
 module xz_copy_chain_test;
 
-using std::logic::{Logic};
-using std::bits::unsigned;
+use std::logic::Logic;
+use std::bits::unsigned;
 
 entity Chain {
     // element 2 of each stage, read from inside the entity

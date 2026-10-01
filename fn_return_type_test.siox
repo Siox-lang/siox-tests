@@ -1,6 +1,6 @@
 module examples::fn_return_type_test;
-using std::bits::{signed, unsigned};
-using std::logic::{Logic};
+use std::bits::{signed, unsigned};
+use std::logic::Logic;
 enum Color { Red, Green, Blue }
 
 fn neg(v: signed[8]) -> signed[8] { return 0 - v; }

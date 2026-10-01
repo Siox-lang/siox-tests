@@ -8,7 +8,7 @@
 // broke, and instantiating it here would hide it.
 module generic_standalone_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Scaler<N: integer> {
     a: unsigned[8] in,

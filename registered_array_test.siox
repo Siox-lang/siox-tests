@@ -24,8 +24,8 @@
 // Every expected value is the arithmetic written beside it.
 module registered_array_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 fn constant2() -> unsigned[8][2] { return [3, 4]; }
 fn scaled2(k: unsigned[8]) -> unsigned[8][2] { return [k, k * 2]; }

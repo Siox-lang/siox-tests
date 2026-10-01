@@ -1,6 +1,6 @@
 module examples::slice_direction_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 // A written range keeps its direction (spec 3.13): `w[7..4]` extracts
 // MSB-first, `w[4..7]` names the same bits with their significance reversed.

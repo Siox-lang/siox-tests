@@ -4,9 +4,9 @@
 // ceil(log2(n)) computed separately, not read back from the compiler.
 module std_numeric_test;
 
-using std::bits::{unsigned};
-using std::numeric::{clog2};
-using std::math::{min, max};
+use std::bits::unsigned;
+use std::numeric::clog2;
+use std::math::{min, max};
 
 // The usual reason to call it: an address width from a memory depth.
 entity Memory<DEPTH: integer> {

@@ -1,5 +1,5 @@
 module examples::regfile_test;
-using std::bits::unsigned;
+use std::bits::unsigned;
 entity RF {
     clk: Bit in,
     we: Bit in,

@@ -12,8 +12,8 @@
 // the compiler produced.
 module resolve_table_test;
 
-using std::bits::{unsigned};
-using std::logic::{Logic};
+use std::bits::unsigned;
+use std::logic::Logic;
 
 // Two parallel contexts drive one net; `impl Resolve for Logic` folds them.
 entity Net { sa: unsigned[4] in, sb: unsigned[4] in, bus: Logic out }

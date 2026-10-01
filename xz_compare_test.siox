@@ -21,8 +21,8 @@
 // exactly the operands worth guarding. Checked against `nvc`.
 module xz_compare_test;
 
-using std::logic::{Bit};
-using std::bits::unsigned;
+use std::logic::Bit;
+use std::bits::unsigned;
 
 entity Cmp {
     sel: unsigned[4] in,

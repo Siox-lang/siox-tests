@@ -7,7 +7,7 @@
 // is not the storage position 0..2.
 module testbench_dynamic_array_write_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Slot { pub tag: unsigned[8], pub val: unsigned[8] }
 

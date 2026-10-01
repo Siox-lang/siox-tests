@@ -21,7 +21,7 @@
 // Every value below is asserted in both engines and against the arithmetic.
 module testbench_composite_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 

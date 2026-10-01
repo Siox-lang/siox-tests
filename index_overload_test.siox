@@ -1,7 +1,7 @@
 module tests::index_overload;
 
-using std::bits::unsigned;
-using std::ops::{Index, IndexAssign, Range};
+use std::bits::unsigned;
+use std::ops::{Index, IndexAssign, Range};
 
 struct Pair {
     pub first: unsigned[8],

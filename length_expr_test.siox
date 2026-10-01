@@ -4,8 +4,8 @@ module examples::length_expr_test;
 // so `w'length` on `unsigned[2 + 1]` or `unsigned[clog2(8)]` failed the build
 // ("`w'length` is not known here") while the direct runtime and hardware read
 // 3 -- and the width also governs how assignments wrap.
-using std::bits::{unsigned};
-using std::numeric::{clog2};
+use std::bits::unsigned;
+use std::numeric::clog2;
 
 #[test]
 entity LengthExprTest {}

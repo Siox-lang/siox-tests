@@ -13,8 +13,8 @@
 //   slow = not slow after 20ns  -> rises at 20, 60, 100, ... ns
 module await_forms_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 entity Counter { clk: Bit in, count: unsigned[8] out }
 impl Counter {

@@ -1,6 +1,6 @@
 module examples::instance_array_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // An array of instances: `let stage: Inc[N]` declares N instances, built
 // element-wise in a generate loop and wired head-to-tail. Unlike a plain

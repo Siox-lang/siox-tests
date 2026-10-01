@@ -21,7 +21,7 @@
 // Expected values are the arithmetic written beside them.
 module array_literal_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 struct Holder { pub xs: unsigned[8][2], pub tag: unsigned[8] }

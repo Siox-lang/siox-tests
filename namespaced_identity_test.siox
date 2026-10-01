@@ -1,8 +1,8 @@
 module examples::namespaced_identity_test;
 
-using identity_common::{Acc, Bus};
-using identity_a::Left;
-using identity_b::Right;
+use identity_common::{Acc, Bus};
+use identity_a::Left;
+use identity_b::Right;
 
 // Equal view leaves in separate modules may expose different directions over
 // the same physical representation.

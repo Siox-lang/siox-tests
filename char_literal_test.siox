@@ -9,7 +9,7 @@ module examples::char_literal_test;
 // read 0: `integer('A')`, `unicode('A')` and `ascii('A')` all returned 0 on the
 // default runtime and in hardware. Expected values are Unicode's, not siox's:
 // 'A' is U+0041, 'B' is U+0042, '1' is U+0031, 'é' is U+00E9.
-using std::text::{unicode, ascii, char_of};
+use std::text::{unicode, ascii, char_of};
 
 entity Codes {
     conv: integer out,

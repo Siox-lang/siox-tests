@@ -8,7 +8,7 @@ module examples::bit_string_test;
 // A plain string needs no prefix: a string of logic values reads as a Logic
 // array by context (`"1010"`, metavalues too — see string_to_array_test).
 
-using std::attrs::{test};
+use std::attrs::test;
 
 entity Probe {
     h: unsigned[16] out,   // x"BEEF"

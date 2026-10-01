@@ -11,7 +11,7 @@
 // two agree. The expected values are hand-computed, not read back from a run.
 module const_fold_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Folds {
     add: unsigned[16] out,

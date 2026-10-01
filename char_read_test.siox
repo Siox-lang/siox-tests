@@ -1,7 +1,7 @@
 module examples::char_read_test;
 
-using std::text::{string, unicode};
-using std::attrs::{test};
+use std::text::{string, unicode};
+use std::attrs::test;
 
 struct CharacterBox { pub value: Char }
 

@@ -14,7 +14,7 @@
 // design's own arithmetic on the same inputs.
 module string_vector_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Masker {
     data: unsigned[8] in,

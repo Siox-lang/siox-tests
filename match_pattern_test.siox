@@ -1,7 +1,7 @@
 module examples::match_pattern_test;
 
-using std::logic::{Logic};
-using std::bits::unsigned;
+use std::logic::Logic;
+use std::bits::unsigned;
 
 // `match` over bit patterns (spec 3.22): `?` digits are don't-cares, `_` is a
 // separator, and a hex `?` masks its whole nibble. Each arm lowers to

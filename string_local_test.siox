@@ -1,7 +1,7 @@
 module examples::string_local_test;
 
-using std::text::{string};
-using std::attrs::{test};
+use std::text::string;
+use std::attrs::test;
 
 // A string held in a *testbench-local* — one not connected to any DUT port.
 // These had no element storage at all: writes were dropped, every element read

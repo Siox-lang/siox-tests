@@ -4,8 +4,8 @@ module examples::xz_poison_test;
 // whole result is `'X'`. `mv` has an `'X'` in one element, so `a + mv` poisons
 // every element of the result — read back per element, they are all `'X'`.
 
-using std::attrs::{test};
-using std::logic::{Logic};
+use std::attrs::test;
+use std::logic::Logic;
 
 entity Alu {
     a: unsigned[4] in,

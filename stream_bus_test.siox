@@ -4,8 +4,8 @@ module examples::stream_bus_test;
 // drives valid/data and reads ready; the Sink mirrors it. Connecting two
 // instances to one `Stream` net wires each leaf in its own direction.
 
-using std::logic::{Bit};
-using std::bits::unsigned;
+use std::logic::Bit;
+use std::bits::unsigned;
 
 struct Stream { pub valid: Bit, pub ready: Bit, pub data: unsigned[8] }
 

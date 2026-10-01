@@ -1,7 +1,7 @@
 module examples::nested_dynamic_access_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 // A two-dimensional register file. Both subscripts are runtime signals; the
 // compiler expands the read into a nested mux and the clocked write into one

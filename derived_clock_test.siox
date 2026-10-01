@@ -1,5 +1,5 @@
 module examples::derived_clock_test;
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // A derived (divided) clock: `h` toggles on clk (clk/2) and a counter runs on
 // the *derived* clock `h` — a cascaded event domain a single-delta engine

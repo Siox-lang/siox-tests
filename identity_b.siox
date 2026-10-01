@@ -1,6 +1,6 @@
 module identity_b;
 
-using identity_common::Bus;
+use identity_common::Bus;
 
 pub trait Measure {
     fn tag() -> integer {

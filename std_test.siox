@@ -4,8 +4,8 @@ module examples::std_test;
 // from `--std` (default ./std) and resolution binds the names to the actual
 // `pub` declarations.
 
-using std::logic::{Bit, LOW, HIGH};
-using std::attrs::{test};
+use std::logic::{Bit, LOW, HIGH};
+use std::attrs::test;
 
 entity Buf {
     a: Bit in,

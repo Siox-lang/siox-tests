@@ -25,7 +25,7 @@
 // from a run.
 module struct_const_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 struct Limits { pub lo: unsigned[8], pub hi: unsigned[8] }

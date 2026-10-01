@@ -2,8 +2,8 @@ module examples::char_fn_return_test;
 // A function's declared return type applies at the call site, not only once
 // the value is bound to a typed local: `char_of` returns `Char`, so its result
 // displays as a character and compares against a character literal.
-using std::text::{unicode, char_of, ascii};
-using std::bits::{unsigned};
+use std::text::{unicode, char_of, ascii};
+use std::bits::unsigned;
 #[test]
 entity T {}
 impl T {

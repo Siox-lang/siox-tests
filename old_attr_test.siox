@@ -10,7 +10,7 @@
 // settled value — the compiler says so, and the numbers below would drift.
 module old_attr_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 struct Pkt { pub valid: Bit, pub data: unsigned[8] }
 

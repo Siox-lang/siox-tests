@@ -1,6 +1,6 @@
 module examples::spi_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // An SPI master (mode 0, MSB-first): on `start`, serialize `tx` onto `mosi`
 // one bit per clock while sampling `miso` into a receive register. Eight bits,

@@ -1,7 +1,7 @@
 module examples::stream_test;
 
-using std::logic::Logic;
-using std::bits::unsigned;
+use std::logic::Logic;
+use std::bits::unsigned;
 
 // A struct-typed port carries a whole bundle (a valid/data handshake) across an
 // instance boundary in one connection. Each field wires independently: the

@@ -1,5 +1,5 @@
 module examples::rand_text_test;
-using std::text::{unicode, ascii, char_of};
+use std::text::{unicode, ascii, char_of};
 
 entity Buf { c: Char in, n: unsigned[8] out }
 impl Buf { n = unsigned[8](unicode(c)); }

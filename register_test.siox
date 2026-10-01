@@ -1,7 +1,7 @@
 module examples::register_test;
 
-using std::logic::{Logic};
-using std::bits::unsigned;
+use std::logic::Logic;
+use std::bits::unsigned;
 
 // A parameterized register: `q` captures `d` on the rising clock edge.
 entity Register<W: integer> {

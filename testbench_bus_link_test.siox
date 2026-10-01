@@ -1,6 +1,6 @@
 module examples::testbench_bus_link_test;
-using std::bits::{signed, unsigned};
-using std::logic::{Bit};
+use std::bits::{signed, unsigned};
+use std::logic::Bit;
 // Two DUTs wired to each other through a struct local *in the testbench*.
 // A scalar local linked them and a struct one did not: a struct port is
 // flattened into leaves, so the scalar port lookup found nothing and the

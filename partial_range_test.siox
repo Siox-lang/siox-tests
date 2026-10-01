@@ -1,6 +1,6 @@
 module tests::partial_range;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 entity PartialRange {
     value: unsigned[7..0] in,

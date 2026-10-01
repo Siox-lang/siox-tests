@@ -18,8 +18,8 @@
 // is changing any more.
 module aggregate_event_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 struct Pkt { pub valid: Bit, pub data: unsigned[8] }
 

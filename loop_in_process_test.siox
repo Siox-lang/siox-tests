@@ -12,8 +12,8 @@
 // rather than against the compiler's own idea of what the loop means.
 module loop_in_process_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 entity Regs {
     clk: Bit in,

@@ -1,5 +1,5 @@
 module examples::logic_default_test;
-using std::logic::{Logic, Bit};
+use std::logic::{Logic, Bit};
 
 // `impl New` uninitialized defaults (IEEE 1076-2019): an undriven `Logic`
 // powers on to `'U'` (uninitialized), an undriven `Bit` to `'0'`.

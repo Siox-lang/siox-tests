@@ -1,6 +1,6 @@
 module examples::range_attr_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 // Range attributes are computed twice — const-folded in the IR for hardware,
 // and again in the testbench emitter — so both are checked here against the

@@ -25,7 +25,7 @@
 // as in a loop, so it is a separate gap and deliberately not what this covers.
 module generate_struct_connection_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Beat { pub v: unsigned[8], pub tag: unsigned[4] }
 

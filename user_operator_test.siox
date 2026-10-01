@@ -5,8 +5,8 @@
 // comparisons rather than each needing its own impl.
 module user_operator_test;
 
-using std::bits::{unsigned};
-using std::ops::{Operator, Ordering};
+use std::bits::unsigned;
+use std::ops::{Operator, Ordering};
 
 // A newtype, so a value is one word and carries its own ordering.
 struct Money(unsigned[8]);

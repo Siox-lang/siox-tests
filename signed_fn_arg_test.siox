@@ -1,6 +1,6 @@
 module examples::signed_fn_arg_test;
-using std::bits::{signed, unsigned};
-using std::math::{abs};
+use std::bits::{signed, unsigned};
+use std::math::abs;
 // A `signed` argument keeps its width through a call: the inlined body of
 // `abs` dispatches signed's Ord, whose sign test needs `self'length`. With the
 // width lost the test shifted by 0 and abs(-5) came back as 251.

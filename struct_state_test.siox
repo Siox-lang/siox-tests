@@ -4,7 +4,7 @@
 // signals get. Nothing in the corpus held a struct as register state.
 module struct_state_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 struct Pair { pub a: unsigned[8], pub b: unsigned[8] }
 struct Acc { pub total: unsigned[8], pub count: unsigned[8] }

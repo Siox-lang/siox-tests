@@ -1,8 +1,8 @@
 module examples::await_unmet_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
-using std::attrs::{test};
+use std::bits::unsigned;
+use std::logic::Bit;
+use std::attrs::test;
 
 // An `await` whose condition is satisfied proceeds normally. (The failing
 // case — a condition that never holds — is a compiler test, since a corpus

@@ -1,6 +1,6 @@
 module examples::fifo_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // A synchronous FIFO (circular buffer, depth 4). `push` enqueues when not
 // full, `pop` dequeues when not empty; head/tail pointers wrap and `count`

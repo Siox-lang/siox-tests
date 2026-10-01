@@ -13,7 +13,7 @@
 // work.
 module trait_default_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 trait Meter {
     // Required: no body.
