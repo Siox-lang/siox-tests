@@ -1,0 +1,60 @@
+// Every Rust import form: nested groups with `self` and renames, module
+// aliases and their re-exports, globs (an explicit name beats a glob), enum
+// variant imports, `self::` paths, block-level `use`, and generic aliases.
+module import_forms_test;
+
+use std::{math::{self, PI}, numeric::{Word8 = Byte}};
+use import_forms_geometry::*;
+use import_forms_colors::{self, Color::{self, Red, Green}};
+use import_forms_geometry::double;
+use self::Mode::{Fast, Slow};
+
+enum Mode { Fast, Slow }
+
+entity Dut { a: unsigned[8] in, y: unsigned[8] out, z: integer out }
+
+impl Dut {
+    y = a;
+    z = double(SIDES) + import_forms_colors::HUES;
+}
+
+#[test]
+entity ImportFormsTest {}
+
+impl ImportFormsTest {
+    let a: unsigned[8];
+    let y: unsigned[8];
+    let z: integer;
+    let p: Pair<unsigned[8]>;
+    let w: Word8 = 200;
+    let m: Mode = Fast;
+    let c: Color = Green;
+    let k: Corner = Corner::SouthWest;
+    let dut: Dut = { .a = a, .y = y, .z = z };
+
+    process {
+        a = 7;
+        p = Pair<unsigned[8]> { .valid = '1', .data = 9 };
+        await 1ns;
+        assert!(y == 7, "an entity through plain imports");
+        assert!(z == 11, "the explicit `double` beats the glob; HUES via a module alias");
+        assert!(math::max(3, 4) == 4, "a module alias from a nested `self`");
+        assert!(import_forms_colors::math::max(1, 2) == 2, "a re-exported module alias");
+        assert!(w == 200, "a renamed import in a nested group");
+        assert!(p.data == 9, "a generic alias, substituted");
+        assert!(PI > 3.0, "a constant through a nested group");
+        match m {
+            Fast => { assert!(c == Green, "variant imports"); }
+            Slow => { assert!(false, "unreachable"); }
+        }
+        if c != Red {
+            use import_forms_colors::double;
+            use import_forms_geometry::Corner::*;
+            assert!(double(5) == 11, "a block-level import shadows the module's");
+            match k {
+                NorthEast => { assert!(false, "a block-level glob of variants"); }
+                SouthWest => {}
+            }
+        }
+    }
+}
