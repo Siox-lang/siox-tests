@@ -1,0 +1,11 @@
+// Imported by macros_test.siox: a public macro whose body names this
+// module's function and invokes this module's private macro.
+module macros_debug;
+
+pub fn helper(x: integer) -> integer { return x + 100; }
+
+pub macro bump($x: expr) { helper($x) }
+
+macro private_one() { 1 }
+
+pub macro via_private() { private_one!() }

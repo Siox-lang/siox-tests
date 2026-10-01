@@ -1,0 +1,57 @@
+// User macros in every position: an item, implementation members,
+// statements and expressions; several forms of one macro; hygiene in both
+// directions; and a macro imported from another module whose body resolves
+// where it is declared.
+module macros_test;
+
+use macros_debug::{bump, via_private};
+
+macro twice($x: expr) { $x + $x }
+
+macro swap($a: ident, $b: ident) {
+    let tmp: integer = $a;
+    $a = $b;
+    $b = tmp;
+}
+
+macro check($c: expr) { assert!($c); }
+macro check($c: expr, $m: expr) { assert!($c, $m); }
+
+macro probe($name: ident, $ty: type) { let $name: $ty; }
+
+macro make_fn($name: ident) { fn $name() -> integer { return 42; } }
+
+make_fn!(answer);
+
+entity Dut { a: unsigned[8] in, y: unsigned[8] out }
+
+impl Dut {
+    probe!(mid, unsigned[8]);
+    mid = a;
+    y = mid;
+}
+
+#[test]
+entity MacrosTest {}
+
+impl MacrosTest {
+    let a: unsigned[8];
+    let y: unsigned[8];
+    let dut: Dut = { .a = a, .y = y };
+
+    process {
+        a = 5;
+        await 1ns;
+        check!(y == 5);
+        check!(twice!(3) == 6, "a macro in a macro's argument");
+        let tmp: integer = 1;
+        let other: integer = 2;
+        swap!(tmp, other);
+        check!(tmp == 2, "the caller's tmp is not the macro's");
+        check!(other == 1, "swapped");
+        check!(twice!(1 + 2) * 2 == 12, "an expression argument is one operand");
+        check!(bump!(1) == 101, "a free name resolves where the macro is declared");
+        check!(answer() == 42, "an item macro");
+        check!(via_private!() == 1, "a private macro behind a public one");
+    }
+}
