@@ -22,7 +22,7 @@ impl Alu {
     let sh: unsigned[32];
     sh = b and 31;                 // shift amount is the low 5 bits
     let r: unsigned[32];
-    process select_result {
+    select_result: process {
         r = 0;                     // default (also covers invalid op codes)
 
         match op {

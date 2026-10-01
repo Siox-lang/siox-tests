@@ -30,7 +30,7 @@ entity Comb {
 }
 impl Comb {
     let word: unsigned[8] = 0;
-    process partial_writes {
+    partial_writes: process {
         word[1] = '1';
         word[3] = '1';
     }
@@ -49,7 +49,7 @@ impl Clocked {
     let a: unsigned[8] = 0;
     let b: unsigned[8] = 0;
     let c: unsigned[8] = 0;
-    process update {
+    update: process {
         if clk.rising() {
             a[0] = '1';
             a[1] = '1';
@@ -80,21 +80,21 @@ entity Blocks {
 }
 impl Blocks {
     let s: unsigned[8] = 0;
-    process same_updates {
+    same_updates: process {
         if a.rising() { s[1] = '1'; }
         if a.rising() { s[3] = '1'; }
     }
     same = s;
 
     let p: unsigned[8] = 0;
-    process split_updates {
+    split_updates: process {
         if a.rising() { p[1] = '1'; }
         if b.rising() { p[3] = '1'; }
     }
     split = p;
 
     let w: unsigned[8] = 0;
-    process whole_updates {
+    whole_updates: process {
         if a.rising() { w = 15; }
         if b.rising() { w[7] = '1'; }
     }
@@ -121,7 +121,7 @@ entity Meta {
 }
 impl Meta {
     let w: unsigned[4] = "0000";
-    process constant_updates {
+    constant_updates: process {
         if clk.rising() {
             w[0] = '1';
             w[1] = 'X';
@@ -134,7 +134,7 @@ impl Meta {
     // The same, at runtime indices: a metavalue and a clean value, on two
     // different elements of one vector in one block.
     let v: unsigned[4] = "0000";
-    process runtime_updates {
+    runtime_updates: process {
         if clk.rising() {
             v[i] = a;
             v[j] = b;
@@ -147,7 +147,7 @@ impl Meta {
 entity Cell { clk: Bit in, q: unsigned[8] out }
 impl Cell {
     let w: unsigned[8] = 0;
-    process update {
+    update: process {
         if clk.rising() { w[0] = '1'; }
         if clk.rising() { w[2] = '1'; }
     }
@@ -176,7 +176,7 @@ entity CombRuntime {
 }
 impl CombRuntime {
     let word: unsigned[8] = 0;
-    process update {
+    update: process {
         word = 0;
         word[i] = '1';
         word[j] = '1';
@@ -196,7 +196,7 @@ entity Runtime {
 impl Runtime {
     let w: unsigned[8] = 0;
     let m: unsigned[8] = 0;
-    process update {
+    update: process {
         if clk.rising() {
             w[i] = '1';
             w[j] = '1';
@@ -268,7 +268,7 @@ impl PackedPartialWriteTest {
     let cell2q: unsigned[8];
     let cell2: Cell = { .clk = bb, .q = cell2q };
 
-    process stimulus {
+    stimulus: process {
     await 1ns;
     // Combinational, with no clock at all: bit 1 and bit 3 are both set.
     assert!(cq == 10, "two combinational bit writes both land — this gave 8");

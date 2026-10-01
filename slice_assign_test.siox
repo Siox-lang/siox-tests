@@ -18,29 +18,29 @@ entity S {
     reg: unsigned[8] out
 }
 impl S {
-    process pack_low {
+    pack_low: process {
         low = 0;
         low[3..0] = a;          // low nibble set, high nibble stays 0
     }
 
-    process pack_high {
+    pack_high: process {
         high = 0;
         high[7..4] = a;         // the other end
     }
 
-    process merge_nibbles {
+    merge_nibbles: process {
         merged = 0xF0;          // a prior driver in the same context
         merged[3..0] = a;       // merges with it rather than replacing
     }
 
-    process set_one_bit {
+    set_one_bit: process {
         one = 0;
         one[7] = e;             // a single bit, spelled without a range
     }
 
     // In a clocked block the untouched bits come from the register.
     let r: unsigned[8] = 0xAA;
-    process update_register {
+    update_register: process {
         if clk.rising() { r[3..0] = a; }
     }
     reg = r;

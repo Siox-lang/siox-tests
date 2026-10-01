@@ -11,7 +11,7 @@ entity E {
 }
 impl E {
     let r: unsigned[8] = 0;
-    process update_register {
+    update_register: process {
         if clk.rising() {
             if we_lo {
                 r[3..0] = lo_in;  // update only the low nibble; high holds
@@ -21,7 +21,7 @@ impl E {
     reg = r;
 
     // combinational pack: two nibbles into one byte
-    process pack_nibbles {
+    pack_nibbles: process {
         packed = 0;
         packed[7..4] = hi_in;
         packed[3..0] = lo_in;
@@ -32,11 +32,11 @@ impl T {
     let clk: Bit = '0'; let lo_in: unsigned[4] = 0; let hi_in: unsigned[4] = 0; let we_lo: Bit = '0';
     let reg: unsigned[8]; let packed: unsigned[8];
     let d: E = { .clk = clk, .lo_in = lo_in, .hi_in = hi_in, .we_lo = we_lo, .reg = reg, .packed = packed };
-    process clock {
+    clock: process {
         clk = not clk after 5ns;
     }
 
-    process stimulus {
+    stimulus: process {
         hi_in = 10; lo_in = 5; await 1ns;
         assert!(packed == 165, "pack: hi=A lo=5 -> 0xA5");
 
