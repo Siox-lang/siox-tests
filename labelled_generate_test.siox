@@ -1,0 +1,64 @@
+module examples::labelled_generate_test;
+
+// VHDL-style generate labels. A labelled structural `for` is a hierarchy
+// scope with one child per iteration (`c.stages[0].s`); a labelled `if` is
+// one scope filled by whichever branch is taken (`c.debug_tap.tap`). The
+// waveform nests those scopes. An unlabelled loop next to them keeps the flat
+// `x_0` names, and a hand-written `s_0` no longer collides with the scoped
+// `stages[0].s`.
+
+entity Stage { i: unsigned[8] in, o: unsigned[8] out }
+impl Stage { o = i + 1; }
+
+entity Probe { i: unsigned[8] in, o: unsigned[8] out }
+impl Probe { o = i + 100; }
+
+entity Chain<DEBUG: integer> {
+    a: unsigned[8] in,
+    y: unsigned[8] out,
+    z: unsigned[8] out,
+    side: unsigned[8] out,
+}
+impl<DEBUG: integer> Chain<DEBUG> {
+    let w: unsigned[8][0..3];
+    w[0] = a;
+    stages: for k in 0..2 {
+        let s: Stage = { .i = w[k], .o = w[k + 1] };
+    }
+    debug_tap: if DEBUG == 1 {
+        let tap: Probe = { .i = w[3], .o = z };
+    } else {
+        let tap: Stage = { .i = w[3], .o = z };
+    }
+    y = w[3];
+
+    let v: unsigned[8][0..1];
+    v[0] = a;
+    for k in 0..0 {
+        let x: Stage = { .i = v[k], .o = v[k + 1] };
+    }
+    let s_0: Stage = { .i = v[1], .o = side };
+}
+
+#[test]
+entity LabelledGenerateTest {}
+impl LabelledGenerateTest {
+    let a: unsigned[8];
+    let y: unsigned[8];
+    let z: unsigned[8];
+    let side: unsigned[8];
+    let zoff: unsigned[8];
+    let yoff: unsigned[8];
+    let sideoff: unsigned[8];
+    let on: Chain<1> = { .a = a, .y = y, .z = z, .side = side };
+    let off: Chain<0> = { .a = a, .y = yoff, .z = zoff, .side = sideoff };
+
+    run: process {
+        a = 5;
+        await 1ns;
+        assert!(y == 8, "three labelled stages add three");
+        assert!(z == 108, "DEBUG = 1 builds the probe branch");
+        assert!(zoff == 9, "DEBUG = 0 builds the stage branch in the same scope");
+        assert!(side == 7, "the flat loop and the plain `s_0` both exist");
+    }
+}
