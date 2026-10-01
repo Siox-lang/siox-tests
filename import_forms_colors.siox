@@ -1,0 +1,10 @@
+// Imported by import_forms_test.siox: a second glob source, and module aliases.
+module import_forms_colors;
+
+pub use std::math;
+
+pub enum Color { Red, Green }
+
+pub fn double(x: integer) -> integer { return x + x + 1; }
+
+pub const HUES: integer = 3;

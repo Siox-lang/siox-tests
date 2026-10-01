@@ -1,0 +1,14 @@
+// Imported by import_forms_test.siox: globs, generic aliases, `super::`.
+module import_forms_geometry;
+
+pub use super::import_forms_colors::Color;
+
+pub enum Corner { NorthEast, SouthWest }
+
+pub struct Packet<T> { pub valid: Bit, pub data: T }
+
+pub type Pair<T> = Packet<T>;
+
+pub fn double(x: integer) -> integer { return x * 2; }
+
+pub const SIDES: integer = 4;
