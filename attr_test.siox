@@ -11,7 +11,7 @@ impl Ram { ok = true; }
 
 entity Top { clk: Bit in, l: Bool out, o: Bool out }
 impl Top {
-    #[external_clock = true]
+    attr external_clock for p = true;
     let p: Pll = { .clk = clk, .locked = l };
 
     let r: Ram = { .clk = clk, .ok = o };

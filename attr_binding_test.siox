@@ -1,0 +1,61 @@
+module examples::attr_binding_test;
+
+// Declarative attributes: a declaration with a default, bindings written
+// from outside the declaration they describe, and reads with the tick.
+// A read answers with the binding on that object, else (for an instance)
+// the binding on its entity, else the declared default.
+
+attr external_clock: Bool for Pll = false;
+attr speed: integer for entity, let = 1;
+
+entity Pll { clk: Bit in, locked: Bit out }
+impl Pll {
+    attr speed = 250;            // objectless: binds the entity `Pll`
+    locked = clk;
+}
+
+entity Top {
+    clk: Bit in,
+    a: unsigned[8] out,
+    b: unsigned[8] out,
+    c: unsigned[8] out,
+    d: Bit out,
+}
+impl Top {
+    attr external_clock for p = true;
+    attr speed for probe = 7;
+
+    let probe: unsigned[8];
+    let l: Bit;
+    let p: Pll = { .clk = clk, .locked = l };
+    let q: Pll = { .clk = clk, .locked = d };
+
+    probe = 1;
+    a = p'speed;                 // `p` is unbound: its entity's 250
+    b = probe'speed;             // bound on the `let`: 7
+    c = q'speed + probe;         // a second instance: 250, plus 1
+}
+
+attr speed for Top = 3;          // module level: names the entity
+
+#[test]
+entity AttrBindingTest {}
+impl AttrBindingTest {
+    let clk: Bit;
+    let a: unsigned[8];
+    let b: unsigned[8];
+    let c: unsigned[8];
+    let d: Bit;
+    let t: Top = { .clk = clk, .a = a, .b = b, .c = c, .d = d };
+
+    process {
+        await 1ns;
+        assert!(a == 250, "an instance falls back to its entity's binding");
+        assert!(b == 7, "a binding on a `let`");
+        assert!(c == 251, "a read is an ordinary constant in an expression");
+        assert!(t'speed == 3, "a module-level binding on an entity");
+        if t'external_clock {
+            assert!(false, "an unbound instance reads the declared default");
+        }
+    }
+}
