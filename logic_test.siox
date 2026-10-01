@@ -4,8 +4,8 @@ module examples::logic_test;
 // the truth-table impls in std::logic (std_logic_1164 style), so unknowns
 // propagate — but a dominant operand still decides.
 
-using std::logic::{Logic};
-using std::attrs::{test};
+use std::logic::Logic;
+use std::attrs::test;
 
 entity Gates {
     a: Logic in,

@@ -19,7 +19,7 @@
 // a leaf already meant.
 module nested_aggregate_read_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Inner { pub lo: unsigned[8], pub hi: unsigned[8] }
 struct Outer { pub tag: unsigned[8], pub inner: Inner }

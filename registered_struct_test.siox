@@ -13,8 +13,8 @@
 // the shape a packet buffer or a skid buffer is built from.
 module registered_struct_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 struct Entry { pub tag: unsigned[4], pub data: unsigned[8] }
 

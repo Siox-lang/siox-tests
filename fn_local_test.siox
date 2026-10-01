@@ -5,7 +5,7 @@
 // this is verified by building an object as well as by running.
 module fn_local_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 fn absdiff(a: unsigned[8], b: unsigned[8]) -> unsigned[8] {
     let hi: unsigned[8] = if a > b { a } else { b };

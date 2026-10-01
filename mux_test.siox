@@ -1,6 +1,6 @@
 module examples::mux_test;
 
-using std::logic::Bit;
+use std::logic::Bit;
 
 // A 2:1 mux, written both ways: default-then-override in one process (spec 3.14),
 // and the equivalent Rust-style if-expression — both lower to one select.

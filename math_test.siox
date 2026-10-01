@@ -1,5 +1,5 @@
 module examples::math_test;
-using std::math::{sqrt, pow, PI, floor};
+use std::math::{sqrt, pow, PI, floor};
 entity R { x: real in, ok: Bool out }
 impl R { ok = (sqrt(x) == 3.0) and (pow(2.0, 10.0) == 1024.0) and (floor(PI) == 3.0); }
 #[test] entity T {}

@@ -5,7 +5,7 @@
 // `impl<W: integer> Reg<W>`, written under a different name.
 module generic_binder_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Reg<W: integer> {
     d: unsigned[8] in,

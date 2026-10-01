@@ -11,9 +11,9 @@
 // it is the spelling that means "compute this", and it is here as the control.
 module initializer_seed_test;
 
-using std::bits::{unsigned};
-using std::logic::{Logic};
-using std::text::{unicode};
+use std::bits::unsigned;
+use std::logic::Logic;
+use std::text::unicode;
 
 enum Phase { Idle, Run, Done }
 

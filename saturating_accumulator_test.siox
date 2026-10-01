@@ -20,9 +20,9 @@
 // produced.
 module saturating_accumulator_test;
 
-using std::bits::{signed, sext};
-using std::logic::{Bit};
-using std::math::{min, max, abs};
+use std::bits::{signed, sext};
+use std::logic::Bit;
+use std::math::{min, max, abs};
 
 entity Acc {
     clk: Bit in,

@@ -8,7 +8,7 @@
 // instantiation.
 module impl_const_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Plain {
     y: unsigned[8] out

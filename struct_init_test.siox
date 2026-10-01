@@ -1,8 +1,8 @@
 module examples::struct_init_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
-using std::attrs::{test};
+use std::bits::unsigned;
+use std::logic::Bit;
+use std::attrs::test;
 
 // A struct-literal initializer seeds the field signals, in an entity exactly
 // as in a testbench. Previously only the testbench interpreter honoured it, so

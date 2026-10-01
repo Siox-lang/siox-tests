@@ -1,6 +1,6 @@
 module examples::slice_assign_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 // Partial (slice) assignment is a read-modify-write: the written bits change
 // and the rest hold (spec 3.13). A single constant index is the one-bit case

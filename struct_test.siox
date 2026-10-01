@@ -1,7 +1,7 @@
 module examples::struct_test;
 
-using std::logic::Bit;
-using std::bits::unsigned;
+use std::logic::Bit;
+use std::bits::unsigned;
 
 // A struct-typed signal flattens to one scalar signal per field, so each field
 // gets its own trace path in the waveform.

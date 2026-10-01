@@ -1,5 +1,5 @@
 module examples::derive_chain_test;
-using std::logic::{ULogic};
+use std::logic::ULogic;
 
 // The two ways a type builds on another after extension was dropped (§3.28):
 // newtype derivation (`:`, same representation, new identity) and composition.

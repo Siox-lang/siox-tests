@@ -1,7 +1,7 @@
 module integer_hw_test;
 
-using SmallInteger = integer<-16..15>;
-using SmallAlias = SmallInteger;
+type SmallInteger = integer<-16..15>;
+type SmallAlias = SmallInteger;
 
 entity IntegerOps {
     a: integer<-16..15> in,

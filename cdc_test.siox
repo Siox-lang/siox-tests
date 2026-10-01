@@ -1,5 +1,5 @@
 module examples::cdc_test;
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // Cross-clock-domain sampling: the slow domain samples the fast domain's
 // counter VALUE on its own edge. Exercises independent clocks, coincident

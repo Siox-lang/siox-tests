@@ -1,6 +1,6 @@
 module examples::riscv_decode_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 // RV32I instruction field decoder: split a 32-bit word into its register and
 // function fields by shift-and-mask (the R/I-type field layout).

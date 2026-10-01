@@ -1,6 +1,6 @@
 module examples::inout_test;
 
-using std::logic::Logic;
+use std::logic::Logic;
 
 // A bidirectional pad: when enabled it drives the shared pin, otherwise it
 // tristates ('Z') and lets someone else own the line. It always senses the

@@ -1,7 +1,7 @@
 module examples::counter;
 
-using std::logic::{Bit, Logic};
-using std::bits::unsigned;
+use std::logic::{Bit, Logic};
+use std::bits::unsigned;
 
 // A parameterized up-counter with synchronous reset and enable.
 entity Counter<W: integer> {

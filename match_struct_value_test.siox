@@ -20,8 +20,8 @@
 // independently rather than read back from a run.
 module match_struct_value_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 //   0, 1    -> Alu,    writes, no immediate
 //   2..5    -> Logic,  writes, no immediate

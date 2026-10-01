@@ -24,7 +24,7 @@
 // instantiation is what that classification exists for.
 module connected_struct_initializer_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 struct Packet { pub id: unsigned[8], pub payload: unsigned[32] }
 

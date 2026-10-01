@@ -17,7 +17,7 @@
 // a = 200, b = 13, all values 8-bit and wrapping.
 module engine_differential_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity D {
     a: unsigned[8] in, b: unsigned[8] in,

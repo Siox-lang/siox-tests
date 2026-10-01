@@ -19,8 +19,8 @@
 // asserted equal to each other as well as to what Python's `math.trunc` gives.
 module real_conversion_signed_test;
 
-using std::bits::{signed, unsigned};
-using std::math::{abs};
+use std::bits::{signed, unsigned};
+use std::math::abs;
 
 entity Cross {
     // r = -2.9 -> -2

@@ -18,8 +18,8 @@
 // a = (3, 5); twice(a) = (6, 10); nested(a) = twice(a) + a = (9, 15).
 module struct_valued_call_test;
 
-using std::bits::{unsigned};
-using std::ops::{Operator};
+use std::bits::unsigned;
+use std::ops::Operator;
 
 struct Vec2 { pub x: unsigned[8], pub y: unsigned[8] }
 

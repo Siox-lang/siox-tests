@@ -1,6 +1,6 @@
 module examples::signed_divide_test;
 
-using std::bits::{signed};
+use std::bits::signed;
 
 // Signed division is a library impl that negates, divides, then restores the
 // sign, choosing its branch by testing each operand's top bit. A bare literal

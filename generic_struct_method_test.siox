@@ -11,8 +11,8 @@
 // against the compiler's own idea of what a method call does.
 module generic_struct_method_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 struct Box<T> { pub v: T, pub tag: Bit }
 impl<T> Box<T> {

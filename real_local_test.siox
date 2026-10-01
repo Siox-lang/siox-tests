@@ -1,7 +1,7 @@
 module examples::real_local_test;
 
-using std::attrs::{test};
-using std::math::{sqrt, pow, floor, PI};
+use std::attrs::test;
+use std::math::{sqrt, pow, floor, PI};
 
 // Unconnected real-valued testbench storage still uses the simulator's
 // bit-pattern representation. Operations must decode it to floating point and

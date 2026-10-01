@@ -14,7 +14,7 @@
 // libm is on the link line (`-lm`), so these symbols are always available.
 module ffi_real_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 extern "C" {
     pub fn sqrt(v: real) -> real;

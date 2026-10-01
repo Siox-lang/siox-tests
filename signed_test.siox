@@ -1,6 +1,6 @@
 module examples::signed_test;
-using std::logic::{Bool};
-using std::bits::{signed, unsigned};
+use std::logic::Bool;
+use std::bits::{signed, unsigned};
 
 // Signed comparison comes from std's
 // `impl Operator<"<=>", signed, Ordering> for signed` — not the compiler.

@@ -4,8 +4,8 @@ module examples::top_counter;
 // `sioxc` compiles this sole structural root to a native object —
 // no testbench involved.
 
-using std::logic::{Logic};
-using std::bits::{unsigned};
+use std::logic::Logic;
+use std::bits::unsigned;
 
 entity Counter8 {
     clk: Bit in,

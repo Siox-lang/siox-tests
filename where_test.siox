@@ -1,5 +1,5 @@
 module examples::where_test;
-using std::bits::{signed};
+use std::bits::signed;
 
 // The `where` form — identical to `fn maxi<T: Operator>`.
 fn maxi<T>(a: T, b: T) -> T

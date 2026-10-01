@@ -16,7 +16,7 @@
 // wide, and unassignable to `unsigned[16]`).
 module wide_literal_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Wide {
     direct: unsigned[96] out,

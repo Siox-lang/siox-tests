@@ -1,6 +1,6 @@
 module examples::array_test;
 
-using std::logic::Bit;
+use std::logic::Bit;
 
 // An array-typed signal flattens to one scalar signal per element, so each
 // element gets its own trace path in the waveform.

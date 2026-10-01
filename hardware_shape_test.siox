@@ -1,5 +1,5 @@
 module examples::hardware_shape_test;
-using std::bits::{signed, unsigned};
+use std::bits::{signed, unsigned};
 // The shapes an operand can take, all in hardware: a struct field, a
 // conversion, and the two branch-valued expressions. Each must resolve to the
 // same `signed` family a plain name would, or the comparison runs unsigned.

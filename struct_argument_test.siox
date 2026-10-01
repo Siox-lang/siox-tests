@@ -6,7 +6,7 @@
 // look like structs worked here.
 module struct_argument_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 struct Point { pub x: unsigned[8], pub y: unsigned[8] }
 

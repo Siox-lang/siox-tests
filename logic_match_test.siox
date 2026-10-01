@@ -12,8 +12,8 @@
 // language's existing behaviour rather than against itself.
 module logic_match_test;
 
-using std::bits::{unsigned};
-using std::logic::{Logic};
+use std::bits::unsigned;
+use std::logic::Logic;
 
 entity Decode {
     l: Logic in,

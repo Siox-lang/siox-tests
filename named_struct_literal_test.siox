@@ -18,7 +18,7 @@
 // (generic named, plain named, and brace-only).
 module named_struct_literal_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 
 struct Pair { pub a: unsigned[8], pub b: unsigned[8] }

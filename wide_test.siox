@@ -1,6 +1,6 @@
 module wide_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity WideAdder {
     a: unsigned[128] in,

@@ -8,7 +8,7 @@
 // the fold that needed it.
 module enum_const_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 enum Mode { Fast, Slow, Off }
 

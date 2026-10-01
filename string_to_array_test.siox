@@ -5,8 +5,8 @@ module examples::string_to_array_test;
 //   - to a Logic-vector, each char is a std_ulogic value (metavalues too);
 //   - to an array of a char-enum, each char is that enum's variant.
 
-using std::attrs::{test};
-using std::logic::{Logic};
+use std::attrs::test;
+use std::logic::Logic;
 
 // A small char enum, VHDL-`character`-style (each variant is a char literal;
 // its discriminant is its position in the declaration).

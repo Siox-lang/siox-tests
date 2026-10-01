@@ -12,8 +12,8 @@
 // read back from a run.
 module generate_shape_test;
 
-using std::bits::{unsigned};
-using std::logic::{Bit};
+use std::bits::unsigned;
+use std::logic::Bit;
 
 // An N-deep delay line whose per-stage register is clocked inside the loop, so
 // the loop produces N sequential processes rather than N instances. The array

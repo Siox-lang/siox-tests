@@ -16,8 +16,8 @@
 // the neighbouring slots must be left alone.
 module dynamic_struct_write_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 struct Slot { pub tag: unsigned[8], pub val: unsigned[8] }
 struct Ctx { pub count: unsigned[8], pub acc: unsigned[8] }

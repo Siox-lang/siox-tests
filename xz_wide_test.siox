@@ -1,7 +1,7 @@
 module examples::xz_wide_test;
 
-using std::attrs::{test};
-using std::logic::{Logic};
+use std::attrs::test;
+use std::logic::Logic;
 
 entity WideProbe {
     init_hi: Logic out,

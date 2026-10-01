@@ -1,6 +1,6 @@
 module examples::signed_struct_field_test;
-using std::bits::{signed, unsigned};
-using std::logic::{Bit};
+use std::bits::{signed, unsigned};
+use std::logic::Bit;
 // A `signed` field of a struct *connected to a DUT port*: the values live in
 // signals, but the leaves' declared types are still needed to read them back.
 // Unconnected the same field was already correct, which hid this.

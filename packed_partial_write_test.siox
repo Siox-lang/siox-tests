@@ -21,8 +21,8 @@
 // arithmetic done there, as well as to the value Python computes.
 module packed_partial_write_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 // Combinational: two disjoint constant bit writes.
 entity Comb {

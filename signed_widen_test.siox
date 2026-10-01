@@ -1,6 +1,6 @@
 module examples::signed_widen_test;
 
-using std::bits::{unsigned, signed, sext};
+use std::bits::{unsigned, signed, sext};
 
 // A conversion is a raw resize — zero-extend or truncate — because the
 // compiler tracks no signedness (spec 3.10). Sign extension is the library

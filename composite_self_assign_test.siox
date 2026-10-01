@@ -17,7 +17,7 @@
 // swap, not read back from a run.
 module composite_self_assign_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 struct P { pub a: unsigned[8], pub b: unsigned[8] }
 struct Inner { pub p: unsigned[8], pub q: unsigned[8] }

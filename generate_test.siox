@@ -1,5 +1,5 @@
 module m;
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // A single-stage incrementer.
 entity Inc { x: unsigned[8] in, y: unsigned[8] out }

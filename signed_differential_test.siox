@@ -11,7 +11,7 @@
 // a = -100, b = 7, c = 75, p = 6, q = -6; every result wraps to 8 bits.
 module signed_differential_test;
 
-using std::bits::{signed};
+use std::bits::signed;
 
 entity D {
     a: signed[8] in, b: signed[8] in, c: signed[8] in, p: signed[8] in, q: signed[8] in,

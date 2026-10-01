@@ -1,7 +1,7 @@
 module examples::runtime_vector_index_test;
 
-using std::bits::unsigned;
-using std::logic::{Bit, Logic};
+use std::bits::unsigned;
+use std::logic::{Bit, Logic};
 
 // Runtime labels select packed storage bits. This vector deliberately uses a
 // nonzero declared range: label 8 is storage bit 0 and label 15 is bit 7.

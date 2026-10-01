@@ -1,7 +1,7 @@
 module examples::view_bus_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 // A reusable physical layout can have distinct producer and consumer views.
 // Both views flatten onto the same Stream net; only their permissions and

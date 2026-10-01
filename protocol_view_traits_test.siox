@@ -1,7 +1,7 @@
 module examples::protocol_view_traits_test;
 
-using std::bits::unsigned;
-using std::logic::Bit;
+use std::bits::unsigned;
+use std::logic::Bit;
 
 // Protocol behavior can be shared through traits while views describe which
 // physical signals each endpoint may drive.

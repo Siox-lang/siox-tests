@@ -22,8 +22,8 @@
 // Expected values are what the arithmetic says, not what the compiler printed.
 module integer_param_signed_test;
 
-using std::bits::{signed, unsigned};
-using std::math::{abs, min, max};
+use std::bits::{signed, unsigned};
+use std::math::{abs, min, max};
 
 // The same bodies std uses, in the user's own module, so this does not depend
 // on std continuing to spell them the same way.

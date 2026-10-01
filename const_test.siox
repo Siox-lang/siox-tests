@@ -1,6 +1,6 @@
 module examples::const_test;
 
-using std::logic::{Bit, Logic, LOW, HIGH};
+use std::logic::{Bit, Logic, LOW, HIGH};
 
 // Module-level `const`s (std's LOW/HIGH, user consts) resolve to their values
 // in testbench expressions on every engine — not just the ones that happen to

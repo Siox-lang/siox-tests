@@ -1,5 +1,5 @@
 module examples::slice_write_test;
-using std::bits::unsigned;
+use std::bits::unsigned;
 // Register bit-field update + two-field combinational pack.
 entity E {
     clk: Bit in,

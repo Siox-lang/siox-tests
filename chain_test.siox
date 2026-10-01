@@ -1,6 +1,6 @@
 module examples::chain_test;
 
-using std::bits::unsigned;
+use std::bits::unsigned;
 
 // DUT-to-DUT chaining through a plain testbench local: a name bound to one
 // DUT's `out` and another's `in` becomes a real feedback driver in the

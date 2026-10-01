@@ -7,7 +7,7 @@
 // values: constants are folded per testbench, so they must not collide.
 module testbench_const_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 const SHARED: integer = 100;
 

@@ -2,7 +2,7 @@
 // than to a name. Both work in hardware; both used to be dropped here.
 module concat_test;
 
-using std::bits::{unsigned};
+use std::bits::unsigned;
 
 entity Split {
     src: unsigned[12] in,

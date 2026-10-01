@@ -14,7 +14,7 @@
 // Every expected value below is what Python computes for the same arithmetic.
 module generate_negative_test;
 
-using std::bits::{signed};
+use std::bits::signed;
 
 entity Neg {
     // `k - 5` for k in 0..3 -> -5, -4, -3, -2

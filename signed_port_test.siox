@@ -6,7 +6,7 @@
 // never in their bits.
 module signed_port_test;
 
-using std::bits::{signed};
+use std::bits::signed;
 
 entity Arith {
     s: signed[8] in,
