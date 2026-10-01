@@ -1,0 +1,38 @@
+module examples::encoding_table_test;
+
+// `std::text` encoding tables: a `Char` has no number of its own, only one
+// relative to a table. `Unicode` is the identity on code points; `Ascii` is
+// its 7-bit prefix and answers -1 outside it. The tables are structs with
+// associated functions, callable in hardware and in a testbench alike; the
+// free functions `unicode`/`char_of`/`ascii` are shorthands for them.
+
+use std::text::{Unicode, Ascii, unicode, ascii, char_of};
+
+entity Encode { c: Char in, code: integer out, low: integer out }
+impl Encode {
+    code = Unicode::code(c);
+    low = Ascii::code(c);
+}
+
+#[test]
+entity EncodingTableTest {}
+impl EncodingTableTest {
+    let c: Char;
+    let code: integer;
+    let low: integer;
+    let dut: Encode = { .c = c, .code = code, .low = low };
+
+    process {
+        c = 'A';
+        await 1ns;
+        assert!(code == 65 and low == 65, "ASCII letters are in both tables");
+        c = 'é';
+        await 1ns;
+        assert!(code == 233, "Unicode is the code point");
+        assert!(low == -1, "outside 7-bit ASCII");
+        assert!(Unicode::char(129408) == '🦀', "and back to a Char");
+        assert!(unicode('é') == Unicode::code('é'), "shorthand: unicode");
+        assert!(ascii('é') == Ascii::code('é'), "shorthand: ascii");
+        assert!(char_of(65) == 'A', "shorthand: char_of");
+    }
+}
