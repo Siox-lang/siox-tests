@@ -4,7 +4,6 @@ module examples::complex_test;
 // resolves to `Operator<"+", Complex, Complex>`, inlined into the IR per field.
 
 use std::math::Complex;
-use std::attrs::test;
 
 entity Adder {
     a: Complex in,

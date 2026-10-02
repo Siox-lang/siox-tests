@@ -1,6 +1,5 @@
 module examples::real_local_test;
 
-use std::attrs::test;
 use std::math::{sqrt, pow, floor, PI};
 
 // Unconnected real-valued testbench storage still uses the simulator's

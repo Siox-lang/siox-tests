@@ -1,7 +1,6 @@
 module examples::nested_array_local_test;
 
-use std::attrs::test;
-use std::text::string;
+use std::primitive::string;
 
 struct WidePair {
     pub value: unsigned[128],

@@ -4,7 +4,6 @@ module examples::xz_logical_test;
 // unlike arithmetic (which poisons the whole result). `0 and X = 0`,
 // `1 and X = X`, `1 or X = 1`, `0 or X = X` — proven element by element.
 
-use std::attrs::test;
 use std::logic::Logic;
 
 entity Gates {

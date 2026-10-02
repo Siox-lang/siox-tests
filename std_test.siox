@@ -5,7 +5,6 @@ module examples::std_test;
 // `pub` declarations.
 
 use std::logic::{Bit, LOW, HIGH};
-use std::attrs::test;
 
 entity Buf {
     a: Bit in,

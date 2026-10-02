@@ -2,8 +2,7 @@ module examples::format_test;
 
 use std::bits::unsigned;
 use std::logic::Bit;
-use std::text::string;
-use std::attrs::test;
+use std::primitive::string;
 
 // `print!`/`assert!` formatting: `{}` takes the next argument, `{{`/`}}` are
 // literal braces, and enum/Logic operands render as their symbol. The message

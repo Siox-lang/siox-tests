@@ -5,7 +5,6 @@ module examples::logic_test;
 // propagate — but a dominant operand still decides.
 
 use std::logic::Logic;
-use std::attrs::test;
 
 entity Gates {
     a: Logic in,
