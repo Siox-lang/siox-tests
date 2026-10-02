@@ -5,7 +5,6 @@ module examples::xz_vector_test;
 // 9-value `std_ulogic`. `"1X10"` — bit 3 = '1', bit 2 = 'X', bit 1 = '1',
 // bit 0 = '0'.
 
-use std::attrs::test;
 use std::logic::Logic;
 
 entity Probe {

@@ -1,7 +1,6 @@
 module examples::rand_test;
 
 use std::bits::unsigned;
-use std::attrs::test;
 
 // std::rand is deterministic: the same seed gives the same sequence in every
 // generated native test executable. `rand()`/`uniform()` are nullary calls,

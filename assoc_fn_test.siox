@@ -1,7 +1,6 @@
 module examples::assoc_fn_test;
 
 use std::bits::unsigned;
-use std::attrs::test;
 
 // Static associated functions (no `self`) are callable in expressions as
 // `Type::name(..)`, in hardware and in a testbench alike. This is what makes

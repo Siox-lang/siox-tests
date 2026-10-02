@@ -6,7 +6,8 @@
 module user_operator_test;
 
 use std::bits::unsigned;
-use std::ops::{Operator, Ordering};
+use std::ops::Operator;
+use std::cmp::Ordering;
 
 // A newtype, so a value is one word and carries its own ordering.
 struct Money(unsigned[8]);

@@ -4,8 +4,7 @@ module examples::string_test;
 // a string literal supplies the length, and whole-string equality compares
 // symbol by symbol.
 
-use std::text::string;
-use std::attrs::test;
+use std::primitive::string;
 
 entity Echo {
     s: string[5] in,

@@ -1,5 +1,5 @@
 module examples::signed_test;
-use std::logic::Bool;
+use std::primitive::Bool;
 use std::bits::{signed, unsigned};
 
 // Signed comparison comes from std's

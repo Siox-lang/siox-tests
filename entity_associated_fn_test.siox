@@ -1,6 +1,5 @@
 module examples::entity_associated_fn_test;
 
-use std::attrs::test;
 
 // An entity can own ordinary namespaced functions when they have no `self`.
 // No instance boundary is crossed and no ports are generated for the call.
