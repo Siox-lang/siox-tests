@@ -1,0 +1,96 @@
+// std::fixed: VHDL-style fixed point, where the index range carries the
+// binary point (`ufixed[3..-4]` is 4.4). Arithmetic, signed products and their
+// rounding, comparisons, conversions from and to real, and a clocked
+// multiply-accumulate.
+module fixed_test;
+
+use std::fixed::{ufixed, sfixed, to_ufixed, to_sfixed};
+
+// acc <= acc + a * b on every rising edge, in 8.8 signed fixed point.
+entity Mac { clk: Bit in, a: sfixed[7..-8] in, b: sfixed[7..-8] in, acc: sfixed[7..-8] out }
+
+impl Mac {
+    let total: sfixed[7..-8] = 0;
+    step: process {
+        if clk.rising() {
+            total = total + a * b;
+        }
+    }
+    acc = total;
+}
+
+// The unsigned and signed operations, combinationally.
+entity UArith { a: ufixed[3..-4] in, b: ufixed[3..-4] in, sum: ufixed[3..-4] out, diff: ufixed[3..-4] out, product: ufixed[3..-4] out, square: ufixed[3..-4] out }
+
+impl UArith {
+    sum = a + b;
+    diff = a - b;
+    product = a * b;
+    square = b * b;
+}
+
+entity SArith { a: sfixed[3..-4] in, b: sfixed[3..-4] in, product: sfixed[3..-4] out, square: sfixed[3..-4] out }
+
+impl SArith {
+    product = a * b;
+    square = a * a;
+}
+
+#[test]
+entity FixedTest {}
+
+impl FixedTest {
+    // 2.5 and 1.5 in 4.4: the words 40 and 24.
+    let a: ufixed[3..-4] = to_ufixed(2.5, 3, -4);
+    let b: ufixed[3..-4] = to_ufixed(1.5, 3, -4);
+    let sum: ufixed[3..-4];
+    let diff: ufixed[3..-4];
+    let product: ufixed[3..-4];
+    let unused: ufixed[3..-4];
+    let big: ufixed[3..-4] = to_ufixed(12.5, 3, -4);
+    let wrapped: ufixed[3..-4];
+    let u: UArith = { .a = a, .b = b, .sum = sum, .diff = diff, .product = product, .square = unused };
+    let w: UArith = { .a = big, .b = big, .sum = unused, .diff = unused, .product = wrapped, .square = unused };
+
+    let n: sfixed[3..-4] = to_sfixed(0.0 - 2.5, 3, -4);
+    let p: sfixed[3..-4] = to_sfixed(1.5, 3, -4);
+    let tiny: sfixed[3..-4] = to_sfixed(0.0 - 0.0625, 3, -4);
+    let np: sfixed[3..-4];
+    let nn: sfixed[3..-4];
+    let floored: sfixed[3..-4];
+    let spare: sfixed[3..-4];
+    let s1: SArith = { .a = n, .b = p, .product = np, .square = nn };
+    let s2: SArith = { .a = tiny, .b = p, .product = floored, .square = spare };
+
+    let clk: Bit = '0';
+    let x: sfixed[7..-8] = to_sfixed(1.5, 7, -8);
+    let y: sfixed[7..-8] = to_sfixed(0.0 - 0.5, 7, -8);
+    let acc: sfixed[7..-8];
+    let mac: Mac = { .clk = clk, .a = x, .b = y, .acc = acc };
+    clk = not clk after 5ns;
+
+    check: process {
+        await 1ns;
+        assert!(a == 40 and b == 24, "2.5 and 1.5 are the 4.4 words 40 and 24");
+        assert!(sum.to_real() == 4.0, "2.5 + 1.5");
+        assert!(diff.to_real() == 1.0, "2.5 - 1.5");
+        assert!(product.to_real() == 3.75, "2.5 * 1.5");
+        assert!(wrapped.to_real() == 12.25, "12.5 * 12.5 = 156.25 wraps to 12.25");
+        assert!(a > b and b < a and a >= a, "unsigned comparison");
+
+        assert!(np.to_real() == 0.0 - 3.75, "-2.5 * 1.5");
+        assert!(nn.to_real() == 6.25, "-2.5 * -2.5");
+        assert!(floored.to_real() == 0.0 - 0.125, "-0.09375 rounds toward minus infinity");
+        assert!(n < p and p > n and tiny < p, "signed comparison");
+
+        assert!(to_ufixed(2.53, 3, -4) == 40, "rounds to the nearest 1/16");
+        assert!(to_ufixed(100.0, 3, -4) == 255, "saturates high");
+        assert!(to_ufixed(0.0 - 1.0, 3, -4) == 0, "saturates at zero");
+        assert!(to_sfixed(0.0 - 100.0, 3, -4) == 0 - 128, "saturates low");
+        assert!(to_sfixed(0.0 - 2.53, 3, -4) == 0 - 40, "rounds a negative to nearest");
+
+        await 30ns;
+        // Three rising edges (5, 15, 25ns), each adding 1.5 * -0.5.
+        assert!(acc.to_real() == 0.0 - 2.25, "the accumulator holds 3 * -0.75");
+    }
+}
