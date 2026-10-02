@@ -1,0 +1,78 @@
+// std::sync: a two-flop synchronizer, a reset synchronizer, an edge detector,
+// and a pulse synchronizer between two unrelated clocks.
+module sync_test;
+
+use std::sync::{Sync2, ResetSync, EdgeDetect, PulseSync};
+
+// Counts the cycles of `clk` in which `pulse` is high.
+entity PulseCounter { clk: Bit in, pulse: Bit in, count: integer out }
+
+impl PulseCounter {
+    let seen: integer;
+    tally: process {
+        if clk.rising() {
+            if pulse == '1' {
+                seen = seen + 1;
+            }
+        }
+    }
+    count = seen;
+}
+
+#[test]
+entity SyncTest {}
+
+impl SyncTest {
+    let fast: Bit = '0';
+    let slow: Bit = '0';
+    let d: Bit = '0';
+    let q: Bit;
+    let rst_in: Bit = '0';
+    let rst_out: Bit;
+    let rise: Bit;
+    let fall: Bit;
+    let pulse_in: Bit = '0';
+    let pulse_out: Bit;
+    let seen: integer;
+
+    let sync: Sync2 = { .clk = slow, .d = d, .q = q };
+    let reset: ResetSync = { .clk = slow, .rst_in = rst_in, .rst_out = rst_out };
+    let edges: EdgeDetect = { .clk = fast, .d = d, .rise = rise, .fall = fall };
+    let pulses: PulseSync = { .src_clk = fast, .pulse_in = pulse_in, .dst_clk = slow, .pulse_out = pulse_out };
+
+    fast = not fast after 2ns;   // rises at 2, 6, 10, ...
+    slow = not slow after 5ns;   // rises at 5, 15, 25, ...
+
+    let counter: PulseCounter = { .clk = slow, .pulse = pulse_out, .count = seen };
+
+    stimulus: process {
+        await 3ns;
+        d = '1';
+        await 1ns;
+        assert!(q == '0', "nothing has crossed yet");
+        assert!(rise == '1' and fall == '0', "d rose since fast's last edge");
+        await 12ns;
+        assert!(q == '1', "d crossed on the second slow edge (15ns)");
+        await 10ns;
+        assert!(q == '1', "and stays");
+
+        rst_in = '1';
+        await 1ns;
+        assert!(rst_out == '1', "reset asserts at once, without a clock edge");
+        rst_in = '0';
+        await 9ns;
+        assert!(rst_out == '1', "one slow edge after release: still in reset");
+        await 10ns;
+        assert!(rst_out == '0', "released on the second slow edge (45ns)");
+
+        pulse_in = '1';
+        await 4ns;
+        pulse_in = '0';
+        await 40ns;
+        pulse_in = '1';
+        await 4ns;
+        pulse_in = '0';
+        await 60ns;
+        assert!(seen == 2, "each source pulse is one destination pulse");
+    }
+}
