@@ -1,0 +1,32 @@
+// A generic newtype whose base array takes its width from a parameter:
+// `uf<8>` for `struct uf<N: integer>(Logic[N])` is eight bits, with operators
+// implemented generically. Its signals used to have no width at all.
+module generic_newtype_width_test;
+
+pub struct Word<N: integer>(Logic[N]);
+
+impl<N: integer> Operator<"+", Word<N>, Word<N>> for Word<N> {
+    fn apply(self, rhs: Word<N>) -> Word<N> { return self + rhs; }
+}
+
+entity Adder { a: Word<8> in, b: Word<8> in, s: Word<8> out }
+
+impl Adder {
+    s = a + b;
+}
+
+#[test]
+entity GenericNewtypeWidthTest {}
+
+impl GenericNewtypeWidthTest {
+    let a: Word<8> = 250;
+    let b: Word<8> = 24;
+    let s: Word<8>;
+    let add: Adder = { .a = a, .b = b, .s = s };
+
+    check: process {
+        await 1ns;
+        assert!(a'length == 8, "Word<8> is eight bits");
+        assert!(s == 18, "250 + 24 wraps at eight bits");
+    }
+}

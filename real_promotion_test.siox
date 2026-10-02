@@ -1,0 +1,32 @@
+// Integer to real by value: `real(n)`, the implicit promotion of an integer
+// assigned to a real, and an integer beside a real in arithmetic. Each used to
+// read the integer's bits as an f64 (or not lower at all), so `r = 40` gave
+// 2e-322 and `real(40) / real(16)` divided as integers.
+module real_promotion_test;
+
+#[test]
+entity RealPromotionTest {}
+
+impl RealPromotionTest {
+    let i: integer = 40;
+    let neg: integer = 0 - 3;
+    let converted: real;
+    let negative: real;
+    let promoted: real;
+    let mixed: real;
+    let quotient: real;
+
+    check: process {
+        converted = real(i);
+        negative = real(neg);
+        promoted = i;
+        mixed = 1.5 + i;
+        quotient = real(40) / real(16);
+        await 1ns;
+        assert!(converted == 40.0, "real(40)");
+        assert!(negative == 0.0 - 3.0, "real(-3)");
+        assert!(promoted == 40.0, "an integer assigned to a real is promoted by value");
+        assert!(mixed == 41.5, "1.5 + 40");
+        assert!(quotient == 2.5, "real(40) / real(16) divides as reals");
+    }
+}
