@@ -1,0 +1,62 @@
+// Macro repetition: a `...` parameter takes the remaining arguments,
+// `for macro` unrolls over them (with `join` separating repetitions), `$xs`
+// forwards the list, and `$xs'length` counts it. Everything unrolls at
+// expansion time; the hardware below contains no loop.
+module macros_repetition_test;
+
+macro all($conds: expr...) { for macro $c in $conds { assert!($c); } }
+
+macro any($first: expr, $rest: expr...) { $first for macro $c in $rest { or $c } }
+
+macro all_of($cs: expr...) { for macro $c in $cs join and { $c } }
+
+macro count($xs: tokens...) { $xs'length }
+
+macro sum($xs: expr...) { 0 for macro $x in $xs { + $x } }
+
+macro trace($fmt: expr, $args: expr...) { print!($fmt, $args); }
+
+// One register stage per named signal, generated from a list.
+macro stage($clk: ident, $pairs: tokens...) {
+    process {
+        if $clk.rising() {
+            for macro $p in $pairs { $p; }
+        }
+    }
+}
+
+entity Delay { clk: Bit in, a: unsigned[8] in, b: unsigned[8] in, qa: unsigned[8] out, qb: unsigned[8] out }
+
+impl Delay {
+    stage!(clk, qa = a, qb = b);
+}
+
+#[test]
+entity MacrosRepetitionTest {}
+
+impl MacrosRepetitionTest {
+    let clk: Bit;
+    let a: unsigned[8];
+    let b: unsigned[8];
+    let qa: unsigned[8];
+    let qb: unsigned[8];
+    let dut: Delay = { .clk = clk, .a = a, .b = b, .qa = qa, .qb = qb };
+
+    process {
+        all!(1 == 1, 2 == 2, 3 == 3);
+        assert!(any!(false, false, true), "any");
+        assert!(all_of!(true, 1 == 1), "all_of");
+        assert!(count!(a, b c, (d, e)) == 3, "count");
+        assert!(count!() == 0, "count of nothing");
+        assert!(sum!(1, 2, 3) * 2 == 12, "a repetition inside an operand");
+        trace!("{} and {}", 1, 2);
+
+        a = 7;
+        b = 9;
+        clk = '0';
+        await 1ns;
+        clk = '1';
+        await 1ns;
+        all!(qa == 7, qb == 9);
+    }
+}
