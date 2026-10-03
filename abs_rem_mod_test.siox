@@ -39,8 +39,8 @@ impl AbsRemModTest {
         .least = least
     };
     let u: unsigned[8] = 23;
-    let s: sfixed[3..-4] = sfixed[3..-4](0.0 - 1.25);
-    let f: ufixed[3..-4] = ufixed[3..-4](2.5);
+    let s: sfixed<8, 4> = sfixed<8, 4>(0.0 - 1.25);
+    let f: ufixed<8, 4> = ufixed<8, 4>(2.5);
 
     check: process {
         let n: integer = 0 - 7;
