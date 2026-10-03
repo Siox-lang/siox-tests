@@ -16,7 +16,7 @@
 // be wrong in hardware, which is the worst shape this can take.
 //
 // The existing coverage missed it because it exercised `abs` on a `signed[8]`
-// (which dispatches signed's `<=>` and never reaches this path) and on a
+// (which dispatches signed's `Ord` and never reaches this path) and on a
 // literal (which const-folds).
 //
 // Expected values are what the arithmetic says, not what the compiler printed.

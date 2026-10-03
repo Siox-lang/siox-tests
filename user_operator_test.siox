@@ -1,13 +1,13 @@
 // Operators are one generic trait parameterized by the symbol:
-// `impl Operator<"sym", Rhs, Out> for T` with `fn apply`. Nothing in the
-// corpus defined one on a user type, and in particular nothing checked the
-// claim that a single `"<=>"` returning `Ordering` drives all six
-// comparisons rather than each needing its own impl.
+// `impl Operator<"sym", Rhs, Out> for T` with `fn apply`; comparisons are the
+// `Eq`/`Ord` traits. This checks a user type's operator, and that `Eq` (`eq`)
+// plus `Ord` (`lt`, `le`) drive all six comparisons through the trait
+// defaults (`ne`, `gt`, `ge`).
 module user_operator_test;
 
 use std::bits::unsigned;
 use std::ops::Operator;
-use std::cmp::Ordering;
+use std::cmp::{Eq, Ord};
 
 // A newtype, so a value is one word and carries its own ordering.
 struct Money(unsigned[8]);
@@ -18,12 +18,13 @@ impl Operator<"+", Money, Money> for Money {
     }
 }
 
-impl Operator<"<=>", Money, Ordering> for Money {
-    fn apply(self, rhs: Money) -> Ordering {
-        if unsigned[8](self) < unsigned[8](rhs) { return Ordering::Less; }
-        if unsigned[8](self) > unsigned[8](rhs) { return Ordering::Greater; }
-        return Ordering::Equal;
-    }
+impl Eq<Money> for Money {
+    fn eq(self, rhs: Money) -> Bool { return unsigned[8](self) == unsigned[8](rhs); }
+}
+
+impl Ord<Money> for Money {
+    fn lt(self, rhs: Money) -> Bool { return unsigned[8](self) < unsigned[8](rhs); }
+    fn le(self, rhs: Money) -> Bool { return not rhs.lt(self); }
 }
 
 entity Compare {
