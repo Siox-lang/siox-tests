@@ -4,7 +4,7 @@ use std::bits::signed;
 
 // Signed operator semantics on TESTBENCH LOCALS: the runner (and the native
 // harness) dispatch binary operators on family-typed names through the
-// family's std Operator impls — signed's `/` implementation truncates toward
+// family's std operator impls — signed's `/` implementation truncates toward
 // zero and `Ord` compares two's-complement — exactly like the same expressions
 // in hardware.
 #[test]
@@ -26,7 +26,7 @@ impl SignedLocalTest {
     gt = b > a;
     assert!(gt == true, "2 > -7 under signed compare");
 
-    // Arithmetic shift right (signed's `>>` Operator impl) keeps the sign.
+    // Arithmetic shift right (signed's `Shr` impl) keeps the sign.
     let sh: signed[8];
     sh = a >> 1;
     assert!(sh == 0 - 4, "-7 >> 1 arithmetic = -4");

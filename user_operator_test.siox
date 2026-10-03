@@ -1,19 +1,19 @@
-// Operators are one generic trait parameterized by the symbol:
-// `impl Operator<"sym", Rhs, Out> for T` with `fn apply`; comparisons are the
-// `Eq`/`Ord` traits. This checks a user type's operator, and that `Eq` (`eq`)
-// plus `Ord` (`lt`, `le`) drive all six comparisons through the trait
-// defaults (`ne`, `gt`, `ge`).
+// The standard operators are named traits (`impl Add<Rhs, Out> for T` with
+// `fn add`), and comparisons are the `Eq`/`Ord` traits. This checks a user
+// type's `+`, its direct call `a.add(b)`, and that `Eq` (`eq`) plus `Ord`
+// (`lt`, `le`) drive all six comparisons through the trait defaults (`ne`,
+// `gt`, `ge`).
 module user_operator_test;
 
 use std::bits::unsigned;
-use std::ops::Operator;
+use std::ops::Add;
 use std::cmp::{Eq, Ord};
 
 // A newtype, so a value is one word and carries its own ordering.
 struct Money(unsigned[8]);
 
-impl Operator<"+", Money, Money> for Money {
-    fn apply(self, rhs: Money) -> Money {
+impl Add<Money, Money> for Money {
+    fn add(self, rhs: Money) -> Money {
         return Money(unsigned[8](self) + unsigned[8](rhs));
     }
 }
@@ -76,6 +76,8 @@ impl UserOperatorTest {
     // hardware that computed them.
     let tbsum: Money = lo + hi;
     assert!(tbsum == less.sum, "`+` agrees across the engines");
+    let called: Money = lo.add(hi);
+    assert!(called == tbsum, "`a.add(b)` is `a + b`");
     assert!((lo < hi) == true and (lo > hi) == false, "comparisons agree too");
     assert!((lo == same) == true, "and equality");
 }

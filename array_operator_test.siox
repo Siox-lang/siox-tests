@@ -1,13 +1,13 @@
 // std lifts operators to arrays with blanket impls over `T[]`:
 //
-//     impl<T: Operator<"and", T, T>> Operator<"and", T, T> for T[] { ... }
+//     impl<T: And<T, T>> And<T, T> for T[] { ... }
 //
 // Neither engine had a form for the result, so `y = a and b` on an array
 // fell through to the scalar assignment path and reported the *target* as
 // unassignable — while `y = a` on the same target was fine.
 module array_operator_test;
 
-use std::ops::Operator;
+use std::ops::And;
 
 // A user element type, to check the blanket impl lifts a user's own operator
 // and not just the ones std defines for Logic.
@@ -15,8 +15,8 @@ enum Tri { Lo, Hi, Unk }
 
 enum Mode { Copy, Other, Combine }
 
-impl Operator<"and", Tri, Tri> for Tri {
-    fn apply(self, rhs: Tri) -> Tri {
+impl And<Tri, Tri> for Tri {
+    fn and(self, rhs: Tri) -> Tri {
         if self == Tri::Lo { return Tri::Lo; }
         if rhs == Tri::Lo { return Tri::Lo; }
         if self == Tri::Hi and rhs == Tri::Hi { return Tri::Hi; }

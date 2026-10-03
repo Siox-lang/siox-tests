@@ -11,7 +11,7 @@
 // Nesting needed a second fix. `twice(v) + v` gives the operator a *call* as
 // its left operand, and `operand_type_name` returned a call's declared return
 // type only when that was a vector family or an enum. A struct return had no
-// type, so no `Operator` impl could be found and the expression again produced
+// type, so no `Add` impl could be found and the expression again produced
 // nothing.
 //
 // Values are worked out from the arithmetic, not read back from a run:
@@ -19,12 +19,12 @@
 module struct_valued_call_test;
 
 use std::bits::unsigned;
-use std::ops::Operator;
+use std::ops::Add;
 
 struct Vec2 { pub x: unsigned[8], pub y: unsigned[8] }
 
-impl Operator<"+", Vec2, Vec2> for Vec2 {
-    fn apply(self, rhs: Vec2) -> Vec2 {
+impl Add<Vec2, Vec2> for Vec2 {
+    fn add(self, rhs: Vec2) -> Vec2 {
         return Vec2 { .x = self.x + rhs.x, .y = self.y + rhs.y };
     }
 }

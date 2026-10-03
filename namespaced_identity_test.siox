@@ -21,14 +21,14 @@ impl DirectionProbe {
 }
 
 // Equal right-operand leaves must remain distinct during overload selection.
-impl Operator<"+", identity_a::Token, integer> for Acc {
-    fn apply(self, rhs: identity_a::Token) -> integer {
+impl Add<identity_a::Token, integer> for Acc {
+    fn add(self, rhs: identity_a::Token) -> integer {
         return 41;
     }
 }
 
-impl Operator<"+", identity_b::Token, integer> for Acc {
-    fn apply(self, rhs: identity_b::Token) -> integer {
+impl Add<identity_b::Token, integer> for Acc {
+    fn add(self, rhs: identity_b::Token) -> integer {
         return 42;
     }
 }
