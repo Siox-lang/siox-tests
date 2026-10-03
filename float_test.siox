@@ -64,6 +64,12 @@ impl FloatTest {
         r = inf - inf;
         await 1ns;
         assert!(r.is_nan(), "infinity minus infinity is NaN");
+        // IEEE-754: a NaN is unordered, so every comparison with it is false
+        // except `!=` — even against itself.
+        assert!(not (r == r) and r != r, "NaN is not equal to itself");
+        assert!(not (r < x) and not (r > x) and not (r <= x) and not (r >= x),
+            "NaN is unordered against a number");
+        assert!(not (x < r) and not (x >= r) and x != r, "a number is unordered against NaN");
         r = inf + x;
         await 1ns;
         assert!(r.is_infinite() and r > x, "infinity absorbs a number");
@@ -73,6 +79,7 @@ impl FloatTest {
         await 1ns;
         assert!(r.is_infinite(), "overflow is infinite");
         assert!(zero.negate() == zero, "-0 equals +0");
+        assert!(not (zero.negate() < zero) and zero.negate() <= zero, "-0 is not below +0");
 
         // binary16 shares the code: only the range differs.
         h = to_float(0.5, 5, 10);

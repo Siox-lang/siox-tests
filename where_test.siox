@@ -20,5 +20,5 @@ impl WhereTest {
     let m: signed[8];
     let d: Pick = { .x = x, .y = y, .m = m };
     await 1ns;
-    assert!(m == 5, "where-bounded generic max dispatches signed <=>");
+    assert!(m == 5, "where-bounded generic max dispatches signed Ord");
 }

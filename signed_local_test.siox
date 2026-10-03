@@ -5,7 +5,7 @@ use std::bits::signed;
 // Signed operator semantics on TESTBENCH LOCALS: the runner (and the native
 // harness) dispatch binary operators on family-typed names through the
 // family's std Operator impls — signed's `/` implementation truncates toward
-// zero and `<=>` compares two's-complement — exactly like the same expressions
+// zero and `Ord` compares two's-complement — exactly like the same expressions
 // in hardware.
 #[test]
 entity SignedLocalTest {}

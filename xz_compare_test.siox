@@ -9,7 +9,7 @@
 //
 // A guard existed, but only over the finished expression, where it could match
 // `<` and `>` -- whose operands are still bare signal reads. `<=`, `>=`, `==`
-// and `/=` reach their answer through `<=>` and an `Ordering`, so nothing in
+// and `/=` reached their answer through an inlined comparison impl, so nothing in
 // the built expression looks like a vector comparison and they went unguarded.
 // It also asked `companion != 0`, which counts `'L'` and `'H'` -- a weak 0 and
 // a weak 1 that compare like any other value -- so a vector holding a pull-up's

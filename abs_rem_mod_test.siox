@@ -1,0 +1,67 @@
+// `abs`, `rem` and `mod` are functions, not operators (as in mathematics and
+// Rust): `rem` takes the dividend's sign (VHDL `rem`, Rust `%`), `mod` the
+// divisor's (VHDL `mod`). Checked on the kernel `integer`, on `signed` and
+// `unsigned` in hardware and in a process, and `abs` on the fixed formats.
+module abs_rem_mod_test;
+use std::bits::{signed, unsigned};
+use std::fixed::{sfixed, ufixed, to_sfixed, to_ufixed};
+
+entity SignedOps {
+    a: signed[8] in,
+    m: signed[8] in,
+    magnitude: signed[8] out,
+    remainder: signed[8] out,
+    modulus: signed[8] out
+}
+impl SignedOps {
+    magnitude = a.abs();
+    remainder = a.rem(m);
+    modulus = a.mod(m);
+}
+
+#[test]
+entity AbsRemModTest {}
+impl AbsRemModTest {
+    let a: signed[8] = 0 - 7;
+    let m: signed[8] = 2;
+    let magnitude: signed[8];
+    let remainder: signed[8];
+    let modulus: signed[8];
+    let ops: SignedOps = {
+        .a = a, .m = m,
+        .magnitude = magnitude, .remainder = remainder, .modulus = modulus
+    };
+    let u: unsigned[8] = 23;
+    let s: sfixed[3..-4] = to_sfixed(0.0 - 1.25, 3, -4);
+    let f: ufixed[3..-4] = to_ufixed(2.5, 3, -4);
+
+    check: process {
+        let n: integer = 0 - 7;
+        assert!(n.abs() == 7, "integer abs");
+        assert!(n.rem(2) == 0 - 1, "integer rem takes the dividend's sign");
+        assert!(n.mod(2) == 1, "integer mod takes the divisor's sign");
+        assert!(7.mod(0 - 2) == 0 - 1, "integer mod with a negative divisor");
+        assert!(7.rem(0 - 2) == 1, "integer rem with a negative divisor");
+        assert!(6.mod(3) == 0, "an exact multiple has no remainder");
+
+        await 1ns;
+        assert!(magnitude == 7, "signed abs in hardware");
+        assert!(remainder == 0 - 1, "signed rem in hardware");
+        assert!(modulus == 1, "signed mod in hardware");
+        assert!(a.abs() == 7, "signed abs in a process");
+        assert!(a.rem(m) == 0 - 1, "signed rem in a process");
+        assert!(a.mod(m) == 1, "signed mod in a process");
+
+        m = 0 - 2;
+        a = 7;
+        await 1ns;
+        assert!(remainder == 1, "signed rem, negative divisor");
+        assert!(modulus == 0 - 1, "signed mod, negative divisor");
+
+        assert!(u.abs() == 23, "unsigned abs is itself");
+        assert!(u.rem(5) == 3 and u.mod(5) == 3, "unsigned rem and mod agree");
+
+        assert!(s.abs().to_real() == 1.25, "sfixed abs");
+        assert!(f.abs().to_real() == 2.5, "ufixed abs");
+    }
+}
