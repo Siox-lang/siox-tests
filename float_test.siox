@@ -6,6 +6,7 @@
 module float_test;
 
 use std::float::{float, to_float};
+use std::math::abs;
 
 #[test]
 entity FloatTest {}
@@ -30,7 +31,7 @@ impl FloatTest {
         assert!(x == 1069547520, "1.5 is 0x3FC00000");
         assert!(y.to_real() == 0.0 - 2.25, "to_real");
         assert!(y < x and x > y and x >= x and x != y, "ordering");
-        assert!(y.negate().to_real() == 2.25 and y.abs() == y.negate(), "negate and abs");
+        assert!((-y).to_real() == 2.25 and abs(y) == -y, "negation and abs");
 
         r = x * y;
         await 1ns;
@@ -78,8 +79,8 @@ impl FloatTest {
         r = x * y * y;
         await 1ns;
         assert!(r.is_infinite(), "overflow is infinite");
-        assert!(zero.negate() == zero, "-0 equals +0");
-        assert!(not (zero.negate() < zero) and zero.negate() <= zero, "-0 is not below +0");
+        assert!(-zero == zero, "-0 equals +0");
+        assert!(not (-zero < zero) and -zero <= zero, "-0 is not below +0");
 
         // binary16 shares the code: only the range differs.
         h = to_float(0.5, 5, 10);
