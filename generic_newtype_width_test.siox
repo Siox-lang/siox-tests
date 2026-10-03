@@ -5,8 +5,8 @@ module generic_newtype_width_test;
 
 pub struct Word<N: integer>(Logic[N]);
 
-impl<N: integer> Operator<"+", Word<N>, Word<N>> for Word<N> {
-    fn apply(self, rhs: Word<N>) -> Word<N> { return self + rhs; }
+impl<N: integer> Add<Word<N>, Word<N>> for Word<N> {
+    fn add(self, rhs: Word<N>) -> Word<N> { return self + rhs; }
 }
 
 entity Adder { a: Word<8> in, b: Word<8> in, s: Word<8> out }

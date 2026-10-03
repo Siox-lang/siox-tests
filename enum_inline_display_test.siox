@@ -2,7 +2,7 @@ module examples::enum_inline_display_test;
 
 // An enum-valued expression renders as a symbol however it is written, not
 // only when it is reached through a name. `and`/`or` are overloaded per type
-// (`Operator<"and", Logic, Logic> for Logic`), so they return what they were
+// (`And<Logic, Logic> for Logic`), so they return what they were
 // given and their result prints like their operands.
 
 enum State { Idle, Run, Done }

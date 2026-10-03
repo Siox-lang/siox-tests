@@ -2,7 +2,7 @@
 // out by hand.
 //
 // Coverage, not a fix: all fifteen already agreed. But signed division's sign
-// handling is written out in std source — `impl Operator<"/", signed, signed>`
+// handling is written out in std source — `impl Div<signed, signed>`
 // divides magnitudes and restores the sign, with comments recording where that
 // has gone wrong before — and none of its four sign combinations was pinned by
 // a test that checks both engines. Truncation is toward zero, so -100 / 7 is
