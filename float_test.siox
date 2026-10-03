@@ -5,7 +5,7 @@
 // for the shared hardware lowering (see std.md).
 module float_test;
 
-use std::float::{float, to_float};
+use std::float::float;
 use std::math::abs;
 
 #[test]
@@ -23,10 +23,10 @@ impl FloatTest {
     let hr: float[5..-10];
 
     check: process {
-        x = to_float(1.5, 8, 23);
-        y = to_float(0.0 - 2.25, 8, 23);
-        inf = to_float(1.0 / 0.0, 8, 23);
-        zero = to_float(0.0, 8, 23);
+        x = float[8..-23](1.5);
+        y = float[8..-23](0.0 - 2.25);
+        inf = float[8..-23](1.0 / 0.0);
+        zero = float[8..-23](0.0);
         await 1ns;
         assert!(x == 1069547520, "1.5 is 0x3FC00000");
         assert!(y.to_real() == 0.0 - 2.25, "to_real");
@@ -45,19 +45,21 @@ impl FloatTest {
 
         // Ties round to the even neighbour: 1 + 2^-24 is halfway to the next
         // binary32 after 1.0 and stays 1.0; 1 + 3 * 2^-25 rounds up.
-        // `to_float` gives the word: store it in a float before arithmetic.
-        x = to_float(1.0, 8, 23);
-        y = to_float(0.000000059604644775390625, 8, 23);
+        x = float[8..-23](1.0);
+        y = float[8..-23](0.000000059604644775390625);
         await 1ns;
         r = x + y;
         await 1ns;
         assert!(r == 1065353216, "a tie rounds to even");
-        y = to_float(0.0000000894069671630859375, 8, 23);
+        y = float[8..-23](0.0000000894069671630859375);
         await 1ns;
         r = x + y;
         await 1ns;
         assert!(r == 1065353217, "above a tie rounds up");
-        x = to_float(1.5, 8, 23);
+        // The constructor's value is a float itself, usable in place.
+        assert!((float[8..-23](1.5) * float[8..-23](2.0)).to_real() == 3.0, "constructed operands");
+        assert!(float[8..-23](3) == float[8..-23](3.0), "an integer converts by value");
+        x = float[8..-23](1.5);
 
         r = inf * zero;
         await 1ns;
@@ -74,7 +76,7 @@ impl FloatTest {
         r = inf + x;
         await 1ns;
         assert!(r.is_infinite() and r > x, "infinity absorbs a number");
-        y = to_float(300000000549775575777803994281145270272.0, 8, 23);
+        y = float[8..-23](300000000549775575777803994281145270272.0);
         await 1ns;
         r = x * y * y;
         await 1ns;
@@ -83,8 +85,8 @@ impl FloatTest {
         assert!(not (-zero < zero) and -zero <= zero, "-0 is not below +0");
 
         // binary16 shares the code: only the range differs.
-        h = to_float(0.5, 5, 10);
-        k = to_float(3.0, 5, 10);
+        h = float[5..-10](0.5);
+        k = float[5..-10](3.0);
         await 1ns;
         hr = h * k + h;
         await 1ns;
