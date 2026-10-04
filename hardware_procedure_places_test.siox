@@ -1,0 +1,161 @@
+// Procedures capture writable locations rather than substituting caller ASTs.
+module hardware_procedure_places_test;
+use std::bits::unsigned;
+use std::logic::{Bit, Logic};
+use std::ops::IndexAssign;
+
+struct Record {
+    pub value: unsigned[128],
+    pub samples: unsigned[128][3..2],
+    pub tag: Char
+}
+impl Record {
+    pub fn set(self, value: unsigned[128]) {
+        self.value = value;
+        self.samples = [value, value + 1];
+        self.tag = 'λ';
+    }
+    pub fn increment(self) { self.value = self.value + 1; }
+}
+fn forward(record: Record, value: unsigned[128]) { record.set(value); }
+fn select_once(record: Record, selector: integer, value: unsigned[128]) {
+    selector = 1;
+    forward(record, value);
+}
+fn put_array(target: unsigned[128][2], value: unsigned[128][2]) { target = value; }
+fn put_nibble(target: unsigned[4], value: unsigned[4]) { target = value; }
+fn put_bit(target: Logic) { target = '1'; }
+fn put_logic(target: Logic[4], value: Logic[4]) { target = value; }
+fn put_packed_meta(target: unsigned[4], value: unsigned[4]) { target = value; }
+fn forward_meta(target: unsigned[4], value: unsigned[4]) { put_packed_meta(target, value); }
+fn shadow(record: Record, value: unsigned[128]) {
+    if value != 0 {
+        let value: unsigned[128] = 9;
+        record.value = value;
+    } else { record.value = 0; }
+}
+fn identity(record: Record) -> Record { return record; }
+fn local_twice(record: Record) { record.increment(); record.increment(); }
+impl IndexAssign<integer, unsigned> for Record {
+    fn index_assign(self, index: integer, value: unsigned[128]) {
+        if index == 0 { self.value = value; } else { self.samples[3] = value; }
+    }
+}
+fn custom_index(record: Record, value: unsigned[128]) { record[0] = value; }
+fn repeated(record: Record, last: integer, value: unsigned[128]) {
+    for i in 0..last { record.value = value + i; }
+}
+
+entity ProcedurePlaces {
+    clk: Bit in,
+    k: unsigned[128] in,
+    index: integer in,
+    selected: unsigned[128] out,
+    untouched: unsigned[128] out,
+    sample: unsigned[128] out,
+    tag: Char out,
+    local_result: unsigned[128] out,
+    shadow_result: unsigned[128] out,
+    array_result: unsigned[128] out,
+    packed_result: unsigned[8] out,
+    dynamic_bit: unsigned[8] out,
+    meta_result: Logic[4] out,
+    packed_meta: unsigned[4] out,
+    local_capture: unsigned[128] out,
+    selector_result: integer out,
+    pure_nested: unsigned[128] out,
+    local_tag: Char out,
+    custom_result: unsigned[128] out,
+    custom_sample: unsigned[128] out,
+    loop_result: unsigned[128] out,
+    signal_twice: unsigned[128] out
+}
+impl ProcedurePlaces {
+    let rows: Record[-1..0] = [
+        { .value = 0, .samples = [0, 0], .tag = 'α' },
+        { .value = 0, .samples = [0, 0], .tag = 'β' }
+    ];
+    if clk.rising() {
+        let selector: integer = 0;
+        select_once(rows[selector - 1], selector, k);
+        selector_result = selector;
+    }
+    selected = rows[-1].value; untouched = rows[0].value;
+    sample = rows[-1].samples[2]; tag = rows[-1].tag;
+
+    if k != 0 {
+        let record: Record = { .value = k, .samples = [0, 0], .tag = 'α' };
+        local_twice(record);
+        local_result = record.value;
+        shadow(record, k);
+        shadow_result = record.value;
+        let selector: integer = 0;
+        let locals: Record[-1..0] = [record, record];
+        select_once(locals[selector - 1], selector, k + 3);
+        local_capture = locals[-1].value;
+        let copied: Record = identity(locals[-1]);
+        pure_nested = copied.value;
+        local_tag = copied.tag;
+    } else {
+        local_result = 0; shadow_result = 0; local_capture = 0; pure_nested = 0;
+        local_tag = 'α';
+    }
+    let matrix: unsigned[128][9..8][-1..0] = [[0, 0], [0, 0]];
+    if clk.rising() { put_array(matrix[index], [k + 7, k + 8]); }
+    array_result = matrix[-1][8];
+    let packed: unsigned[8] = 0;
+    if clk.rising() { put_nibble(packed[7..4], 10); put_nibble(packed[0..3], 12); }
+    packed_result = packed;
+    let dynamic: unsigned[8] = 0;
+    if clk.rising() { put_bit(dynamic[integer(index) + 4]); }
+    dynamic_bit = dynamic;
+    let meta: Logic[4];
+    put_logic(meta, "1XZ0");
+    meta_result = meta;
+    let meta_packed: unsigned[4];
+    forward_meta(meta_packed, "1XZ0");
+    packed_meta = meta_packed;
+    let signal: Record = { .value = 0, .samples = [0, 0], .tag = 'α' };
+    if clk.rising() { local_twice(signal); }
+    signal_twice = signal.value;
+    let indexed: Record = { .value = 0, .samples = [0, 0], .tag = 'α' };
+    if clk.rising() { custom_index(indexed, k + 4); }
+    custom_result = indexed.value;
+    custom_sample = indexed.samples[3];
+    let looped: Record = { .value = 0, .samples = [0, 0], .tag = 'α' };
+    if clk.rising() { repeated(looped, 2, k); }
+    loop_result = looped.value;
+}
+
+#[test]
+entity HardwareProcedurePlacesTest {}
+impl HardwareProcedurePlacesTest {
+    let clk: Bit = '0';
+    let k: unsigned[128] = 170141183460469231731687303715884105728;
+    let index: integer = -1;
+    let packed_meta: unsigned[4];
+    let dut: ProcedurePlaces = { .clk = clk, .k = k, .index = index, .packed_meta = packed_meta };
+    process {
+        await 1ns;
+        assert!(dut.local_result == k + 2, "nested local receiver writes are immediate");
+        assert!(dut.shadow_result == 9, "callee locals shadow arguments, not caller syntax");
+        assert!(dut.local_capture == k + 3 and dut.pure_nested == k + 3, "captured local selection and pure nested call retain shape");
+        assert!(dut.local_tag == 'λ', "conditional local field writes retain character context");
+        assert!(dut.meta_result[0] == '1' and dut.meta_result[1] == 'X' and dut.meta_result[2] == 'Z' and dut.meta_result[3] == '0', "logic-array arguments retain every discriminant");
+        assert!(packed_meta[3..3] == '1' and packed_meta[2..2] == 'X' and packed_meta[1..1] == 'Z' and packed_meta[0..0] == '0', "packed argument captures retain exact planes through nested calls");
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(dut.selected == k and dut.untouched == 0, "changing a local selector does not retarget a captured receiver");
+        assert!(dut.selector_result == 1, "scalar place arguments update caller locals");
+        assert!(dut.sample == k + 1 and dut.tag == 'λ', "nested wide aggregate and character writes retain their context");
+        assert!(dut.array_result == k + 8, "selected subarrays retain directed target labels");
+        assert!(dut.packed_result == 163, "descending and ascending captured slices compose");
+        assert!(dut.dynamic_bit == 8, "dynamic packed places retain physical bit mapping");
+        assert!(dut.signal_twice == 1, "signal receiver reads remain pre-commit across nested calls");
+        assert!(dut.custom_result == k + 4, "custom index assignment forwards captured places in clocked calls");
+        assert!(dut.custom_sample == 0, "unselected custom index branch does not write");
+        assert!(dut.loop_result == k + 2, "literal parameter values still bind elaboration-time loops");
+        index = 0; await 1ns;
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(dut.dynamic_bit == 24 and dut.signal_twice == 2, "successive edges preserve untouched bits and staged state");
+    }
+}
