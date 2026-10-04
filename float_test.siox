@@ -1,32 +1,35 @@
 // std::float: IEEE-754 floating point written in siox, after VHDL's float_pkg.
-// The index range gives the format: float[8..-23] is binary32, float[5..-10]
-// binary16. Conversions, the special values, and rounding to nearest even.
+// The parameters give the format: float<32, 23> is binary32 (32 bits, 23 of
+// them mantissa), float<16, 10> binary16, and an alias names one.
+// Conversions, the special values, and rounding to nearest even.
 // This file exercises procedural use; hardware_float_conformance_test covers
 // the same source-defined arithmetic driven continuously through DUT ports.
 module float_test;
 
-use std::float::{float, to_float};
+use std::float::float;
 use std::math::abs;
+
+type binary16 = float<16, 10>;
 
 #[test]
 entity FloatTest {}
 
 impl FloatTest {
 
-    let x: float[8..-23];
-    let y: float[8..-23];
-    let r: float[8..-23];
-    let inf: float[8..-23];
-    let zero: float[8..-23];
-    let h: float[5..-10];
-    let k: float[5..-10];
-    let hr: float[5..-10];
+    let x: float<32, 23>;
+    let y: float<32, 23>;
+    let r: float<32, 23>;
+    let inf: float<32, 23>;
+    let zero: float<32, 23>;
+    let h: binary16;
+    let k: float<16, 10>;
+    let hr: float<16, 10>;
 
     check: process {
-        x = to_float(1.5, 8, 23);
-        y = to_float(0.0 - 2.25, 8, 23);
-        inf = to_float(1.0 / 0.0, 8, 23);
-        zero = to_float(0.0, 8, 23);
+        x = float<32, 23>(1.5);
+        y = float<32, 23>(0.0 - 2.25);
+        inf = float<32, 23>(1.0 / 0.0);
+        zero = float<32, 23>(0.0);
         await 1ns;
         assert!(x == 1069547520, "1.5 is 0x3FC00000");
         assert!(y.to_real() == 0.0 - 2.25, "to_real");
@@ -45,19 +48,21 @@ impl FloatTest {
 
         // Ties round to the even neighbour: 1 + 2^-24 is halfway to the next
         // binary32 after 1.0 and stays 1.0; 1 + 3 * 2^-25 rounds up.
-        // `to_float` gives the word: store it in a float before arithmetic.
-        x = to_float(1.0, 8, 23);
-        y = to_float(0.000000059604644775390625, 8, 23);
+        x = float<32, 23>(1.0);
+        y = float<32, 23>(0.000000059604644775390625);
         await 1ns;
         r = x + y;
         await 1ns;
         assert!(r == 1065353216, "a tie rounds to even");
-        y = to_float(0.0000000894069671630859375, 8, 23);
+        y = float<32, 23>(0.0000000894069671630859375);
         await 1ns;
         r = x + y;
         await 1ns;
         assert!(r == 1065353217, "above a tie rounds up");
-        x = to_float(1.5, 8, 23);
+        // The constructor's value is a float itself, usable in place.
+        assert!((float<32, 23>(1.5) * float<32, 23>(2.0)).to_real() == 3.0, "constructed operands");
+        assert!(float<32, 23>(3) == float<32, 23>(3.0), "an integer converts by value");
+        x = float<32, 23>(1.5);
 
         r = inf * zero;
         await 1ns;
@@ -74,7 +79,7 @@ impl FloatTest {
         r = inf + x;
         await 1ns;
         assert!(r.is_infinite() and r > x, "infinity absorbs a number");
-        y = to_float(300000000549775575777803994281145270272.0, 8, 23);
+        y = float<32, 23>(300000000549775575777803994281145270272.0);
         await 1ns;
         r = x * y * y;
         await 1ns;
@@ -82,13 +87,17 @@ impl FloatTest {
         assert!(-zero == zero, "-0 equals +0");
         assert!(not (-zero < zero) and -zero <= zero, "-0 is not below +0");
 
-        // binary16 shares the code: only the range differs.
-        h = to_float(0.5, 5, 10);
-        k = to_float(3.0, 5, 10);
+        // binary16 shares the code: only the format differs. An alias names the
+        // format, and builds it too.
+        h = binary16(0.5);
+        k = float<16, 10>(3.0);
         await 1ns;
         hr = h * k + h;
         await 1ns;
         assert!(hr.to_real() == 2.0, "0.5 * 3 + 0.5 in binary16");
+        // Internally the word is indexed as VHDL's float is: the exponent
+        // above index 0, the mantissa below it.
+        assert!(x'high == 8 and x'low == 0 - 23 and x'length == 32, "binary32's index range");
         assert!(h == 14336, "0.5 is 0x3800 in binary16");
 
     }
