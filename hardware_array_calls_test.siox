@@ -1,0 +1,144 @@
+// Array arguments/returns are canonical values, not substituted caller ASTs.
+module hardware_array_calls_test;
+use std::bits::unsigned;
+
+struct Tagged { pub word: unsigned[128], pub tag: Char }
+
+const TABLE: unsigned[8][2] = [13, 17];
+extern "C" { fn labs(x: integer) -> integer; }
+fn twice_integer(v: integer[2]) -> integer { return v[0] + v[0]; }
+fn identity<T>(value: T) -> T { return value; }
+
+fn pick(v: unsigned[8][2], i: integer) -> unsigned[8] { return v[i]; }
+fn relay(v: unsigned[8][2], i: integer) -> unsigned[8] { return pick(v, i); }
+fn make(a: unsigned[8]) -> unsigned[8][2] {
+    if a > 0 { return [a, a + 1]; }
+    return [7, 8];
+}
+fn through_local(v: unsigned[8][2], i: integer) -> unsigned[8] {
+    let saved: unsigned[8][2] = v;
+    return relay(saved, i);
+}
+fn bit_pick(v: unsigned[8][2], i: integer, bit: integer) -> unsigned[1] {
+    return unsigned[1](v[i][bit]);
+}
+fn nibble(v: unsigned[7..0][2], i: integer) -> unsigned[4] { return v[i][..4]; }
+fn reversed(v: unsigned[8][2], i: integer) -> unsigned[4] { return v[i][0..3]; }
+fn select_tagged(v: Tagged[2], i: integer) -> Tagged { return v[i]; }
+fn tag(v: Tagged) -> Char { return v.tag; }
+fn nested(v: unsigned[128][-1..0][3..2], row: integer, col: integer) -> unsigned[128] {
+    return v[row][col];
+}
+fn nested_alias(v: unsigned[128][-1..0][3..2], row: integer, col: integer) -> unsigned[128] {
+    let selected: unsigned[128][-1..0] = v[row];
+    return selected[col];
+}
+fn bounds(v: unsigned[128][-1..0][3..2], row: integer) -> Bool {
+    return v'left == 3 and v'right == 2 and v'ascending == false
+        and v'length == 2 and v[row]'left == -1 and v[row]'right == 0;
+}
+impl Tagged {
+    pub fn combine(self, v: unsigned[8][2], i: integer) -> unsigned[128] {
+        return self.word + unsigned[128](pick(v, i));
+    }
+}
+
+entity ArrayCalls {
+    a: unsigned[8] in,
+    index: integer in,
+    enabled: Bool in,
+    n: integer in,
+    via_return: unsigned[8] out,
+    via_local: unsigned[8] out,
+    via_literal: unsigned[8] out,
+    via_constant: unsigned[8] out,
+    via_foreign: integer out,
+    negative_literal: integer out,
+    selected_bit: unsigned[1] out,
+    selected_nibble: unsigned[4] out,
+    reversed_nibble: unsigned[4] out,
+    selected_tag: Char out,
+    wide: unsigned[128] out,
+    wide_alias: unsigned[128] out,
+    via_method: unsigned[128] out,
+    shape_ok: Bool out
+}
+impl ArrayCalls {
+    let data: unsigned[8][2] = [4, 9];
+    let matrix: unsigned[128][-1..0][3..2] = [
+        [170141183460469231731687303715884105729, 170141183460469231731687303715884105730],
+        [170141183460469231731687303715884105731, 170141183460469231731687303715884105732]
+    ];
+    let records: Tagged[2] = [
+        { .word = 170141183460469231731687303715884105728, .tag = 'λ' },
+        { .word = 170141183460469231731687303715884105730, .tag = 'β' }
+    ];
+    let receiver: Tagged = { .word = 170141183460469231731687303715884105728, .tag = ' ' };
+    if enabled {
+        via_return = relay(identity(make(a)), index);
+        via_local = through_local(data, index);
+        via_literal = pick(if a > 0 { [a, a + 2] } else { [4, 5] }, index);
+        via_constant = pick(TABLE, index);
+        via_foreign = twice_integer([labs(n), 0]);
+        negative_literal = twice_integer([-3, 0]);
+        selected_bit = bit_pick(data, index, index);
+        selected_nibble = nibble([a, 240], index);
+        reversed_nibble = reversed(data, index);
+        selected_tag = tag(identity(select_tagged(records, index)));
+        wide = nested(matrix, 3 - index, index - 1);
+        wide_alias = nested_alias(matrix, 3 - index, index - 1);
+        via_method = receiver.combine([a, a + 2], index);
+        shape_ok = bounds(matrix, 3 - index);
+    } else {
+        via_return = 0; via_local = 0; via_literal = 0; via_constant = 0;
+        via_foreign = 0; negative_literal = 0;
+        selected_bit = 0; selected_nibble = 0; reversed_nibble = 0;
+        selected_tag = ' '; wide = 0; wide_alias = 0; via_method = 0; shape_ok = false;
+    }
+}
+
+#[test]
+entity HardwareArrayCallsTest {}
+impl HardwareArrayCallsTest {
+    let a: unsigned[8] = 10;
+    let index: integer = 999;
+    let enabled: Bool = false;
+    let n: integer = -10;
+    let dut: ArrayCalls = { .a = a, .index = index, .enabled = enabled, .n = n };
+    check: process {
+        await 1ns;
+        assert!(dut.wide == 0, "inactive array argument indices are not evaluated");
+        index = 1; enabled = true; await 1ns;
+        assert!(dut.via_return == 11, "returned arrays pass through nested calls");
+        assert!(dut.via_local == 9, "an inlined array local keeps its shape");
+        assert!(dut.via_literal == 12, "dynamic reads select array literal arguments");
+        assert!(dut.via_constant == 17, "constant table arguments retain their values");
+        assert!(dut.via_foreign == 20, "integer array arguments reuse foreign values");
+        assert!(dut.negative_literal == -6, "integer array literal arithmetic keeps its signed format");
+        assert!(dut.selected_bit == 0, "checked packed selection follows an array argument");
+        assert!(dut.selected_nibble == 15, "partial packed slices retain selected-element bounds");
+        assert!(dut.reversed_nibble == 9, "ascending packed slices reverse significance");
+        assert!(dut.selected_tag == 'β', "runtime-selected structs pass whole to another call");
+        assert!(dut.wide == 170141183460469231731687303715884105732, "nested labels and multiword leaves survive calls");
+        assert!(dut.wide_alias == dut.wide, "selected subarrays retain negative labels");
+        assert!(dut.via_method == 170141183460469231731687303715884105740, "methods use the same aggregate argument path");
+        assert!(dut.shape_ok, "array attributes retain written direction and nested bounds");
+        a = 20; index = 0; await 1ns;
+        assert!(dut.via_return == 20, "returned array reevaluates with its argument");
+        assert!(dut.via_local == 4, "caller data is not captured from another scope");
+        assert!(dut.via_literal == 20, "literal element reevaluates");
+        assert!(dut.via_constant == 13, "constant table selects the other element");
+        assert!(dut.selected_bit == 0, "packed projection follows a changing index");
+        assert!(dut.selected_nibble == 1, "partial slice follows its argument value");
+        assert!(dut.reversed_nibble == 2, "ascending slice reverses a different selected value");
+        assert!(dut.selected_tag == 'λ', "selected struct keeps Unicode context");
+        assert!(dut.wide == 170141183460469231731687303715884105729, "negative index selects the other row element");
+        assert!(dut.wide_alias == dut.wide, "nested array alias follows the new index");
+        assert!(dut.via_method == 170141183460469231731687303715884105748, "method argument bindings reevaluate");
+        a = 0; await 1ns;
+        assert!(dut.via_return == 7, "alternate array returns retain the same shape");
+        assert!(dut.via_literal == 4, "conditional array argument selects its other branch");
+        enabled = false; index = 999; await 1ns;
+        assert!(dut.via_return == 0, "inactive returned array checks stay suppressed");
+    }
+}
