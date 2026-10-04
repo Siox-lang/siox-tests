@@ -1,0 +1,109 @@
+// Storage-free hardware locals are immediate values, not staged signals.
+// Snapshots, narrow formats, and dynamic aggregate writes must survive shared
+// canonical bindings and both native representations.
+module hardware_local_values_test;
+use std::bits::unsigned;
+use std::logic::Bit;
+
+struct Pair { pub value: unsigned[8], pub tag: Char }
+
+fn double(x: integer) -> integer { return x + x; }
+
+entity LocalValues {
+    enable: Bool in,
+    a: unsigned[8] in,
+    index: integer in,
+    number: integer<-8..7> in,
+    word: unsigned[8] out,
+    snapshot: unsigned[8] out,
+    selected: unsigned[8] out,
+    tag: Char out,
+    negative: Bool out,
+    doubled: integer out
+}
+impl LocalValues {
+    if enable {
+        let local: unsigned[8] = a;
+        let saved: unsigned[8] = local;
+        local = local + 10;
+        local[3] = '1';
+        local[index] = '1';
+        local[7] = '1';
+        word = local;
+        snapshot = saved;
+
+        let pairs: Pair[2] = [
+            { .value = a, .tag = 'λ' },
+            { .value = 3, .tag = 'β' }
+        ];
+        let matrix: unsigned[8][2][2] = [[a, 2], [3, 4]];
+        matrix[1][index] = local;
+        pairs[1].value = matrix[1][index];
+        selected = pairs[1].value;
+        tag = pairs[0].tag;
+
+        let signed_value: integer<-8..7> = number;
+        negative = signed_value < 0;
+        doubled = double(double(double(number)));
+    } else {
+        word = 0;
+        snapshot = 0;
+        selected = 0;
+        tag = ' ';
+        negative = false;
+        doubled = 0;
+    }
+}
+
+entity LocalEvent { clk: Bit in, count: unsigned[8] out, observed: unsigned[8] out }
+impl LocalEvent {
+    let state: unsigned[8] = 0;
+    tick: process {
+        if clk.rising() {
+            let step: unsigned[8] = 1;
+            step = step + 1;
+            state = state + 1;
+            observed = state + step;
+        }
+    }
+    count = state;
+}
+
+#[test]
+entity HardwareLocalValuesTest {}
+impl HardwareLocalValuesTest {
+    let enable: Bool = false;
+    let a: unsigned[8] = 250;
+    let index: integer = 999;
+    let number: integer<-8..7> = -3;
+    let dut: LocalValues = { .enable = enable, .a = a, .index = index, .number = number };
+    let clk: Bit = '0';
+    let event: LocalEvent = { .clk = clk };
+    check: process {
+        await 1ns;
+        assert!(dut.word == 0, "inactive checked indices are not evaluated");
+        index = 1; enable = true; await 1ns;
+        assert!(dut.word == 142, "immediate wrapping and partial writes compose");
+        assert!(dut.snapshot == 250, "a copied local keeps its earlier value");
+        assert!(dut.selected == 142, "dynamic nested aggregate writes are immediate");
+        assert!(dut.tag == 'λ', "aggregate leaves retain their Char representation");
+        assert!(dut.negative, "narrow signed local retains signed comparison");
+        assert!(dut.doubled == -24, "nested argument reuse preserves signed values");
+
+        a = 1; number = 3; index = 0; await 1ns;
+        assert!(dut.word == 139, "bindings reevaluate after a signal changes");
+        assert!(dut.snapshot == 1, "the new evaluation takes a fresh snapshot");
+        assert!(dut.selected == 139, "aggregate update follows the new index");
+        assert!(dut.negative == false, "positive ranged integer is not negative");
+        assert!(dut.doubled == 24, "nested call results reevaluate");
+
+        clk = '1'; await 1ns;
+        assert!(event.count == 1, "signal writes commit at the scheduler boundary");
+        assert!(event.observed == 2, "locals update immediately but signals read old state");
+        clk = '0'; await 1ns; clk = '1'; await 1ns;
+        assert!(event.count == 2, "second signal update commits");
+        assert!(event.observed == 3, "new event reads previous committed signal state");
+        enable = false; index = 999; await 1ns;
+        assert!(dut.word == 0, "deactivation suppresses invalid index again");
+    }
+}
