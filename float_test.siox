@@ -1,8 +1,8 @@
 // std::float: IEEE-754 floating point written in siox, after VHDL's float_pkg.
 // The index range gives the format: float[8..-23] is binary32, float[5..-10]
 // binary16. Conversions, the special values, and rounding to nearest even.
-// Slice 1 runs in test processes; a hardware entity's float arithmetic waits
-// for the shared hardware lowering (see std.md).
+// This file exercises procedural use; hardware_float_conformance_test covers
+// the same source-defined arithmetic driven continuously through DUT ports.
 module float_test;
 
 use std::float::{float, to_float};
