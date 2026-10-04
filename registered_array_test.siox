@@ -17,9 +17,8 @@
 // Separately, an array-returning function had no array form of its own: the
 // inliner's result is a scalar or a set of named fields, and an array is
 // neither. `g = gives()` reported that `gives()` had no element-wise form. A
-// call now stands for the expression it returns, with the arguments
-// substituted, so the literal it returns is driven exactly as one written at
-// the assignment would be.
+// call now produces canonical leaves with its concrete return layout, so the
+// common aggregate writer stores that value without substituting caller ASTs.
 //
 // Every expected value is the arithmetic written beside it.
 module registered_array_test;
@@ -64,8 +63,8 @@ impl Regs {
     fromScaled = unsigned[16](d[0]) * 10 + unsigned[16](d[1]);
     fromThru = unsigned[16](e[0]) * 10 + unsigned[16](e[1]);
 
-    // The combinational counterpart of `fromCall`: that path reduces a call
-    // to its returned expression in its own place, so it needs its own case.
+    // The combinational counterpart of `fromCall` uses the same canonical
+    // aggregate writer and needs direct native coverage too.
     let cb: unsigned[8][2];
     cb = constant2();
     combCall = unsigned[16](cb[0]) * 10 + unsigned[16](cb[1]);

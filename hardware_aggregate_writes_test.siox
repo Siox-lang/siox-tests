@@ -1,0 +1,148 @@
+// Canonical aggregate values drive both combinational and clocked stores.
+module hardware_aggregate_writes_test;
+use std::bits::unsigned;
+use std::logic::Bit;
+
+struct Packet { pub samples: unsigned[128][-1..0], pub tag: Char }
+fn make(k: unsigned[128], mode: unsigned[2]) -> unsigned[128][3..2] {
+    let result: unsigned[128][3..2] = [k, k + 1];
+    if mode == 0 { return result; }
+    return [k + 10, k + 11];
+}
+fn choose(k: unsigned[128], mode: unsigned[2]) -> unsigned[128][3..2] {
+    return match mode { 0 => [k, k + 1], 1 => [k + 10, k + 11], _ => [7, 8] };
+}
+fn matrix(k: unsigned[128]) -> unsigned[128][2][2] {
+    return [[k, k + 1], [k + 2, k + 3]];
+}
+fn patch(p: Packet, k: unsigned[128]) -> Packet {
+    return { ..p, .samples = [k + 3, k + 4] };
+}
+fn positional(k: unsigned[128]) -> Packet { return { [k, k + 1], 'β' }; }
+fn local_array(k: unsigned[128]) -> unsigned[128][2] {
+    let local: unsigned[128][10..9] = choose(k, 0);
+    return local;
+}
+
+entity AggregateWrites {
+    clk: Bit in,
+    k: unsigned[128] in,
+    mode: unsigned[2] in,
+    comb_first: unsigned[128] out,
+    comb_last: unsigned[128] out,
+    reg_first: unsigned[128] out,
+    reg_last: unsigned[128] out,
+    previous_first: unsigned[128] out,
+    previous_last: unsigned[128] out,
+    grid_last: unsigned[128] out,
+    grid_first: unsigned[128] out,
+    grid_second: unsigned[128] out,
+    grid_third: unsigned[128] out,
+    patched_first: unsigned[128] out,
+    patched_tag: Char out,
+    positional_first: unsigned[128] out,
+    positional_tag: Char out,
+    matched_first: unsigned[128] out,
+    matched_tag: Char out,
+    local_first: unsigned[128] out,
+    local_last: unsigned[128] out,
+    char_first: Char out,
+    char_last: Char out,
+    dynamic_first: unsigned[128] out,
+    dynamic_last: unsigned[128] out,
+    local_store: unsigned[128] out,
+    selected_row_first: unsigned[128] out,
+    selected_row_last: unsigned[128] out,
+    selected_copy_first: unsigned[128] out,
+    selected_copy_last: unsigned[128] out
+}
+impl AggregateWrites {
+    let comb: unsigned[128][10..9];
+    comb = make(k, mode);
+    comb_first = comb[10]; comb_last = comb[9];
+    let reg: unsigned[128][7..6] = [0, 0];
+    let previous: unsigned[128][4..5] = [0, 0];
+    if clk.rising() { reg = choose(k, mode); previous = reg; }
+    reg_first = reg[7]; reg_last = reg[6];
+    previous_first = previous[4]; previous_last = previous[5];
+    let grid: unsigned[128][4..5][7..6];
+    grid = matrix(k);
+    grid_last = grid[6][5];
+    grid_first = grid[7][4]; grid_second = grid[7][5]; grid_third = grid[6][4];
+    let base: Packet = { .samples = [0, 0], .tag = 'λ' };
+    let patched: Packet;
+    patched = patch(base, k);
+    patched_first = patched.samples[-1]; patched_tag = patched.tag;
+    let pos: Packet;
+    pos = positional(k);
+    positional_first = pos.samples[-1]; positional_tag = pos.tag;
+    let matched: Packet;
+    matched = match mode {
+        0 => Packet { .samples = [k + 5, k + 6], .tag = 'α' },
+        _ => Packet { ..base, .samples = [k + 7, k + 8] }
+    };
+    matched_first = matched.samples[-1]; matched_tag = matched.tag;
+    let locals: unsigned[128][99..100];
+    locals = local_array(k);
+    local_first = locals[99];
+    local_last = locals[100];
+    let text: Char[3..2];
+    text = "λβ";
+    char_first = text[3];
+    char_last = text[2];
+    let dynamic: unsigned[128][-1..0] = [0, 0];
+    if clk.rising() { if mode < 2 { dynamic[integer(mode) - 1] = k; } }
+    dynamic_first = dynamic[-1]; dynamic_last = dynamic[0];
+    if mode == 0 {
+        let snapshot: unsigned[128][4..5] = make(k, mode);
+        snapshot = choose(k, mode);
+        local_store = snapshot[4];
+    } else { local_store = 0; }
+    let rows: unsigned[128][4..5][-1..0] = [[0, 0], [0, 0]];
+    if clk.rising() { if mode < 2 { rows[integer(mode) - 1] = make(k, mode); } }
+    selected_row_first = rows[-1][4]; selected_row_last = rows[0][5];
+    let selected: unsigned[128][9..8];
+    if mode < 2 { selected = rows[integer(mode) - 1]; } else { selected = [0, 0]; }
+    selected_copy_first = selected[9]; selected_copy_last = selected[8];
+}
+
+#[test]
+entity HardwareAggregateWritesTest {}
+impl HardwareAggregateWritesTest {
+    let clk: Bit = '0';
+    let k: unsigned[128] = 170141183460469231731687303715884105728;
+    let mode: unsigned[2] = 0;
+    let dut: AggregateWrites = { .clk = clk, .k = k, .mode = mode };
+    check: process {
+        await 1ns;
+        assert!(dut.comb_first == k and dut.comb_last == k + 1, "branch-returning arrays reindex onto target labels");
+        assert!(dut.grid_last == k + 3, "nested arrays map both dimensions recursively");
+        assert!(dut.grid_first == k and dut.grid_second == k + 1 and dut.grid_third == k + 2, "every nested leaf follows written source order");
+        assert!(dut.patched_first == k + 3 and dut.patched_tag == 'λ', "spread override replaces every nested leaf and retains other fields");
+        assert!(dut.positional_first == k and dut.positional_tag == 'β', "positional struct returns lower without body rewriting");
+        assert!(dut.matched_first == k + 5 and dut.matched_tag == 'α', "aggregate match literals share contextual layouts");
+        assert!(dut.local_first == k and dut.local_last == k + 1, "inlined locals and returned arrays reindex at each value boundary");
+        assert!(dut.char_first == 'λ' and dut.char_last == 'β', "directed Unicode array stores preserve character context");
+        assert!(dut.local_store == k, "immediate local aggregate stores reindex canonical returns");
+        assert!(dut.reg_first == 0 and dut.previous_first == 0, "register writes remain staged");
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(dut.reg_first == k and dut.reg_last == k + 1, "clocked aggregate return stores use the common writer");
+        assert!(dut.previous_first == 0 and dut.previous_last == 0, "a same-edge array copy reads pre-commit values");
+        assert!(dut.dynamic_first == k and dut.dynamic_last == 0, "runtime negative labels select the correct write target");
+        assert!(dut.selected_row_first == k and dut.selected_row_last == 0, "a runtime-selected subarray store updates only its selected row");
+        assert!(dut.selected_copy_first == k and dut.selected_copy_last == k + 1, "runtime-selected subarray values reindex onto another signal");
+        mode = 1; await 1ns;
+        assert!(dut.comb_first == k + 10 and dut.comb_last == k + 11, "alternate array return branches keep their shape");
+        assert!(dut.matched_first == k + 7 and dut.matched_tag == 'λ', "match spread selects its alternate branch");
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(dut.reg_first == k + 10 and dut.reg_last == k + 11, "match array return chooses another arm");
+        assert!(dut.previous_first == k and dut.previous_last == k + 1, "ascending target labels preserve written source order");
+        assert!(dut.dynamic_first == k and dut.dynamic_last == k, "zero and negative labels share the same checked domain");
+        assert!(dut.selected_row_first == k and dut.selected_row_last == k + 11, "selected subarray stores retain nested label mapping");
+        assert!(dut.selected_copy_first == k + 10 and dut.selected_copy_last == k + 11, "aggregate read selection follows a changing negative-range index");
+        mode = 2; await 1ns;
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(dut.reg_first == 7 and dut.reg_last == 8, "wildcard array-return arm drives every leaf");
+        assert!(dut.selected_copy_first == 0, "inactive aggregate read bounds checks remain suppressed");
+    }
+}
