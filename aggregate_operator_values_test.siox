@@ -1,0 +1,86 @@
+// Operators pair canonical operands by position, not source labels or AST paths.
+module aggregate_operator_values_test;
+
+use std::bits::unsigned;
+use std::ops::And;
+
+struct Pair { pub n: integer, pub mark: Logic }
+impl And<Pair, Pair> for Pair {
+    fn and(self, rhs: Pair) -> Pair {
+        return Pair { .n = self.n + rhs.n, .mark = self.mark };
+    }
+}
+
+fn returned(a: Logic[-1..1]) -> Logic[4..2] { return a; }
+fn combine(a: Logic[-3..-1], b: Logic[4..2]) -> Logic[2..0] {
+    return (not a) or b;
+}
+
+entity Operands {
+    a: Logic[-1..1] in,
+    b: Logic[7..5] in,
+    pick: Bit in,
+    y: Logic[12..10] out,
+    literal: Logic[-3..-1] out,
+    called: Logic[2..0] out,
+    matrix: Logic[9..7][-1..0] in,
+    index: integer in,
+    selected: Logic[5..3] out,
+    nested: Logic[-4..-2][7..6] out,
+    pairs: Pair[-1..0] in,
+    other: Pair[5..4] in,
+    joined: Pair[3..2] out,
+    wide: unsigned[128][-1..0] in,
+    masked: unsigned[128][4..3] out,
+    inverted: unsigned[128][2..1] out,
+    flipped: unsigned[4][3..2] out,
+    literal_meta: unsigned[4][7..6] out
+}
+impl Operands {
+    let meta: unsigned[4][-1..0] = ["1XZ0", "0ZX1"];
+    y = not (returned(a) and if pick == '1' { b } else { ['0', 'X', 'Z'] });
+    literal = a and ['1', '1', '0'];
+    called = combine(a, b);
+    selected = matrix[index] and b;
+    nested = not matrix;
+    joined = pairs and other;
+    masked = wide and [unsigned[128](0 - 1), unsigned[128](2)];
+    inverted = not wide;
+    flipped = meta xor [unsigned[4](15), unsigned[4](15)];
+    literal_meta = meta and ["1111", "1XZ0"];
+}
+
+#[test]
+entity AggregateOperatorValuesTest {}
+impl AggregateOperatorValuesTest {
+    let a: Logic[-1..1] = ['0', 'X', '1'];
+    let b: Logic[7..5] = ['1', '0', 'Z'];
+    let pick: Bit = '1';
+    let matrix: Logic[9..7][-1..0] = [['1', '1', '0'], ['X', '1', '1']];
+    let index: integer = -1;
+    let pairs: Pair[-1..0] = [Pair { .n = 3, .mark = 'X' }, Pair { .n = 7, .mark = 'Z' }];
+    let other: Pair[5..4] = [Pair { .n = 4, .mark = '0' }, Pair { .n = 5, .mark = '1' }];
+    let k: unsigned[128] = 1 << 127;
+    let wide: unsigned[128][-1..0] = [k, 0 - 1];
+    let dut: Operands = {
+        .a = a, .b = b, .pick = pick, .matrix = matrix, .index = index,
+        .pairs = pairs, .other = other, .wide = wide
+    };
+    await 1ns;
+    assert!(dut.y[12] == '1' and dut.y[11] == '1' and dut.y[10] == 'X', "returned and selected array operands");
+    assert!(dut.literal[-3] == '0' and dut.literal[-2] == 'X' and dut.literal[-1] == '0', "contextual literal leaves");
+    assert!(dut.called[2] == '1' and dut.called[1] == 'X' and dut.called[0] == 'X', "scoped array parameters");
+    assert!(dut.selected[5] == '1' and dut.selected[4] == '0' and dut.selected[3] == '0', "selected subarray");
+    assert!(dut.nested[7][-4] == '0' and dut.nested[7][-3] == '0' and dut.nested[7][-2] == '1' and dut.nested[6][-4] == 'X' and dut.nested[6][-3] == '0' and dut.nested[6][-2] == '0', "recursive positional operators");
+    assert!(dut.joined[3].n == 7 and dut.joined[2].n == 12, "source struct operator lifted to arrays");
+    assert!(dut.joined[3].mark == 'X' and dut.joined[2].mark == 'Z', "nominal struct leaves retained");
+    assert!(dut.masked[4] == k and dut.masked[3] == 2, "multiword element masks");
+    assert!(dut.inverted[2] == k - 1 and dut.inverted[1] == 0, "multiword element complement");
+    assert!(dut.flipped[3][3..3] == '0' and dut.flipped[3][2..2] == 'X' and dut.flipped[3][1..1] == 'X' and dut.flipped[3][0..0] == '1', "packed metavalue element operators");
+    assert!(dut.literal_meta[6][3..3] == '0' and dut.literal_meta[6][2..2] == 'X' and dut.literal_meta[6][1..1] == 'X' and dut.literal_meta[6][0..0] == '0', "contextual packed literals retain planes");
+    pick = '0';
+    index = 0;
+    await 1ns;
+    assert!(dut.y[12] == '1' and dut.y[11] == 'X' and dut.y[10] == 'X', "selected literal array branch");
+    assert!(dut.selected[5] == 'X' and dut.selected[4] == '0' and dut.selected[3] == 'X', "dynamic selected array changes");
+}

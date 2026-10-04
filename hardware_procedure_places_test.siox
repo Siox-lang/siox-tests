@@ -133,8 +133,7 @@ impl HardwareProcedurePlacesTest {
     let clk: Bit = '0';
     let k: unsigned[128] = 170141183460469231731687303715884105728;
     let index: integer = -1;
-    let packed_meta: unsigned[4];
-    let dut: ProcedurePlaces = { .clk = clk, .k = k, .index = index, .packed_meta = packed_meta };
+    let dut: ProcedurePlaces = { .clk = clk, .k = k, .index = index };
     process {
         await 1ns;
         assert!(dut.local_result == k + 2, "nested local receiver writes are immediate");
@@ -142,7 +141,7 @@ impl HardwareProcedurePlacesTest {
         assert!(dut.local_capture == k + 3 and dut.pure_nested == k + 3, "captured local selection and pure nested call retain shape");
         assert!(dut.local_tag == 'λ', "conditional local field writes retain character context");
         assert!(dut.meta_result[0] == '1' and dut.meta_result[1] == 'X' and dut.meta_result[2] == 'Z' and dut.meta_result[3] == '0', "logic-array arguments retain every discriminant");
-        assert!(packed_meta[3..3] == '1' and packed_meta[2..2] == 'X' and packed_meta[1..1] == 'Z' and packed_meta[0..0] == '0', "packed argument captures retain exact planes through nested calls");
+        assert!(dut.packed_meta[3..3] == '1' and dut.packed_meta[2..2] == 'X' and dut.packed_meta[1..1] == 'Z' and dut.packed_meta[0..0] == '0', "entity-qualified packed captures retain exact planes through nested calls");
         clk = '1'; await 1ns; clk = '0'; await 1ns;
         assert!(dut.selected == k and dut.untouched == 0, "changing a local selector does not retarget a captured receiver");
         assert!(dut.selector_result == 1, "scalar place arguments update caller locals");
