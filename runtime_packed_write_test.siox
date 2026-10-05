@@ -1,0 +1,66 @@
+module examples::runtime_packed_write_test;
+
+use std::bits::unsigned;
+use std::logic::{Bit, Logic};
+
+entity PackedWrites {
+    clk: Bit in,
+    enabled: Bit in,
+    index: integer in,
+    data: Logic in,
+    ascending: unsigned[-64..63] out,
+    descending: unsigned[63..-64] out
+}
+
+impl PackedWrites {
+    let a: unsigned[-64..63] = 0;
+    let d: unsigned[63..-64] = 0;
+    if clk.rising() {
+        if enabled {
+            a[index] = data;
+            d[index] = data;
+            a[0] = '1';
+            d[0] = '1';
+            // Later indexed writes override overlapping earlier writes but
+            // must retain their non-overlapping value and X/Z regions.
+            a[index] = data;
+            d[index] = data;
+        }
+    }
+    ascending = a;
+    descending = d;
+}
+
+#[test]
+entity RuntimePackedWriteTest {}
+
+impl RuntimePackedWriteTest {
+    let clk: Bit = '0';
+    let enabled: Bit = '0';
+    let index: integer = 999;
+    let data: Logic = '0';
+    let a: unsigned[-64..63];
+    let d: unsigned[63..-64];
+    let dut: PackedWrites = {
+        .clk = clk, .enabled = enabled, .index = index, .data = data,
+        .ascending = a, .descending = d
+    };
+
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(a == 0 and d == 0, "disabled invalid index must not execute");
+    enabled = '1'; index = -64; data = 'X';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(a[-64] == 'X' and d[-64] == 'X', "negative low labels preserve X");
+    assert!(a[0] == '1' and d[0] == '1', "later partial writes retain indexed metadata");
+    index = 63; data = 'Z';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(a[63] == 'Z' and d[63] == 'Z', "high labels cross value and companion words");
+    assert!(a[-64] == 'X' and d[-64] == 'X', "prior companion region survives");
+    index = 0; data = '0';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(a[0] == '0' and d[0] == '0', "last indexed write wins overlap");
+    index = -64; data = '1';
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(a[-64] == '1' and d[-64] == '1', "clean replacement clears X plane");
+    assert!(a[63] == 'Z' and d[63] == 'Z', "clean replacement preserves remote Z");
+}
