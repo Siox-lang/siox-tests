@@ -1,0 +1,55 @@
+module examples::runtime_packed_read_test;
+
+use std::bits::unsigned;
+use std::logic::{Bit, Logic};
+
+entity PackedReads {
+    enabled: Bit in,
+    index: integer in,
+    word: unsigned[63..-64] in,
+    ascending: Logic out,
+    descending: Logic out
+}
+
+impl PackedReads {
+    let ascending_word: unsigned[-64..63];
+    ascending_word = word;
+    if enabled {
+        ascending = ascending_word[index];
+        descending = word[index];
+    } else {
+        ascending = '0';
+        descending = '0';
+    }
+}
+
+#[test]
+entity RuntimePackedReadTest {}
+
+impl RuntimePackedReadTest {
+    let enabled: Bit = '0';
+    let index: integer = 999;
+    let word: unsigned[63..-64] = 0;
+    let ascending: Logic;
+    let descending: Logic;
+    let dut: PackedReads = {
+        .enabled = enabled, .index = index, .word = word,
+        .ascending = ascending, .descending = descending
+    };
+
+    await 1ns;
+    assert!(ascending == '0' and descending == '0', "inactive invalid reads do not fail");
+    word[-64] = 'X'; word[0] = 'H'; word[63] = 'Z';
+    index = -64; enabled = '1'; await 1ns;
+    assert!(ascending == 'X' and descending == 'X', "negative low label selects X in both directions");
+    index = 0; await 1ns;
+    assert!(ascending == 'H' and descending == 'H', "weak discriminants survive companion selection");
+    index = 63; await 1ns;
+    assert!(ascending == 'Z' and descending == 'Z', "high label selects beyond value and companion ABI words");
+    index = -1; await 1ns;
+    assert!(ascending == '0' and descending == '0', "negative middle label selects a clean bit");
+    index = 63; word[63] = '1'; await 1ns;
+    assert!(ascending == '1' and descending == '1', "clean replacement clears the selected metavalue");
+    enabled = '0'; index = 999; await 1ns;
+    assert!(ascending == '0' and descending == '0', "later inactive invalid reads remain suppressed");
+}
