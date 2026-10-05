@@ -1,0 +1,86 @@
+// Procedures share their caller's canonical Process CFG, not a second runner.
+module process_procedure_cfg_test;
+use std::bits::unsigned;
+use std::logic::{Bit, Logic};
+
+extern "C" { fn putchar(value: integer) -> integer; }
+
+struct Counter { pub n: integer, pub wide: unsigned[128], pub tag: Logic }
+impl Counter {
+    pub fn update(self, delta: integer) {
+        if delta <= 0 { return; }
+        let next: integer = self.n + delta;
+        self.n = next;
+        await 1ns;
+        for i in 2..0 { self.n = self.n + i; }
+        return;
+        self.n = 999;
+    }
+    pub fn mode(self, mode: integer) {
+        match mode {
+            0 => { self.tag = 'X'; return; }
+            1 => { self.tag = 'Z'; }
+            _ => { self.tag = '1'; }
+        }
+        self.wide = self.wide + 1;
+    }
+}
+fn forward(counter: Counter, delta: integer) { counter.update(delta); }
+fn select_once(counter: Counter, selector: integer) {
+    selector = 1;
+    if selector == 1 { forward(counter, 2); }
+    counter.mode(1);
+}
+fn record(counter: Counter, first: integer, second: integer) {
+    if first == 65 { counter.n = first; }
+    await 1ns;
+    counter.n = counter.n + second;
+    counter.wide = unsigned[128](first + second);
+}
+fn copy_meta(counter: Counter, value: Logic) {
+    if counter.n > 0 { counter.tag = value; }
+    await 1ns;
+    counter.tag = value;
+}
+fn delayed(target: Bit) {
+    target = '1' after 1ns;
+    await 2ns;
+    return;
+}
+
+entity Probe { pulse: Bit in, seen: Bit out }
+impl Probe { seen = pulse; }
+
+#[test] entity ProcedureCfgTest {}
+impl ProcedureCfgTest {
+    let rows: Counter[-1..0] = [
+        { .n = 4, .wide = 18446744073709551616, .tag = '0' },
+        { .n = 20, .wide = 7, .tag = '0' }
+    ];
+    let selector: integer = 0;
+    let pulse: Bit = '0';
+    let seen: Bit;
+    let probe: Probe = { .pulse = pulse, .seen = seen };
+    let meta: Logic = 'X';
+    select_once(rows[selector - 1], selector);
+    assert!(selector == 1, "writable formal remains a caller-place alias");
+    assert!(rows[-1].n == 9 and rows[0].n == 20,
+            "captured receiver selector survives mutation and suspension");
+    assert!(rows[-1].wide == 18446744073709551617 and rows[-1].tag == 'Z',
+            "nested match and wide writes retain representation");
+    rows[-1].update(3);
+    assert!(rows[-1].n == 15, "repeated call uses its own initialized locals");
+    rows[-1].update(0);
+    assert!(rows[-1].n == 15, "early return resumes the caller");
+    rows[-1].mode(0);
+    assert!(rows[-1].tag == 'X' and rows[-1].wide == 18446744073709551617,
+            "match return skips the callee tail, not the caller");
+    copy_meta(rows[-1], if selector == 1 { meta } else { '0' });
+    assert!(rows[-1].tag == 'X', "computed arguments preserve X across suspension");
+    record(rows[-1], putchar(65), putchar(66));
+    assert!(rows[-1].n == 131 and rows[-1].wide == 131,
+            "computed foreign arguments evaluate once in source order");
+    delayed(pulse);
+    assert!(pulse == '1' and seen == '1',
+            "delayed writes execute and settle through the fixed runtime");
+}
