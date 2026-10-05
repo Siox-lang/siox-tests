@@ -1,0 +1,40 @@
+// Integer values promoted to real must keep their canonical evaluation domain.
+// In particular a foreign call must not be projected/imported a second time.
+module canonical_real_coercion_test;
+
+extern "C" { pub fn labs(value: integer) -> integer; }
+
+entity Mixed {
+    value: integer in,
+    fractional: real in,
+    called: real out,
+    observed: real out,
+    converted: real out,
+    shifted: real out
+}
+impl Mixed {
+    called = labs(value) + 0.5;
+    observed = value + 0.5;
+    converted = integer(fractional) + 0.5;
+    shifted = (value >> 1) + 0.5;
+}
+
+#[test]
+entity CanonicalRealCoercionTest {}
+impl CanonicalRealCoercionTest {
+    let value: integer = -7;
+    let fractional: real = -3.75;
+    let dut: Mixed = { .value = value, .fractional = fractional };
+    await 1ns;
+    assert!(dut.called == 7.5, "integer foreign result is promoted by value");
+    assert!(dut.observed == -6.5, "integer signal is promoted by value");
+    assert!(dut.converted == -2.5, "real-to-integer result is promoted by value");
+    assert!(dut.shifted == -3.5, "signed shift keeps its integer evaluation");
+    value = -9;
+    fractional = 2.75;
+    await 1ns;
+    assert!(dut.called == 9.5, "the foreign call observes the changed signal");
+    assert!(dut.observed == -8.5, "the signal read is not cached across epochs");
+    assert!(dut.converted == 2.5, "truncation precedes promotion");
+    assert!(dut.shifted == -4.5, "negative signed shifts remain signed");
+}
