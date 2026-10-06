@@ -1,0 +1,130 @@
+module process_value_cfg_test;
+use std::bits::unsigned;
+
+struct Packet { pub n: integer, pub data: unsigned[128], pub mark: Logic }
+impl Packet {
+    pub fn advance(self, steps: integer) -> Packet {
+        for i in 0..steps { self.n = self.n + i; }
+        await 1ns;
+        return self;
+    }
+}
+fn accumulate(n: integer) -> integer {
+    let total: integer = 0;
+    for i in 0..n {
+        if i == 3 { return total; }
+        total = total + i;
+    }
+    return total;
+}
+fn delayed(n: integer) -> integer {
+    let result: integer = accumulate(n);
+    await 1ns;
+    return result + 2;
+}
+fn forbidden() -> integer {
+    assert!(false, "an inactive branch executed its call");
+    return 999;
+}
+fn record(tag: integer, value: integer) -> integer {
+    let printed: integer = putchar(tag);
+    let result: integer = accumulate(value);
+    await 1ns;
+    return result;
+}
+extern "C" { fn putchar(value: integer) -> integer; }
+fn relabel(rows: Packet[3..2]) -> Packet[-1..0] {
+    let copied: Packet[-1..0] = rows;
+    for i in -1..0 { copied[i].n = copied[i].n + 1; }
+    return copied;
+}
+fn publish(target: Bit, selector: integer) -> integer {
+    selector = 1;
+    target = '1' after 1ns;
+    await 2ns;
+    return 2;
+}
+fn hold<T>(value: T, steps: integer) -> T {
+    for i in 0..steps { await 1ns; }
+    return value;
+}
+fn bump(target: integer) -> integer { target = 9; return 2; }
+fn observe(value: integer) -> integer { await 1ns; return value + bump(value); }
+fn observe_after(value: integer) -> integer { await 1ns; return value + (bump(value) + value); }
+fn trio(value: integer) -> integer[3] { await 1ns; return [value, bump(value), value]; }
+fn formatted(value: integer) -> integer {
+    print!("snapshot={} return={} after={}", value, bump(value), value);
+    await 1ns; return value;
+}
+fn end(count: integer) -> integer { count = count + 1; await 1ns; return 2; }
+fn duration(selector: integer) -> time { selector = 1; return 1ns; }
+fn duration_and_change(value: Bit, selector: integer) -> time {
+    value = '0'; selector = 0; await 1ns; return 1ns;
+}
+entity Probe { pulse: Bit in, seen: Bit out, flags: Bit[2] in, echoed: Bit[2] out }
+impl Probe { seen = pulse; echoed = flags; }
+
+#[test] entity ValueCfgTest {}
+impl ValueCfgTest {
+    let pulse: Bit = '0';
+    let seen: Bit;
+    let flags: Bit[2] = ['0', '0'];
+    let dut: Probe = { .pulse = pulse, .seen = seen, .flags = flags };
+    exercise: process {
+        let n: integer = 6;
+        let total: integer = accumulate(n);
+        assert!(total == 3, "runtime loop and early value return");
+        let nested: integer = 10 + delayed(n);
+        assert!(nested == 15, "nested expression retains its operand across suspension");
+        let selected: integer = if false { forbidden() } else { delayed(1) };
+        assert!(selected == 3, "if expression only executes the selected call");
+        let matched: integer = match n { 6 => delayed(2), _ => forbidden() };
+        assert!(matched == 5, "match expression only executes the matching call");
+        let ordered: integer = record(65, n) + record(66, 1);
+        assert!(ordered == 4, "two computed calls execute once in source order");
+        let rows: Packet[3..2] = [
+            { .n = 4, .data = "1000000000000000000000000000000000000000000000000000000000000000Z00000000000000000000000000000000000000000000000000000000000000X", .mark = 'Z' },
+            { .n = 20, .data = 7, .mark = 'X' }
+        ];
+        let advanced: Packet = rows[3].advance(2);
+        assert!(rows[3].n == 7 and advanced.n == 7, "receiver alias and aggregate return");
+        assert!(advanced.data[127] == '1' and advanced.data[63] == 'Z' and advanced.data[0] == 'X'
+                and advanced.mark == 'Z', "wide returned companion planes survive suspension");
+        let copied: Packet[-1..0] = relabel(rows);
+        assert!(copied[-1].n == 8 and copied[0].n == 21 and rows[3].n == 7,
+                "function locals and differently labelled returns retain their shapes");
+        assert!(copied[-1].data[63] == 'Z' and copied[0].mark == 'X', "returned array companion planes");
+        let selector: integer = 0;
+        let targets: integer[2] = [0, 0];
+        targets[selector] = publish(pulse, selector);
+        assert!(selector == 1 and targets[0] == 2 and targets[1] == 0,
+                "assignment selector is captured before the RHS call mutates it");
+        assert!(pulse == '1' and seen == '1', "returned delayed write settles at 7 ns");
+        let held: Packet = hold(advanced, 2);
+        assert!(held.n == 7 and held.data[63] == 'Z' and held.mark == 'Z', "generic return retains caller layout");
+        let original: integer = 4;
+        let observed: integer = observe(original);
+        assert!(observed == 6 and original == 9, "snapshot does not redirect a parameter alias");
+        original = 4;
+        let after: integer = observe_after(original);
+        assert!(after == 15 and original == 9, "later read observes call's write");
+        original = 4;
+        let three: integer[3] = trio(original);
+        assert!(three[0] == 4 and three[1] == 2 and three[2] == 9, "array operands retain written order");
+        original = 4;
+        let printed: integer = formatted(original);
+        assert!(printed == 9 and original == 9, "formatted call writes its caller alias");
+        let count: integer = 0;
+        let sum: integer = 0;
+        for i in 0..end(count) { sum = sum + i; }
+        assert!(count == 1 and sum == 3, "loop bound call executes only at loop entry");
+        selector = 0;
+        flags[selector] = '1' after duration(selector);
+        await 2ns;
+        assert!(selector == 1 and flags[0] == '1' and flags[1] == '0', "delay call must not retarget the write");
+        let value: Bit = '1';
+        flags[selector] = value after duration_and_change(value, selector);
+        await 2ns;
+        assert!(value == '0' and selector == 0 and flags[1] == '1', "delay call captures its RHS before suspension");
+    }
+}
