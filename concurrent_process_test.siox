@@ -1,0 +1,26 @@
+module examples::concurrent_process_test;
+
+entity Observer { a: Bit in, b: Bit in, seen_a: Bit out, seen_b: Bit out }
+impl Observer { seen_a = a; seen_b = b; }
+
+#[test] entity ConcurrentProcessTest {}
+impl ConcurrentProcessTest {
+    let a: Bit = '0';
+    let b: Bit = '0';
+    let seen_a: Bit;
+    let seen_b: Bit;
+    let dut: Observer = { .a = a, .b = b, .seen_a = seen_a, .seen_b = seen_b };
+
+    later: process {
+        await 2ns;
+        assert!(seen_b == '1', "earlier process already ran");
+        a = '1';
+    }
+    earlier: process {
+        await 1ns;
+        assert!(seen_a == '0', "later process must still be suspended");
+        b = '1';
+        await 2ns;
+        assert!(seen_a == '1' and seen_b == '1', "independent continuations completed");
+    }
+}
