@@ -1,0 +1,39 @@
+module examples::register;
+use std::bits::unsigned;
+
+pub entity Register<W: integer> {
+    clk: Bit in, reset: Bit in, d: unsigned[W] in, q: unsigned[W] out
+}
+impl<W: integer> Register<W> {
+    let state: unsigned[W] = 0;
+    capture: process {
+        if clk.rising() {
+            if reset { state = 0; } else { state = d; }
+        }
+    }
+    q = state;
+}
+
+#[test] entity RegisterExampleTest {}
+impl RegisterExampleTest {
+    let clk: Bit = '0';
+    let reset: Bit = '0';
+    let d: unsigned[8] = 0;
+    let q: unsigned[8];
+    let dut: Register<W = 8> = { .clk = clk, .reset = reset, .d = d, .q = q };
+    assert!(q == 0, "initial register state");
+    d = 42;
+    await 1ns;
+    assert!(q == 0, "changing d alone does not capture");
+    clk = '1'; await 1ns;
+    assert!(q == 42, "rising edge captures d");
+    d = 7;
+    clk = '0'; await 1ns;
+    assert!(q == 42, "falling edge holds state");
+    clk = '1'; await 1ns;
+    assert!(q == 7, "next rising edge captures the new input");
+    clk = '0'; reset = '1'; await 1ns;
+    assert!(q == 7, "reset is synchronous");
+    clk = '1'; await 1ns;
+    assert!(q == 0, "rising edge applies reset");
+}

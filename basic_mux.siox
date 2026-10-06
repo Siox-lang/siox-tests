@@ -1,0 +1,30 @@
+module examples::basic_mux;
+use std::bits::unsigned;
+
+// A combinational select has no clock, state or implicit storage.
+pub entity Mux<W: integer> {
+    select: Bit in, a: unsigned[W] in, b: unsigned[W] in, y: unsigned[W] out
+}
+impl<W: integer> Mux<W> { y = if select { a } else { b }; }
+
+#[test] entity BasicMuxTest {}
+impl BasicMuxTest {
+    let select: Bit = '0';
+    let a: unsigned[8] = 0xA5;
+    let b: unsigned[8] = 0x3C;
+    let y: unsigned[8];
+    let dut: Mux<W = 8> = { .select = select, .a = a, .b = b, .y = y };
+    assert!(y == 0x3C, "select=0 chooses b");
+    await 1ns;
+    select = '1';
+    assert!(y == 0xA5, "select=1 chooses a without a clock");
+    await 1ns;
+    a = 0x7E;
+    assert!(y == 0x7E, "selected input changes propagate");
+    await 1ns;
+    b = 0x12;
+    assert!(y == 0x7E, "unselected input does not change y");
+    await 1ns;
+    select = '0';
+    assert!(y == 0x12, "switching selection observes the latest b");
+}

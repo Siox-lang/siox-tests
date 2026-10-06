@@ -1,0 +1,38 @@
+module examples::attribute_usage;
+use std::bits::unsigned;
+use std::attrs::top;
+
+pub attr depth: integer for entity, let = 4;
+entity Annotated { d: unsigned[8] in, q: unsigned[8] out }
+impl Annotated { attr depth = 16; q = d; }
+entity Plain { d: unsigned[8] in, q: unsigned[8] out }
+impl Plain { q = d; }
+
+pub entity AttributeDesign { d: unsigned[8] in, q: unsigned[8] out,
+                             overridden: integer out, inherited: integer out, defaulted: integer out }
+attr top for AttributeDesign = true;  // metadata, not compiler root selection
+impl AttributeDesign {
+    attr depth for first = 7;
+    let first: Annotated = { .d = d };
+    let second: Annotated = { .d = d };
+    let plain: Plain = { .d = d, .q = q };
+    overridden = first'depth;
+    inherited = second'depth;
+    defaulted = plain'depth;
+}
+
+#[test] entity AttributeUsageTest {}
+impl AttributeUsageTest {
+    let d: unsigned[8] = 25;
+    let q: unsigned[8];
+    let overridden: integer; let inherited: integer; let defaulted: integer;
+    let dut: AttributeDesign = { .d = d, .q = q, .overridden = overridden,
+                                .inherited = inherited, .defaulted = defaulted };
+    assert!(overridden == 7, "instance binding overrides entity binding");
+    assert!(inherited == 16, "unbound instance inherits its entity binding");
+    assert!(defaulted == 4, "unbound entity uses attribute declaration default");
+    assert!(dut'top == true and q == 25, "tool metadata remains readable without changing behavior");
+    await 1ns;
+    d = 26;
+    assert!(q == 26 and overridden == 7, "metadata does not replace ordinary signal logic");
+}

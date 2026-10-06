@@ -1,0 +1,39 @@
+module examples::stream_bus;
+use std::bits::unsigned;
+
+pub struct Stream { pub valid: Bit, pub ready: Bit, pub data: unsigned[8] }
+view Source for Stream { valid out, data out, ready in }
+view Sink for Stream { valid in, data in, ready out }
+
+entity Producer { bus: Stream Source, data: unsigned[8] in, valid: Bit in, ready: Bit out }
+impl Producer { bus.data = data; bus.valid = valid; ready = bus.ready; }
+entity Consumer { bus: Stream Sink, accept: Bit in, data: unsigned[8] out, valid: Bit out }
+impl Consumer { bus.ready = accept; data = bus.data; valid = bus.valid; }
+pub entity Link { data: unsigned[8] in, valid: Bit in, accept: Bit in,
+                  received: unsigned[8] out, seen: Bit out, ready: Bit out }
+impl Link {
+    let stream: Stream;
+    let source: Producer = { .bus = stream, .data = data, .valid = valid, .ready = ready };
+    let sink: Consumer = { .bus = stream, .accept = accept, .data = received, .valid = seen };
+}
+
+#[test] entity StreamBusExampleTest {}
+impl StreamBusExampleTest {
+    let data: unsigned[8] = 0;
+    let valid: Bit = '0';
+    let accept: Bit = '0';
+    let received: unsigned[8];
+    let seen: Bit;
+    let ready: Bit;
+    let dut: Link = { .data = data, .valid = valid, .accept = accept,
+                     .received = received, .seen = seen, .ready = ready };
+    await 1ns;
+    data = 0xA5; valid = '1'; accept = '1';
+    assert!(received == 0xA5 and seen == '1' and ready == '1', "source and sink leaf directions");
+    await 1ns;
+    accept = '0';
+    assert!(ready == '0' and received == 0xA5 and seen == '1', "backpressure flows toward source");
+    await 1ns;
+    valid = '0';
+    assert!(seen == '0', "valid is independent of ready");
+}

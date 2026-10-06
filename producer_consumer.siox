@@ -1,0 +1,62 @@
+module examples::producer_consumer;
+use std::bits::unsigned;
+
+struct Stream { pub valid: Bit, pub ready: Bit, pub data: unsigned[8] }
+view Source for Stream { valid out, data out, ready in }
+view Sink for Stream { valid in, data in, ready out }
+
+entity Producer { clk: Bit in, bus: Stream Source }
+impl Producer {
+    let next: unsigned[8] = 10;
+    advance: process { if clk.rising() { if bus.ready { next = next + 1; } } }
+    bus.data = next;
+    bus.valid = '1';
+}
+entity Consumer { clk: Bit in, accept: Bit in, bus: Stream Sink,
+                  count: unsigned[8] out, sum: unsigned[16] out, last: unsigned[8] out }
+impl Consumer {
+    let received: unsigned[8] = 0;
+    let total: unsigned[16] = 0;
+    let latest: unsigned[8] = 0;
+    capture: process {
+        if clk.rising() {
+            if bus.valid and accept {
+                received = received + 1;
+                total = total + unsigned[16](bus.data);
+                latest = bus.data;
+            }
+        }
+    }
+    bus.ready = accept;
+    count = received; sum = total; last = latest;
+}
+pub entity Link { clk: Bit in, accept: Bit in, count: unsigned[8] out,
+                  sum: unsigned[16] out, last: unsigned[8] out, offered: unsigned[8] out }
+impl Link {
+    let stream: Stream;
+    let source: Producer = { .clk = clk, .bus = stream };
+    let sink: Consumer = { .clk = clk, .accept = accept, .bus = stream,
+                          .count = count, .sum = sum, .last = last };
+    offered = stream.data;
+}
+
+#[test] entity ProducerConsumerTest {}
+impl ProducerConsumerTest {
+    let clk: Bit = '0'; let accept: Bit = '0';
+    let count: unsigned[8]; let sum: unsigned[16]; let last: unsigned[8]; let offered: unsigned[8];
+    let dut: Link = { .clk = clk, .accept = accept, .count = count,
+                     .sum = sum, .last = last, .offered = offered };
+    for i in 0..1 { clk = '1'; await 1ns; clk = '0'; await 1ns; }
+    assert!(count == 0 and sum == 0 and offered == 10, "stall before the first transfer");
+    accept = '1';
+    for i in 0..2 { clk = '1'; await 1ns; clk = '0'; await 1ns; }
+    assert!(count == 3 and sum == 33 and last == 12 and offered == 13,
+            "both processes sample the same pre-commit handshake data");
+    accept = '0';
+    for i in 0..1 { clk = '1'; await 1ns; clk = '0'; await 1ns; }
+    assert!(count == 3 and sum == 33 and offered == 13, "backpressure holds data and consumer state");
+    accept = '1';
+    for i in 0..1 { clk = '1'; await 1ns; clk = '0'; await 1ns; }
+    assert!(count == 5 and sum == 60 and last == 14 and offered == 15,
+            "resuming transfers loses and duplicates no samples");
+}

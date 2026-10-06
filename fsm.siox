@@ -1,0 +1,36 @@
+module examples::fsm;
+
+pub enum State { Idle, Active, Done }
+pub entity Controller { clk: Bit in, start: Bit in, state: State out, done: Bit out }
+impl Controller {
+    let current: State = State::Idle;
+    transition: process {
+        if clk.rising() {
+            match current {
+                State::Idle => { if start { current = State::Active; } }
+                State::Active => { current = State::Done; }
+                State::Done => { current = State::Idle; }
+            }
+        }
+    }
+    state = current;
+    done = if current == State::Done { '1' } else { '0' };
+}
+
+#[test] entity FsmExampleTest {}
+impl FsmExampleTest {
+    let clk: Bit = '0';
+    let start: Bit = '0';
+    let state: State;
+    let done: Bit;
+    let dut: Controller = { .clk = clk, .start = start, .state = state, .done = done };
+    assert!(state == State::Idle and done == '0', "initial idle state");
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(state == State::Idle, "idle holds without start");
+    start = '1'; clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(state == State::Active and done == '0', "start enters active");
+    start = '0'; clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(state == State::Done and done == '1', "active completes on the next edge");
+    clk = '1'; await 1ns; clk = '0'; await 1ns;
+    assert!(state == State::Idle and done == '0', "done returns to idle");
+}

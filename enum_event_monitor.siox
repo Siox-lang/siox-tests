@@ -1,0 +1,33 @@
+module examples::enum_event_monitor;
+use std::bits::unsigned;
+
+// Sparse user-owned discriminants must not change event/old semantics.
+pub enum Mode { Idle = 3, Burst = 5, Done = 9 }
+pub entity EnumMonitor { mode: Mode in, changes: unsigned[8] out, previous: Mode out }
+impl EnumMonitor {
+    let count: unsigned[8] = 0;
+    let before: Mode = Mode::Idle;
+    observe: process {
+        if mode'event { count = count + 1; before = mode'old; }
+    }
+    changes = count;
+    previous = before;
+}
+
+#[test] entity EnumEventMonitorTest {}
+impl EnumEventMonitorTest {
+    let mode: Mode = Mode::Idle;
+    let changes: unsigned[8];
+    let previous: Mode;
+    let dut: EnumMonitor = { .mode = mode, .changes = changes, .previous = previous };
+    assert!(changes == 0, "initial value already matches the enum default");
+    await 1ns;
+    mode = Mode::Burst;
+    assert!(changes == 1 and previous == Mode::Idle, "enum event retains its old variant");
+    await 1ns;
+    mode = Mode::Burst;
+    assert!(changes == 1, "same-valued assignment is not an event");
+    await 1ns;
+    mode = Mode::Done;
+    assert!(changes == 2 and previous == Mode::Burst, "sparse discriminants stay source-owned");
+}

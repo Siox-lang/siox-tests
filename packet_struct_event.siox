@@ -1,0 +1,78 @@
+module examples::packet_struct_event;
+use std::bits::unsigned;
+
+pub enum Kind { Idle, Data }
+pub struct Payload { pub data: unsigned[128], pub kind: Kind }
+pub struct Packet { pub valid: Bit, pub payload: Payload }
+pub entity PacketMonitor { packet: Packet in, changes: unsigned[8] out, previous: Packet out }
+impl PacketMonitor {
+    let count: unsigned[8] = 0;
+    let before: Packet;
+    observe: process {
+        if packet'event { count = count + 1; before = packet'old; }
+    }
+    changes = count;
+    previous = before;
+}
+
+// Whole histories retain source ordering when array labels differ. The
+// selected packet uses today's index, not the index from the previous commit.
+entity PacketArrayMonitor {
+    packets: Packet[3..2] in, index: integer in,
+    history: Packet[-1..0] out, selected: Packet out
+}
+impl PacketArrayMonitor {
+    let all: Packet[-1..0];
+    let saved: Packet;
+    process {
+        if packets'event { all = packets'old; saved = packets[index]'old; }
+    }
+    history = all;
+    selected = saved;
+}
+
+#[test] entity PacketArrayHistoryTest {}
+impl PacketArrayHistoryTest {
+    let packets: Packet[3..2] = [Packet(), Packet()];
+    let index: integer = 3;
+    let dut: PacketArrayMonitor = { .packets = packets, .index = index };
+    await 1ns;
+    packets[3].payload.data = "1000000000000000000000000000000000000000000000000000000000000000Z00000000000000000000000000000000000000000000000000000000000000X";
+    assert!(dut.history[-1].payload.data == 0, "first whole snapshot is clean");
+    await 1ns;
+    index = 2;
+    packets[3].payload.data = 21;
+    assert!(dut.history[-1].payload.data[127] == '1', "history preserves high word");
+    assert!(dut.history[-1].payload.data[63] == 'Z' and dut.history[-1].payload.data[0] == 'X',
+            "whole old copy preserves companion planes");
+    assert!(dut.selected.payload.data == 0, "old data is selected with the current index");
+    await 1ns;
+    index = 3;
+    packets[2].valid = '1';
+    assert!(dut.history[-1].payload.data == 21 and dut.history[0].valid == '0',
+            "differently labelled arrays preserve written ordering");
+    assert!(dut.selected.payload.data == 21, "dynamic old struct projection");
+}
+
+#[test] entity PacketStructEventTest {}
+impl PacketStructEventTest {
+    let packet: Packet = { .valid = '0', .payload = { .data = 0, .kind = Kind::Idle } };
+    let changes: unsigned[8];
+    let previous: Packet;
+    let dut: PacketMonitor = { .packet = packet, .changes = changes, .previous = previous };
+    assert!(changes == 0, "packet starts at its recursive default");
+    await 1ns;
+    packet.payload.data = 21;
+    assert!(changes == 1 and previous.payload.data == 0, "nested leaf change is a struct event");
+    await 1ns;
+    packet.valid = '1';
+    assert!(changes == 2 and previous.valid == '0' and previous.payload.data == 21,
+            "aggregate old snapshot retains changed and unchanged leaves");
+    await 1ns;
+    packet.valid = '1';
+    assert!(changes == 2, "same-valued field assignment is not an event");
+    await 1ns;
+    packet.payload.kind = Kind::Data;
+    assert!(changes == 3 and previous.payload.kind == Kind::Idle,
+            "nested enum changes belong to the same aggregate");
+}

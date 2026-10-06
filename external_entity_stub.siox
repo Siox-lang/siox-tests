@@ -1,0 +1,17 @@
+module examples::external_entity_stub;
+use std::bits::unsigned;
+use std::attrs::{library, name};
+
+// Phase 1 preserves and checks this interface as a black box. There is no
+// Siox implementation, native test or pretend foreign HDL driver here.
+// Loading VHDL/Verilog library behavior belongs to Phase 3.
+pub extern entity ExternalCounter<W: integer> {
+    clk: Bit in, reset: Bit in, count: unsigned[W] out
+}
+attr library for ExternalCounter = "work";
+attr name for ExternalCounter = "ExternalCounter";
+
+pub entity Wrapper { clk: Bit in, reset: Bit in, count: unsigned[16] out }
+impl Wrapper {
+    let counter: ExternalCounter<W = 16> = { .clk = clk, .reset = reset, .count = count };
+}
