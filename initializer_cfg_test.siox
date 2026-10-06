@@ -1,0 +1,46 @@
+module initializer_cfg_test;
+use std::bits::unsigned;
+
+struct Packet { pub n: integer, pub data: unsigned[128], pub mark: Logic }
+fn accumulate(seed: integer) -> integer {
+    let total: integer = seed;
+    for i in 0..3 { total = total + i; }
+    return total;
+}
+fn make(seed: integer) -> Packet {
+    let packet: Packet = {.n=accumulate(seed), .data=0, .mark='Z'};
+    packet.data[127] = '1';
+    packet.data[63] = 'Z';
+    packet.data[0] = 'X';
+    await 1ns;
+    return packet;
+}
+fn publish(target: Bit) -> integer {
+    target = '1' after 1ns;
+    await target == '1';
+    return 9;
+}
+entity Probe { packet: Packet in, n: integer out, data: unsigned[128] out, mark: Logic out }
+impl Probe { n = packet.n; data = packet.data; mark = packet.mark; }
+
+#[test] entity InitializerCfgTest {}
+impl InitializerCfgTest {
+    let ready: Bit = '0';
+    let base: integer = accumulate(0);
+    let derived: integer = base + 2;
+    let packet: Packet = make(derived);
+    let confirmed: integer = publish(ready);
+    let dut: Probe = {.packet=packet};
+    process {
+        assert!(base == 6 and derived == 8 and confirmed == 9 and ready == '1',
+                "initializer CFGs run in source order before stimulus");
+        assert!(packet.n == 14 and dut.n == 14 and dut.mark == 'Z',
+                "hardware bootstraps after initializer returns");
+        assert!(dut.data[127] == '1' and dut.data[63] == 'Z' and dut.data[0] == 'X',
+                "multiword returned metadata reaches the initialized DUT");
+        await 1ns;
+        packet.data[63] = '1';
+        assert!(dut.data[63] == '1' and dut.data[0] == 'X',
+                "ordinary process writes still settle after initialization");
+    }
+}
