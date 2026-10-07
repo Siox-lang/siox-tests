@@ -32,12 +32,13 @@ impl UArith {
     wide = ufixed<12, 6>(a);
 }
 
-entity SArith { a: sfixed<8, 4> in, b: sfixed<8, 4> in, product: sfixed<8, 4> out, square: sfixed<8, 4> out, quotient: sfixed<8, 4> out }
+entity SArith { a: sfixed<8, 4> in, b: sfixed<8, 4> in, product: sfixed<8, 4> out, square: sfixed<8, 4> out, quotient: sfixed<8, 4> out, narrow: sfixed<4, 2> out }
 
 impl SArith {
     product = a * b;
     square = a * a;
     quotient = a / b;
+    narrow = sfixed<4, 2>(a);
 }
 
 // Constants built in hardware: the constructor reads the format it builds.
@@ -75,8 +76,10 @@ impl FixedTest {
     let floored: sfixed<8, 4>;
     let spare: sfixed<8, 4>;
     let signed_quotient: sfixed<8, 4>;
-    let s1: SArith = { .a = n, .b = p, .product = np, .square = nn, .quotient = signed_quotient };
-    let s2: SArith = { .a = tiny, .b = p, .product = floored, .square = spare, .quotient = spare };
+    let narrowed: sfixed<4, 2>;
+    let spare_narrow: sfixed<4, 2>;
+    let s1: SArith = { .a = n, .b = p, .product = np, .square = nn, .quotient = signed_quotient, .narrow = narrowed };
+    let s2: SArith = { .a = tiny, .b = p, .product = floored, .square = spare, .quotient = spare, .narrow = spare_narrow };
 
     let clk: Bit = '0';
     let x: sfixed<16, 8> = sfixed<16, 8>(1.5);
@@ -124,6 +127,7 @@ impl FixedTest {
         assert!(sfixed<8, 4>(sfixed<16, 8>(0.0 - 2.53)).to_real() == 0.0 - 2.5625,
             "a negative tie rounds away from zero");
         assert!(sfixed<4, 2>(n).to_real() == 0.0 - 2.0, "saturates low");
+        assert!(narrowed.to_real() == 0.0 - 2.0, "a signed resize in hardware saturates low");
         assert!(offset_y.to_real() == 3.75 and offset_z.to_real() == 0.0 - 2.0,
             "hardware constants from the constructor");
 
