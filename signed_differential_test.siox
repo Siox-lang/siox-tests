@@ -128,27 +128,27 @@ impl SignedDifferentialTest {
     assert!(dut.neg == t_neg, "both engines agree on `0 - a`");
 
     // a signed compare, not the raw bits
-    assert!(dut.lt == 1, "hardware: `if a < b { 1 } else { 0 }` is 1");
-    assert!(t_lt == 1, "testbench: `if a < b { 1 } else { 0 }` is 1");
-    assert!(dut.lt == t_lt, "both engines agree on `if a < b { 1 } else { 0 }`");
+    assert!(dut.lt == 1, "hardware: `if a < b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_lt == 1, "testbench: `if a < b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(dut.lt == t_lt, "both engines agree on `if a < b {{ 1 }} else {{ 0 }}`");
 
     // the other way
-    assert!(dut.gt == 0, "hardware: `if a > b { 1 } else { 0 }` is 0");
-    assert!(t_gt == 0, "testbench: `if a > b { 1 } else { 0 }` is 0");
-    assert!(dut.gt == t_gt, "both engines agree on `if a > b { 1 } else { 0 }`");
+    assert!(dut.gt == 0, "hardware: `if a > b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(t_gt == 0, "testbench: `if a > b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(dut.gt == t_gt, "both engines agree on `if a > b {{ 1 }} else {{ 0 }}`");
 
     // equality against a negative literal
-    assert!(dut.eqNeg == 1, "hardware: `if a == 0 - 100 { 1 } else { 0 }` is 1");
-    assert!(t_eqNeg == 1, "testbench: `if a == 0 - 100 { 1 } else { 0 }` is 1");
-    assert!(dut.eqNeg == t_eqNeg, "both engines agree on `if a == 0 - 100 { 1 } else { 0 }`");
+    assert!(dut.eqNeg == 1, "hardware: `if a == 0 - 100 {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_eqNeg == 1, "testbench: `if a == 0 - 100 {{ 1 }} else {{ 0 }}` is 1");
+    assert!(dut.eqNeg == t_eqNeg, "both engines agree on `if a == 0 - 100 {{ 1 }} else {{ 0 }}`");
 
     // the sign test on its own
-    assert!(dut.ltZero == 1, "hardware: `if a < 0 { 1 } else { 0 }` is 1");
-    assert!(t_ltZero == 1, "testbench: `if a < 0 { 1 } else { 0 }` is 1");
-    assert!(dut.ltZero == t_ltZero, "both engines agree on `if a < 0 { 1 } else { 0 }`");
+    assert!(dut.ltZero == 1, "hardware: `if a < 0 {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_ltZero == 1, "testbench: `if a < 0 {{ 1 }} else {{ 0 }}` is 1");
+    assert!(dut.ltZero == t_ltZero, "both engines agree on `if a < 0 {{ 1 }} else {{ 0 }}`");
 
     // the shape an abs() would take
-    assert!(dut.absLike == 100, "hardware: `if a < 0 { 0 - a } else { a }` is 100");
-    assert!(t_absLike == 100, "testbench: `if a < 0 { 0 - a } else { a }` is 100");
-    assert!(dut.absLike == t_absLike, "both engines agree on `if a < 0 { 0 - a } else { a }`");
+    assert!(dut.absLike == 100, "hardware: `if a < 0 {{ 0 - a }} else {{ a }}` is 100");
+    assert!(t_absLike == 100, "testbench: `if a < 0 {{ 0 - a }} else {{ a }}` is 100");
+    assert!(dut.absLike == t_absLike, "both engines agree on `if a < 0 {{ 0 - a }} else {{ a }}`");
 }

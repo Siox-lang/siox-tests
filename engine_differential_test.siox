@@ -177,29 +177,29 @@ impl EngineDifferentialTest {
     assert!(t_notOp == 55, "testbench: `not a` is 55");
     assert!(d.notOp == t_notOp, "both engines agree on `not a`");
 
-    assert!(d.eq == 0, "hardware: `if a == b { 1 } else { 0 }` is 0");
-    assert!(t_eq == 0, "testbench: `if a == b { 1 } else { 0 }` is 0");
-    assert!(d.eq == t_eq, "both engines agree on `if a == b { 1 } else { 0 }`");
+    assert!(d.eq == 0, "hardware: `if a == b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(t_eq == 0, "testbench: `if a == b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(d.eq == t_eq, "both engines agree on `if a == b {{ 1 }} else {{ 0 }}`");
 
-    assert!(d.ne == 1, "hardware: `if a != b { 1 } else { 0 }` is 1");
-    assert!(t_ne == 1, "testbench: `if a != b { 1 } else { 0 }` is 1");
-    assert!(d.ne == t_ne, "both engines agree on `if a != b { 1 } else { 0 }`");
+    assert!(d.ne == 1, "hardware: `if a != b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_ne == 1, "testbench: `if a != b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(d.ne == t_ne, "both engines agree on `if a != b {{ 1 }} else {{ 0 }}`");
 
-    assert!(d.lt == 0, "hardware: `if a < b { 1 } else { 0 }` is 0");
-    assert!(t_lt == 0, "testbench: `if a < b { 1 } else { 0 }` is 0");
-    assert!(d.lt == t_lt, "both engines agree on `if a < b { 1 } else { 0 }`");
+    assert!(d.lt == 0, "hardware: `if a < b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(t_lt == 0, "testbench: `if a < b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(d.lt == t_lt, "both engines agree on `if a < b {{ 1 }} else {{ 0 }}`");
 
-    assert!(d.le == 0, "hardware: `if a <= b { 1 } else { 0 }` is 0");
-    assert!(t_le == 0, "testbench: `if a <= b { 1 } else { 0 }` is 0");
-    assert!(d.le == t_le, "both engines agree on `if a <= b { 1 } else { 0 }`");
+    assert!(d.le == 0, "hardware: `if a <= b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(t_le == 0, "testbench: `if a <= b {{ 1 }} else {{ 0 }}` is 0");
+    assert!(d.le == t_le, "both engines agree on `if a <= b {{ 1 }} else {{ 0 }}`");
 
-    assert!(d.gt == 1, "hardware: `if a > b { 1 } else { 0 }` is 1");
-    assert!(t_gt == 1, "testbench: `if a > b { 1 } else { 0 }` is 1");
-    assert!(d.gt == t_gt, "both engines agree on `if a > b { 1 } else { 0 }`");
+    assert!(d.gt == 1, "hardware: `if a > b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_gt == 1, "testbench: `if a > b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(d.gt == t_gt, "both engines agree on `if a > b {{ 1 }} else {{ 0 }}`");
 
-    assert!(d.ge == 1, "hardware: `if a >= b { 1 } else { 0 }` is 1");
-    assert!(t_ge == 1, "testbench: `if a >= b { 1 } else { 0 }` is 1");
-    assert!(d.ge == t_ge, "both engines agree on `if a >= b { 1 } else { 0 }`");
+    assert!(d.ge == 1, "hardware: `if a >= b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(t_ge == 1, "testbench: `if a >= b {{ 1 }} else {{ 0 }}` is 1");
+    assert!(d.ge == t_ge, "both engines agree on `if a >= b {{ 1 }} else {{ 0 }}`");
 
     assert!(d.sliceHi == 12, "hardware: `unsigned[8](a[7..4])` is 12");
     assert!(t_sliceHi == 12, "testbench: `unsigned[8](a[7..4])` is 12");
@@ -213,9 +213,9 @@ impl EngineDifferentialTest {
     assert!(t_bit7 == 1, "testbench: `unsigned[8](a[7])` is 1");
     assert!(d.bit7 == t_bit7, "both engines agree on `unsigned[8](a[7])`");
 
-    assert!(d.concatSlices == 141, "hardware: `unsigned[8]({a[3..0], b[3..0]})` is 141");
-    assert!(t_concatSlices == 141, "testbench: `unsigned[8]({a[3..0], b[3..0]})` is 141");
-    assert!(d.concatSlices == t_concatSlices, "both engines agree on `unsigned[8]({a[3..0], b[3..0]})`");
+    assert!(d.concatSlices == 141, "hardware: `unsigned[8]({{a[3..0], b[3..0]}})` is 141");
+    assert!(t_concatSlices == 141, "testbench: `unsigned[8]({{a[3..0], b[3..0]}})` is 141");
+    assert!(d.concatSlices == t_concatSlices, "both engines agree on `unsigned[8]({{a[3..0], b[3..0]}})`");
 
     assert!(d.nested == 170, "hardware: `(a + b) * 2` is 170");
     assert!(t_nested == 170, "testbench: `(a + b) * 2` is 170");
