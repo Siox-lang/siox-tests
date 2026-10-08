@@ -1,0 +1,55 @@
+module print_format_test;
+
+// print! formats: Rust-style specs, built-in struct/array/vector forms, and
+// Display impls (exact output is checked by sioxc's tests/print_format.rs).
+use std::float::float;
+use std::fixed::{sfixed, ufixed};
+use std::math::Complex;
+
+enum Kind { Idle, Data }
+struct Point { pub x: integer, pub y: integer }
+struct Packet { pub kind: Kind, pub at: Point, pub payload: integer[3], pub flags: Logic[3..0] }
+struct Pair { pub a: integer, pub b: integer }
+
+impl Display for Pair {
+    fn fmt(self, f: Formatter) {
+        let total: integer = self.a + self.b;
+        write!(f, "<{} and {} = {}>", self.a, self.b, total);
+    }
+}
+
+#[test]
+entity PrintFormatTest {}
+
+impl PrintFormatTest {
+    check: process {
+        let t: real = 1.25;
+        let big: real = 12345.678;
+        let small: real = 0.000123;
+        let word: integer = 31;
+        let n: integer = 42;
+        let neg: integer = 0 - 42;
+        let u: unsigned[8] = 200;
+        print!("t = {:.3} s", t);
+        print!("{:.2e} {:e} {:E} {:.1e}", big, big, small, small);
+        print!("0x{:x} {:#x} {:#X} {:b} {:#o}", word, word, word, word, word);
+        print!("[{:>6}] [{:<6}] [{:^7}] [{:*^7}]", n, n, n, n);
+        print!("[{:06}] [{:+}] [{:+06}] [{:#06x}]", neg, n, n, word);
+        print!("{:e} {:.2e} {:x} {:08b}", 12345, 98765, neg, u);
+        let p: Packet = Packet {
+            .kind = Kind::Data,
+            .at = Point { .x = 1, .y = 0 - 2 },
+            .payload = [4, 5, 6],
+            .flags = "10XZ",
+        };
+        let bits: Bit[7..0] = "10100101";
+        print!("{}", p);
+        print!("[{:<24}] bits = {}", p.at, bits);
+        let y: float<32, 23> = float<32, 23>(0.0 - 2.25);
+        let g: ufixed<8, 4> = ufixed<8, 4>(2.5);
+        let z: Complex = Complex { .re = 1.0, .im = 2.5 };
+        let pair: Pair = Pair { .a = 3, .b = 4 };
+        print!("y = {}, {:.3}, {:e}; g = [{:>6}]", y, y, y, g);
+        print!("z = {:.3}; pair = [{:^17}]", z, pair);
+    }
+}
