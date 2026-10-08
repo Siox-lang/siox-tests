@@ -1,0 +1,22 @@
+module print_locals_test;
+
+// A `print!` argument has no checked expression type, so a local printed
+// directly must carry its declared type. Each of these was rejected at run
+// time ("lowering is incomplete") before local reads were typed.
+fn grow(x: unsigned[16]) -> unsigned[16] {
+    return x + 1;
+}
+
+#[test]
+entity PrintLocalsTest {}
+
+impl PrintLocalsTest {
+    check: process {
+        let five: integer = 5;
+        let u: unsigned[16] = 7;
+        let s: signed[8] = 0 - 3;
+        let v: unsigned[16] = grow(u);
+        print!("five = {}, u = {}, s = {}, v = {}", five, u, s, v);
+        assert!(v == 8, "grow(7)");
+    }
+}
