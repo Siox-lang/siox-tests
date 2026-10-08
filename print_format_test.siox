@@ -47,6 +47,8 @@ impl PrintFormatTest {
         print!("[{:<24}] bits = {}", p.at, bits);
         let y: float<32, 23> = float<32, 23>(0.0 - 2.25);
         let g: ufixed<8, 4> = ufixed<8, 4>(2.5);
+        let h: sfixed<8, 4> = sfixed<8, 4>(0.0 - 1.625);
+        print!("h = {:.2}", h);
         let z: Complex = Complex { .re = 1.0, .im = 2.5 };
         let pair: Pair = Pair { .a = 3, .b = 4 };
         print!("y = {}, {:.3}, {:e}; g = [{:>6}]", y, y, y, g);
