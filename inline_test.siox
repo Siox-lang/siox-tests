@@ -1,0 +1,93 @@
+module inline_test;
+
+// `#[inline]` chooses how the simulation runs calls, never what they mean:
+// shared and expanded calls of the same body must agree.
+
+// Shared on request, whatever its size.
+#[inline(never)]
+fn mix(a: integer, b: integer) -> integer {
+    return a * 3 + b;
+}
+
+// Expanded at every call site.
+#[inline(always)]
+fn twice(x: integer) -> integer {
+    return x + x;
+}
+
+// No directive and large: the compiler shares it.
+fn scramble(x: integer) -> integer {
+    let a: integer = x * 3 + 7;
+    let b: integer = a * 5 - x;
+    let c: integer = b * 3 + a;
+    let d: integer = c * 5 - b;
+    let e: integer = d * 3 + c;
+    let f: integer = e * 5 - d;
+    let g: integer = f * 3 + e;
+    let h: integer = g * 5 - f;
+    let i: integer = h * 3 + g;
+    let j: integer = i * 5 - h;
+    let k: integer = j * 3 + i;
+    let l: integer = k * 5 - j;
+    let m: integer = l * 3 + k;
+    let n: integer = m * 5 - l;
+    let o: integer = n * 3 + m;
+    let q: integer = o * 5 - n;
+    if q > 1000000 {
+        return q - x;
+    }
+    return q + x;
+}
+
+// The same body, always expanded: the shared call must agree with it.
+#[inline(always)]
+fn scramble_inline(x: integer) -> integer {
+    let a: integer = x * 3 + 7;
+    let b: integer = a * 5 - x;
+    let c: integer = b * 3 + a;
+    let d: integer = c * 5 - b;
+    let e: integer = d * 3 + c;
+    let f: integer = e * 5 - d;
+    let g: integer = f * 3 + e;
+    let h: integer = g * 5 - f;
+    let i: integer = h * 3 + g;
+    let j: integer = i * 5 - h;
+    let k: integer = j * 3 + i;
+    let l: integer = k * 5 - j;
+    let m: integer = l * 3 + k;
+    let n: integer = m * 5 - l;
+    let o: integer = n * 3 + m;
+    let q: integer = o * 5 - n;
+    if q > 1000000 {
+        return q - x;
+    }
+    return q + x;
+}
+
+// No directive and small: expanded.
+fn inc(x: integer) -> integer {
+    return x + 1;
+}
+
+#[test]
+entity InlineTest {}
+
+impl InlineTest {
+    check: process {
+        let two: integer = 2;
+        let five: integer = 5;
+        assert!(mix(two, five) == 11, "mix(2, 5)");
+        assert!(mix(five, two) == 17, "mix(5, 2)");
+        assert!(twice(five) == 10, "twice(5)");
+        assert!(inc(five) == 6, "inc(5)");
+        let u: integer = 7;
+        let first: integer = scramble(u);
+        let again: integer = scramble(u);
+        assert!(first == again, "a shared call is deterministic");
+        assert!(first == scramble_inline(u), "shared and expanded agree at 7");
+        assert!(scramble(300) == scramble_inline(300), "shared and expanded agree at 300");
+        assert!(scramble(65535) == scramble_inline(65535), "shared and expanded agree at 65535");
+        let negative: integer = 0 - 9;
+        assert!(scramble(negative) == scramble_inline(negative), "shared and expanded agree at -9");
+    }
+}
