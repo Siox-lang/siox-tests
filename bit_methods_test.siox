@@ -1,0 +1,84 @@
+module bit_methods_test;
+
+// Rust's integer methods on unsigned/signed (std::bits) and std::math's
+// cmp/clamp, checked in hardware (a combinational entity) and in a testbench.
+// The method bodies loop over the bits, so this also exercises function-body
+// loops, reassignment and return-free `if`s lowered as combinational logic.
+
+use std::math::{clamp, cmp};
+
+entity Bits {
+    a: unsigned[8] in,
+    s: signed[8] in,
+    t: signed[8] in,
+    ones: integer out,
+    leading: integer out,
+    trailing: integer out,
+    reversed: unsigned[8] out,
+    rotated: unsigned[8] out,
+    next: unsigned[8] out,
+    held: signed[8] out,
+}
+
+impl Bits {
+    ones = a.count_ones();
+    leading = a.leading_zeros();
+    trailing = a.trailing_zeros();
+    reversed = a.reverse_bits();
+    rotated = a.rotate_left(3);
+    next = a.next_power_of_two();
+    held = s.saturating_add(t);
+}
+
+#[test]
+entity BitMethodsTest {}
+
+impl BitMethodsTest {
+    let a: unsigned[8] = 0;
+    let s: signed[8] = 0;
+    let t: signed[8] = 0;
+    let ones: integer;
+    let leading: integer;
+    let trailing: integer;
+    let reversed: unsigned[8];
+    let rotated: unsigned[8];
+    let next: unsigned[8];
+    let held: signed[8];
+    let dut: Bits = { .a = a, .s = s, .t = t, .ones = ones, .leading = leading,
+        .trailing = trailing, .reversed = reversed, .rotated = rotated, .next = next,
+        .held = held };
+
+    check: process {
+        a = 200;
+        s = 0 - 100;
+        t = 0 - 50;
+        await 1ns;
+        assert!(ones == 3 and leading == 0 and trailing == 3, "hardware bit counts of 11001000");
+        assert!(reversed == 19 and rotated == 70, "hardware reverse and rotate of 11001000");
+        assert!(next == 0, "200 has no next power of two in 8 bits");
+        assert!(held == 0 - 128, "-100 + -50 saturates at -128");
+
+        a = 5;
+        s = 100;
+        t = 50;
+        await 1ns;
+        assert!(next == 8 and held == 127, "hardware next power of two and positive saturation");
+
+        let x: unsigned[8] = 200;
+        let y: unsigned[8] = 5;
+        let u: signed[8] = 0 - 100;
+        assert!(x.count_ones() == 3 and x.count_zeros() == 5, "testbench bit counts");
+        assert!(x.leading_ones() == 2 and x.trailing_ones() == 0, "testbench runs of ones");
+        assert!(x.rotate_right(3) == 25 and x.reverse_bits() == 19, "testbench rotate and reverse");
+        assert!(y.is_power_of_two() == false and y.next_power_of_two() == 8, "powers of two");
+        assert!(y.pow(3) == 125 and x.abs_diff(y) == 195, "pow and abs_diff");
+        assert!(x.saturating_add(x) == 255 and y.saturating_sub(x) == 0, "unsigned saturation");
+        assert!(u.count_ones() == 4 and u.saturating_sub(100) == 0 - 128, "signed bits and saturation");
+
+        let wide: unsigned[80] = 1;
+        assert!(wide.leading_zeros() == 79 and wide.rotate_right(1).trailing_zeros() == 79, "80-bit vectors");
+
+        assert!(cmp(1, 2) == Ordering::Less and cmp(u, 0) == Ordering::Less, "cmp");
+        assert!(clamp(0 - 5, 0, 9) == 0 and clamp(42, 0, 9) == 9, "clamp");
+    }
+}
