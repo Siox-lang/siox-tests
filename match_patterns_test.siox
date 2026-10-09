@@ -1,0 +1,63 @@
+module match_patterns_test;
+
+// Bit patterns match through the element type's `Match` (`std_match` for
+// Logic: 'H'/'L' read as 1/0, a metavalue matches only '-'), and range
+// patterns take constant-expression bounds, open ends and typed literals
+// through the scrutinee's `Ord` -- in hardware and in a testbench.
+
+const DEPTH: integer = 8;
+
+fn decode(op: unsigned[4]) -> integer {
+    match op {
+        "00--" => { return 1; }
+        "01-1" => { return 2; }
+        _ => { return 0; }
+    }
+}
+
+fn bucket(n: integer) -> integer {
+    match n {
+        ..-1 => { return 0; }
+        0..DEPTH - 1 => { return 1; }
+        DEPTH.. => { return 2; }
+    }
+    return 9;
+}
+
+entity Decoder { op: unsigned[4] in, n: integer in, kind: integer out, slot: integer out }
+
+impl Decoder {
+    kind = decode(op);
+    slot = bucket(n);
+}
+
+#[test]
+entity MatchPatternsTest {}
+
+impl MatchPatternsTest {
+    let op: unsigned[4] = 0;
+    let n: integer = 0;
+    let kind: integer;
+    let slot: integer;
+    let dut: Decoder = { .op = op, .n = n, .kind = kind, .slot = slot };
+
+    check: process {
+        op = "0011"; n = 0 - 5; await 1ns;
+        assert!(kind == 1 and slot == 0, "00-- matches 0011; -5 is below 0");
+        op = "0H11"; n = 5; await 1ns;
+        assert!(kind == 2 and slot == 1, "weak H reads as 1; 5 is in 0..DEPTH-1");
+        op = "0X11"; n = 12; await 1ns;
+        assert!(kind == 0 and slot == 2, "a metavalue falls through to _");
+
+        let h: unsigned[4] = "0H11";
+        assert!(decode(h) == 2 and bucket(8) == 2, "testbench agrees");
+        let t: time = 15ns;
+        let window: integer = match t { 0ns..9ns => 1, 10ns..19ns => 2, _ => 3 };
+        assert!(window == 2, "time ranges");
+        let r: real = 2.5;
+        let band: integer = match r { ..0.0 => 0, 0.0..1.0 => 1, 1.0.. => 2 };
+        assert!(band == 2, "real ranges with open ends");
+        let d: integer = match 5 { 9..3 => 1, _ => 0 };
+        assert!(d == 1, "a range is a set in either order");
+    }
+}
