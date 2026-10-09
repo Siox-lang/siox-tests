@@ -1,0 +1,56 @@
+module rem_vector_results_test;
+
+// `%` is the remainder with the dividend's sign (Rust/Verilog `%`, VHDL
+// `rem`), and a function returning `Logic[]` returns the vector its body
+// sizes; both checked in hardware and in a testbench.
+
+fn widen(v: Logic[]) -> Logic[] {
+    let r: Logic[5..0] = "000000";
+    r[3..0] = v;
+    return r;
+}
+
+entity Remainders {
+    s: signed[8] in,
+    t: signed[8] in,
+    a: Logic[3..0] in,
+    r: signed[8] out,
+    w: Logic[5..0] out,
+}
+
+impl Remainders {
+    r = s % t;
+    w = widen(a);
+}
+
+#[test]
+entity RemVectorResultsTest {}
+
+impl RemVectorResultsTest {
+    let s: signed[8] = 0;
+    let t: signed[8] = 1;
+    let a: Logic[3..0] = "1010";
+    let r: signed[8];
+    let w: Logic[5..0];
+    let dut: Remainders = { .s = s, .t = t, .a = a, .r = r, .w = w };
+
+    check: process {
+        let expected: Logic[5..0] = "001010";
+        s = 0 - 7;
+        t = 2;
+        await 1ns;
+        assert!(r == 0 - 1, "hardware -7 % 2 is -1");
+        s = 7;
+        t = 0 - 2;
+        await 1ns;
+        assert!(r == 1, "hardware 7 % -2 is 1");
+        assert!(w == expected, "hardware widen sizes its result in the body");
+
+        let n: integer = 0 - 9;
+        let u: unsigned[8] = 200;
+        assert!(n % 4 == 0 - 1 and u % 7 == 4, "testbench remainders");
+        let b: Logic[3..0] = "1010";
+        let x: Logic[5..0] = widen(b);
+        assert!(x == expected, "testbench widen");
+    }
+}
