@@ -1,0 +1,50 @@
+module group_declaration_test;
+
+// `let a, b: T = v;` declares each name with the type and initializer, as
+// VHDL's `signal a, b : T := v;`: signals, function locals and testbench
+// storage, each name independent of the others.
+
+fn spread(n: integer) -> integer {
+    let lo, hi: integer = n;
+    lo = lo - 1;
+    hi = hi + 1;
+    return hi - lo;
+}
+
+entity Counters { clk: Bit in, step: unsigned[4] in, a: unsigned[4] out, b: unsigned[4] out,
+    width: integer out }
+
+impl Counters {
+    let fast, slow: unsigned[4] = 3;
+    tick: process {
+        if clk.rising() {
+            fast = fast + step;
+            slow = slow + 1;
+        }
+    }
+    a = fast;
+    b = slow;
+    width = spread(10);
+}
+
+#[test]
+entity GroupDeclarationTest {}
+
+impl GroupDeclarationTest {
+    let clk, idle: Bit = '0';
+    let step: unsigned[4] = 2;
+    let a, b: unsigned[4];
+    let width: integer;
+    let dut: Counters = { .clk = clk, .step = step, .a = a, .b = b, .width = width };
+
+    check: process {
+        assert!(a == 3 and b == 3, "both signals start at the shared initializer");
+        assert!(width == 2, "function locals are independent");
+        clk = '1'; await 1ns; clk = '0'; await 1ns;
+        assert!(a == 5 and b == 4, "each signal is driven on its own");
+        assert!(idle == '0', "a grouped name keeps the initializer");
+        let u, v: integer = 5;
+        u = u * 2;
+        assert!(u == 10 and v == 5, "testbench storage is independent");
+    }
+}
