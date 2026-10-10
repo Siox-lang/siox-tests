@@ -1,0 +1,53 @@
+module resize_styles_test;
+
+// `T<args>::f(x)` calls an associated function with `T<args>` as `Self`:
+// fixed-point `resize` with VHDL's overflow and rounding styles, and float
+// `resize` / `From<float>` between formats, in hardware and a testbench.
+
+use std::fixed::{ufixed, sfixed};
+use std::float::float;
+use std::numeric::{Overflow, Rounding};
+
+entity Narrow {
+    x: ufixed<8, 4> in, y: sfixed<8, 4> in, z: float<32, 23> in,
+    sat: ufixed<5, 2> out, wrap: ufixed<5, 2> out,
+    near: sfixed<6, 2> out, trunc: sfixed<6, 2> out,
+    half: float<16, 10> out, half_trunc: float<16, 10> out,
+}
+
+impl Narrow {
+    sat = ufixed<5, 2>::resize(x, Overflow::Saturate, Rounding::Nearest);
+    wrap = ufixed<5, 2>::resize(x, Overflow::Wrap, Rounding::Truncate);
+    near = sfixed<6, 2>::resize(y, Overflow::Saturate, Rounding::Nearest);
+    trunc = sfixed<6, 2>::resize(y, Overflow::Saturate, Rounding::Truncate);
+    half = float<16, 10>(z);
+    half_trunc = float<16, 10>::resize(z, Rounding::Truncate);
+}
+
+#[test]
+entity ResizeStylesTest {}
+
+impl ResizeStylesTest {
+    let x: ufixed<8, 4>; let y: sfixed<8, 4>; let z: float<32, 23>;
+    let sat: ufixed<5, 2>; let wrap: ufixed<5, 2>;
+    let near: sfixed<6, 2>; let trunc: sfixed<6, 2>;
+    let half: float<16, 10>; let half_trunc: float<16, 10>;
+    let dut: Narrow = { .x = x, .y = y, .z = z, .sat = sat, .wrap = wrap, .near = near,
+        .trunc = trunc, .half = half, .half_trunc = half_trunc };
+
+    check: process {
+        x = ufixed<8, 4>(13.5); y = sfixed<8, 4>(0.0 - 2.5625); z = float<32, 23>(70000.0);
+        await 1ns;
+        assert!(sat.to_real() == 7.75, "saturates at the top of ufixed<5, 2>");
+        assert!(wrap.to_real() == 5.5, "wraps: 54 steps mod 32");
+        assert!(near.to_real() == 0.0 - 2.5, "rounds to the nearest quarter");
+        assert!(trunc.to_real() == 0.0 - 2.75, "truncates toward minus infinity");
+        assert!(half.is_infinite(), "binary16 overflows to infinity, rounding to nearest");
+        assert!(half_trunc.to_real() == 65504.0, "truncated, it is the largest finite");
+
+        let small: float<32, 23> = float<32, 23>(1.000732421875);
+        let up: float<16, 10> = float<16, 10>::resize(small, Rounding::Nearest);
+        let down: float<16, 10> = float<16, 10>::resize(small, Rounding::Truncate);
+        assert!(up.to_real() == 1.0009765625 and down.to_real() == 1.0, "float rounding");
+    }
+}
