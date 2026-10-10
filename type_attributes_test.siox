@@ -1,0 +1,50 @@
+module type_attributes_test;
+
+// Type attributes: `pub attr name: T = <shape of self>;` in an
+// implementation answers for every value (`x'name`) and for `Self`, in
+// hardware and a testbench. std's fixed and float formats use them.
+
+use std::fixed::{ufixed, sfixed};
+use std::float::float;
+
+struct Word<W: integer, F: integer>(Logic[W - F - 1 .. 0 - F]);
+
+impl Word {
+    pub attr whole: integer = self'high + 1;
+    attr twice: integer = self'whole * 2;      // defined through another
+    // `Self` is the type the call names; `v` keeps its own format.
+    pub fn compare(v: Word) -> integer { return Self'whole * 100 + v'whole * 10 + v'twice; }
+}
+
+entity Formats {
+    x: ufixed<8, 4> in, z: float<32, 23> in, w: Word<10, 3> in,
+    ints: integer out, fracs: integer out, bias: integer out, mixed: integer out,
+}
+
+impl Formats {
+    ints = x'integers;
+    fracs = x'fractions;
+    bias = z'bias;
+    mixed = Word<6, 2>::compare(w);
+}
+
+#[test]
+entity TypeAttributesTest {}
+
+impl TypeAttributesTest {
+    let x: ufixed<8, 4>; let z: float<32, 23>; let w: Word<10, 3>;
+    let ints: integer; let fracs: integer; let bias: integer; let mixed: integer;
+    let dut: Formats = { .x = x, .z = z, .w = w, .ints = ints, .fracs = fracs, .bias = bias,
+        .mixed = mixed };
+
+    check: process {
+        await 1ns;
+        assert!(ints == 4 and fracs == 4, "ufixed<8, 4> is 4.4");
+        assert!(bias == 127, "binary32 bias");
+        assert!(mixed == 484, "Self is Word<6, 2>, the argument Word<10, 3>");
+        let s: sfixed<12, 5> = sfixed<12, 5>(1.0);
+        let d: float<64, 52> = float<64, 52>(1.0);
+        assert!(s'integers == 7 and s'fractions == 5, "sfixed<12, 5>");
+        assert!(d'exponent == 11 and d'mantissa == 52 and d'bias == 1023, "binary64");
+    }
+}
