@@ -1,0 +1,49 @@
+module numeric_promotion_test;
+
+// A `real` beside any number promotes it (std's `impl From<T> for real`):
+// arithmetic and comparisons mix `real` with `integer`, `unsigned`, `signed`,
+// `sfixed` and `float`, in hardware and a testbench. Storing the result in
+// another type still converts explicitly.
+
+use std::fixed::sfixed;
+use std::float::float;
+use std::math::sqrt;
+
+entity Mixer {
+    r: real in, u: unsigned[8] in, s: sfixed<8, 4> in, v: signed[8] in, f: float<32, 23> in,
+    sum: real out, scaled: real out, below: Bool out, back: sfixed<8, 4> out,
+}
+
+impl Mixer {
+    sum = r + u - s;
+    scaled = v * r + f;
+    below = s < r;
+    back = sfixed<8, 4>(r - s);
+}
+
+#[test]
+entity NumericPromotionTest {}
+
+impl NumericPromotionTest {
+    let r: real; let u: unsigned[8]; let s: sfixed<8, 4>; let v: signed[8]; let f: float<32, 23>;
+    let sum: real; let scaled: real; let below: Bool; let back: sfixed<8, 4>;
+    let dut: Mixer = { .r = r, .u = u, .s = s, .v = v, .f = f, .sum = sum, .scaled = scaled,
+        .below = below, .back = back };
+
+    check: process {
+        r = 2.5; u = 4; s = sfixed<8, 4>(1.5); v = 0 - 3; f = float<32, 23>(0.25);
+        await 1ns;
+        assert!(sum == 5.0, "2.5 + 4 - 1.5");
+        assert!(scaled == 0.0 - 7.25, "-3 * 2.5 + 0.25");
+        assert!(below, "1.5 < 2.5");
+        assert!(real(back) == 1.0, "the difference stored back as sfixed<8, 4>");
+
+        let i: integer = 3;
+        let tr: real = 2.5;
+        let tu: unsigned[8] = 4;
+        let ts: sfixed<8, 4> = sfixed<8, 4>(1.5);
+        assert!(sqrt(i + tr + tu - ts) == sqrt(8.0), "integer + real + unsigned - sfixed");
+        assert!(tr * ts == 3.75 and ts - tr == 0.0 - 1.0, "either side may be the real");
+        assert!(tu > tr and not (ts > tr), "comparisons promote too");
+    }
+}
