@@ -32,16 +32,16 @@ impl FloatTest {
         zero = float<32, 23>(0.0);
         await 1ns;
         assert!(x == 1069547520, "1.5 is 0x3FC00000");
-        assert!(y.to_real() == 0.0 - 2.25, "to_real");
+        assert!(real(y) == 0.0 - 2.25, "real(y)");
         assert!(y < x and x > y and x >= x and x != y, "ordering");
-        assert!((-y).to_real() == 2.25 and abs(y) == -y, "negation and abs");
+        assert!(real(-y) == 2.25 and abs(y) == -y, "negation and abs");
 
         r = x * y;
         await 1ns;
-        assert!(r.to_real() == 0.0 - 3.375, "1.5 * -2.25");
+        assert!(real(r) == 0.0 - 3.375, "1.5 * -2.25");
         r = x + y;
         await 1ns;
-        assert!(r.to_real() == 0.0 - 0.75, "1.5 + -2.25");
+        assert!(real(r) == 0.0 - 0.75, "1.5 + -2.25");
         r = x - x;
         await 1ns;
         assert!(r.is_zero() and r == zero, "x - x is zero");
@@ -60,7 +60,7 @@ impl FloatTest {
         await 1ns;
         assert!(r == 1065353217, "above a tie rounds up");
         // The constructor's value is a float itself, usable in place.
-        assert!((float<32, 23>(1.5) * float<32, 23>(2.0)).to_real() == 3.0, "constructed operands");
+        assert!(real(float<32, 23>(1.5) * float<32, 23>(2.0)) == 3.0, "constructed operands");
         assert!(float<32, 23>(3) == float<32, 23>(3.0), "an integer converts by value");
         x = float<32, 23>(1.5);
 
@@ -94,7 +94,7 @@ impl FloatTest {
         await 1ns;
         hr = h * k + h;
         await 1ns;
-        assert!(hr.to_real() == 2.0, "0.5 * 3 + 0.5 in binary16");
+        assert!(real(hr) == 2.0, "0.5 * 3 + 0.5 in binary16");
         // Internally the word is indexed as VHDL's float is: the exponent
         // above index 0, the mantissa below it.
         assert!(x'high == 8 and x'low == 0 - 23 and x'length == 32, "binary32's index range");

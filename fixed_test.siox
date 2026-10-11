@@ -94,15 +94,15 @@ impl FixedTest {
     check: process {
         await 1ns;
         assert!(a == 40 and b == 24, "2.5 and 1.5 are the 4.4 words 40 and 24");
-        assert!(sum.to_real() == 4.0, "2.5 + 1.5");
-        assert!(diff.to_real() == 1.0, "2.5 - 1.5");
-        assert!(product.to_real() == 3.75, "2.5 * 1.5");
-        assert!(wrapped.to_real() == 12.25, "12.5 * 12.5 = 156.25 wraps to 12.25");
+        assert!(real(sum) == 4.0, "2.5 + 1.5");
+        assert!(real(diff) == 1.0, "2.5 - 1.5");
+        assert!(real(product) == 3.75, "2.5 * 1.5");
+        assert!(real(wrapped) == 12.25, "12.5 * 12.5 = 156.25 wraps to 12.25");
         assert!(a > b and b < a and a >= a, "unsigned comparison");
 
-        assert!(np.to_real() == 0.0 - 3.75, "-2.5 * 1.5");
-        assert!(nn.to_real() == 6.25, "-2.5 * -2.5");
-        assert!(floored.to_real() == 0.0 - 0.125, "-0.09375 rounds toward minus infinity");
+        assert!(real(np) == 0.0 - 3.75, "-2.5 * 1.5");
+        assert!(real(nn) == 6.25, "-2.5 * -2.5");
+        assert!(real(floored) == 0.0 - 0.125, "-0.09375 rounds toward minus infinity");
         assert!(n < p and p > n and tiny < p, "signed comparison");
 
         assert!(ufixed<8, 4>(2.53) == 40, "rounds to the nearest 1/16");
@@ -113,26 +113,26 @@ impl FixedTest {
         assert!(ufixed<8, 4>(3) == 48, "an integer converts by value");
 
         // Division keeps the format, rounding toward minus infinity.
-        assert!(quotient.to_real() == 1.625, "2.5 / 1.5 in hardware");
-        assert!(signed_quotient.to_real() == 0.0 - 1.6875, "-2.5 / 1.5 in hardware");
-        assert!((a / b).to_real() == 1.625, "2.5 / 1.5 in a process");
-        assert!((n / p).to_real() == 0.0 - 1.6875, "-2.5 / 1.5 in a process");
-        assert!((a / ufixed<8, 4>(0)).to_real() == 0.0, "a quotient by zero is zero");
+        assert!(real(quotient) == 1.625, "2.5 / 1.5 in hardware");
+        assert!(real(signed_quotient) == 0.0 - 1.6875, "-2.5 / 1.5 in hardware");
+        assert!(real(a / b) == 1.625, "2.5 / 1.5 in a process");
+        assert!(real(n / p) == 0.0 - 1.6875, "-2.5 / 1.5 in a process");
+        assert!(real(a / ufixed<8, 4>(0)) == 0.0, "a quotient by zero is zero");
 
         // Between formats, the constructor resizes: nearest step, saturating.
-        assert!(wide.to_real() == 2.5, "4.4 to 6.6 in hardware");
+        assert!(real(wide) == 2.5, "4.4 to 6.6 in hardware");
         let fine: ufixed<12, 8> = ufixed<12, 8>(2.53125);
-        assert!(ufixed<8, 4>(fine).to_real() == 2.5625, "a tie rounds away from zero");
-        assert!(ufixed<4, 2>(big).to_real() == 3.75, "saturates high");
-        assert!(sfixed<8, 4>(sfixed<16, 8>(0.0 - 2.53)).to_real() == 0.0 - 2.5625,
+        assert!(real(ufixed<8, 4>(fine)) == 2.5625, "a tie rounds away from zero");
+        assert!(real(ufixed<4, 2>(big)) == 3.75, "saturates high");
+        assert!(real(sfixed<8, 4>(sfixed<16, 8>(0.0 - 2.53))) == 0.0 - 2.5625,
             "a negative tie rounds away from zero");
-        assert!(sfixed<4, 2>(n).to_real() == 0.0 - 2.0, "saturates low");
-        assert!(narrowed.to_real() == 0.0 - 2.0, "a signed resize in hardware saturates low");
-        assert!(offset_y.to_real() == 3.75 and offset_z.to_real() == 0.0 - 2.0,
+        assert!(real(sfixed<4, 2>(n)) == 0.0 - 2.0, "saturates low");
+        assert!(real(narrowed) == 0.0 - 2.0, "a signed resize in hardware saturates low");
+        assert!(real(offset_y) == 3.75 and real(offset_z) == 0.0 - 2.0,
             "hardware constants from the constructor");
 
         await 30ns;
         // Three rising edges (5, 15, 25ns), each adding 1.5 * -0.5.
-        assert!(acc.to_real() == 0.0 - 2.25, "the accumulator holds 3 * -0.75");
+        assert!(real(acc) == 0.0 - 2.25, "the accumulator holds 3 * -0.75");
     }
 }

@@ -1,0 +1,51 @@
+module math_sqrt_test;
+
+// `std::math::sqrt` for every number type, and `real(x)` from fixed and
+// float, in hardware and a testbench. Fixed-point roots round to the nearest
+// step: sqrt(2) in ufixed<8, 4> is 23/16 = 1.4375, sqrt(10) in sfixed<12, 6>
+// is 202/64 = 3.15625; a negative sfixed has no root and gives zero.
+
+use std::fixed::{ufixed, sfixed};
+use std::float::float;
+use std::math::sqrt;
+
+entity Roots {
+    f: float<32, 23> in, u: ufixed<8, 4> in, x: real in,
+    rf: float<32, 23> out, ru: ufixed<8, 4> out, rx: real out, uv: real out,
+}
+
+impl Roots {
+    rf = sqrt(f);
+    ru = sqrt(u);
+    rx = sqrt(x);
+    uv = real(u);
+}
+
+#[test]
+entity MathSqrtTest {}
+
+impl MathSqrtTest {
+    let f: float<32, 23>; let u: ufixed<8, 4>; let x: real;
+    let rf: float<32, 23>; let ru: ufixed<8, 4>; let rx: real; let uv: real;
+    let dut: Roots = { .f = f, .u = u, .x = x, .rf = rf, .ru = ru, .rx = rx, .uv = uv };
+
+    check: process {
+        f = float<32, 23>(2.0); u = ufixed<8, 4>(2.0); x = 16.0;
+        await 1ns;
+        assert!(integer(rf) == 1068827891, "binary32 sqrt(2) is 0x3FB504F3");
+        assert!(real(ru) == 1.4375, "ufixed<8, 4> sqrt(2) to the nearest sixteenth");
+        assert!(rx == 4.0, "real sqrt through the C library");
+        assert!(uv == 2.0, "real(x) of a ufixed in hardware");
+
+        let s: sfixed<12, 6> = sfixed<12, 6>(10.0);
+        let n: sfixed<12, 6> = sfixed<12, 6>(0.0 - 4.0);
+        let top: ufixed<8, 4> = ufixed<8, 4>(15.9375);
+        let h: float<16, 10> = float<16, 10>(3.0);
+        assert!(real(sqrt(s)) == 3.15625, "sfixed<12, 6> sqrt(10)");
+        assert!(real(sqrt(n)) == 0.0, "a negative fixed-point number has no root");
+        assert!(real(sqrt(top)) == 4.0, "the root of the largest ufixed<8, 4>");
+        assert!(integer(sqrt(h)) == 16110, "binary16 sqrt(3)");
+        assert!(sqrt(9.0) == 3.0, "real sqrt in a testbench");
+        assert!(real(s) == 10.0 and real(n) == 0.0 - 4.0 and real(h) == 3.0, "real(x) conversions");
+    }
+}
