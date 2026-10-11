@@ -38,16 +38,16 @@ impl ResizeStylesTest {
     check: process {
         x = ufixed<8, 4>(13.5); y = sfixed<8, 4>(0.0 - 2.5625); z = float<32, 23>(70000.0);
         await 1ns;
-        assert!(sat.to_real() == 7.75, "saturates at the top of ufixed<5, 2>");
-        assert!(wrap.to_real() == 5.5, "wraps: 54 steps mod 32");
-        assert!(near.to_real() == 0.0 - 2.5, "rounds to the nearest quarter");
-        assert!(trunc.to_real() == 0.0 - 2.75, "truncates toward minus infinity");
+        assert!(real(sat) == 7.75, "saturates at the top of ufixed<5, 2>");
+        assert!(real(wrap) == 5.5, "wraps: 54 steps mod 32");
+        assert!(real(near) == 0.0 - 2.5, "rounds to the nearest quarter");
+        assert!(real(trunc) == 0.0 - 2.75, "truncates toward minus infinity");
         assert!(half.is_infinite(), "binary16 overflows to infinity, rounding to nearest");
-        assert!(half_trunc.to_real() == 65504.0, "truncated, it is the largest finite");
+        assert!(real(half_trunc) == 65504.0, "truncated, it is the largest finite");
 
         let small: float<32, 23> = float<32, 23>(1.000732421875);
         let up: float<16, 10> = float<16, 10>::resize(small, Rounding::Nearest);
         let down: float<16, 10> = float<16, 10>::resize(small, Rounding::Truncate);
-        assert!(up.to_real() == 1.0009765625 and down.to_real() == 1.0, "float rounding");
+        assert!(real(up) == 1.0009765625 and real(down) == 1.0, "float rounding");
     }
 }

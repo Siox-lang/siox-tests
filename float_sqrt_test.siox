@@ -5,11 +5,12 @@ module float_sqrt_test;
 // sqrt(2) = 0x3FB504F3 and sqrt(3) = 0x3FDDB3D7 in binary32, 0x3DA8 in binary16.
 
 use std::float::float;
+use std::math::sqrt;
 
 entity Root { a: float<32, 23> in, r: float<32, 23> out }
 
 impl Root {
-    r = a.sqrt();
+    r = sqrt(a);
 }
 
 #[test]
@@ -29,19 +30,19 @@ impl FloatSqrtTest {
         let nine: float<32, 23> = float<32, 23>(9.0);
         let quarter: float<32, 23> = float<32, 23>(0.25);
         let half_two: float<16, 10> = float<16, 10>(2.0);
-        assert!(integer(three.sqrt()) == 1071494103, "sqrt(3) is 0x3FDDB3D7");
-        assert!(nine.sqrt().to_real() == 3.0, "an exact root");
-        assert!(quarter.sqrt().to_real() == 0.5, "below one");
-        assert!(integer(half_two.sqrt()) == 15784, "binary16 sqrt(2) is 0x3DA8");
+        assert!(integer(sqrt(three)) == 1071494103, "sqrt(3) is 0x3FDDB3D7");
+        assert!(real(sqrt(nine)) == 3.0, "an exact root");
+        assert!(real(sqrt(quarter)) == 0.5, "below one");
+        assert!(integer(sqrt(half_two)) == 15784, "binary16 sqrt(2) is 0x3DA8");
 
         let zero: float<32, 23> = float<32, 23>(0.0);
         let one: float<32, 23> = float<32, 23>(1.0);
         let negative: float<32, 23> = zero - one;
         let inf: float<32, 23> = one / zero;
         let minus_zero: float<32, 23> = -zero;
-        assert!(negative.sqrt().is_nan(), "a negative number has no root");
-        assert!(inf.sqrt().is_infinite(), "infinity is its own root");
-        assert!(integer(minus_zero.sqrt()) == integer(minus_zero), "-0 is its own root");
-        print!("sqrt(2) = {}", a.sqrt());
+        assert!(sqrt(negative).is_nan(), "a negative number has no root");
+        assert!(sqrt(inf).is_infinite(), "infinity is its own root");
+        assert!(integer(sqrt(minus_zero)) == integer(minus_zero), "-0 is its own root");
+        print!("sqrt(2) = {}", sqrt(a));
     }
 }

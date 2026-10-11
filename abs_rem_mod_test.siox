@@ -74,7 +74,7 @@ impl AbsRemModTest {
         assert!(abs(u) == 23, "unsigned abs is itself");
         assert!(rem(u, 5) == 3 and mod(u, 5) == 3, "unsigned rem and mod agree");
 
-        assert!(abs(s).to_real() == 1.25, "sfixed abs");
-        assert!(abs(f).to_real() == 2.5, "ufixed abs");
+        assert!(real(abs(s)) == 1.25, "sfixed abs");
+        assert!(real(abs(f)) == 2.5, "ufixed abs");
     }
 }
