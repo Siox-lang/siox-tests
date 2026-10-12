@@ -1,0 +1,61 @@
+module view_port_array_test;
+
+// An array of views (`down: Bus[N] Requester`) applies the view to each
+// element, as a port's direction applies to each element of an array port.
+// A hub fans one Completer-side port out to `N` Requester-side ones, and a
+// mux reads an element chosen at run time. The comparisons against the
+// generic `N` include `>` and `>=`, whose `core::cmp` defaults once swapped
+// the operands and so made the integer `N` a method receiver.
+
+use std::bits::unsigned;
+
+struct Bus { pub sel: Bit, pub wdata: unsigned[8], pub rdata: unsigned[8] }
+view Requester for Bus { sel out, wdata out, rdata in }
+view Completer for Bus { sel in, wdata in, rdata out }
+
+entity Hub<N: integer> { up: Bus Completer, which: unsigned[4] in, down: Bus[N] Requester,
+                         mapped: Bit out }
+impl<N: integer> Hub<N> {
+    for i in 0..N - 1 {
+        down[i].sel = if which == i { up.sel } else { '0' };
+        down[i].wdata = up.wdata;
+    }
+    up.rdata = if which >= N { 0 } else { down[which].rdata };
+    mapped = if which > N - 1 { '0' } else { '1' };
+}
+
+entity Leaf { bus: Bus Completer, k: unsigned[8] in }
+impl Leaf { bus.rdata = if bus.sel { bus.wdata + k } else { 0 }; }
+
+entity System { sel: Bit in, wdata: unsigned[8] in, which: unsigned[4] in,
+                rdata: unsigned[8] out, mapped: Bit out }
+impl System {
+    let up: Bus;
+    let wires: Bus[3];
+    up.sel = sel;
+    up.wdata = wdata;
+    rdata = up.rdata;
+    let hub: Hub<3> = { .up = up, .which = which, .down = wires, .mapped = mapped };
+    let l0: Leaf = { .bus = wires[0], .k = 1 };
+    let l1: Leaf = { .bus = wires[1], .k = 2 };
+    let l2: Leaf = { .bus = wires[2], .k = 3 };
+}
+
+#[test]
+entity ViewPortArrayTest {}
+impl ViewPortArrayTest {
+    let sel: Bit = '1';
+    let wdata: unsigned[8] = 10;
+    let which: unsigned[4] = 2;
+    let rdata: unsigned[8];
+    let mapped: Bit;
+    let dut: System = { .sel = sel, .wdata = wdata, .which = which, .rdata = rdata, .mapped = mapped };
+    await 1ns;
+    assert!(rdata == 13 and mapped == '1', "element 2 answers");
+    which = 0;
+    await 1ns;
+    assert!(rdata == 11, "element 0 answers");
+    which = 5;
+    await 1ns;
+    assert!(rdata == 0 and mapped == '0', "past the array nothing answers");
+}
