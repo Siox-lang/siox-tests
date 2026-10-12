@@ -1,0 +1,63 @@
+module procedural_loop_test;
+
+// A hardware loop whose bound is not a constant has no RTL form, but it
+// simulates (spec: W-P019 `non_constant_loop_bound` warns): the process runs
+// as procedural code, re-run whenever a signal it reads changes. Hardware
+// must agree with the same computation in the testbench.
+
+fn triangle(n: integer) -> integer {
+    let s: integer = 0;
+    for k in 0..n { s = s + k; }
+    return s;
+}
+
+entity Accumulate<W: integer> {
+    clk: Bit in, n: unsigned[4] in,
+    via_fn: unsigned[W] out, direct: unsigned[W] out, clocked: unsigned[W] out,
+}
+
+impl<W: integer> Accumulate<W> {
+    via_fn = unsigned[W](triangle(integer(n)));
+    sum: process {
+        let s: integer = 0;
+        for k in 0..integer(n) { s = s + k; }
+        direct = unsigned[W](s);
+    }
+    reg: process {
+        if clk.rising() {
+            let s: integer = 0;
+            for k in 0..integer(n) { s = s + 2; }
+            clocked = unsigned[W](s);
+        }
+    }
+}
+
+#[test]
+entity ProceduralLoopTest {}
+
+impl ProceduralLoopTest {
+    let clk: Bit = '0';
+    let n: unsigned[4] = 4;
+    let via_fn: unsigned[8];
+    let direct: unsigned[8];
+    let clocked: unsigned[8];
+    let dut: Accumulate<8> = {
+        .clk = clk, .n = n, .via_fn = via_fn, .direct = direct, .clocked = clocked
+    };
+
+    check: process {
+        await 1ns;
+        assert!(via_fn == 10 and direct == 10, "0 + 1 + 2 + 3 + 4");
+        assert!(integer(via_fn) == triangle(4), "hardware agrees with the testbench");
+        assert!(clocked == 0, "nothing clocked yet");
+        n = 7;
+        await 1ns;
+        assert!(via_fn == 28 and direct == 28, "re-run when n changes");
+        clk = '1';
+        await 1ns;
+        assert!(clocked == 16, "captured on the edge: 8 iterations of 2");
+        n = 1;
+        await 1ns;
+        assert!(via_fn == 1 and clocked == 16, "combinational follows, the register holds");
+    }
+}
