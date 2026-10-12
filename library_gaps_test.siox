@@ -1,0 +1,54 @@
+module library_gaps_test;
+
+// Three gaps found while writing the bus-interface libraries:
+// - a module constant of a character-valued enum (`const OK: Bit = '1'`)
+//   was unknown in a hardware body;
+// - `Bit(cond)` had no `From<Bool> for Bit`, though the diagnostic for
+//   `bit = cond` suggested exactly that;
+// - a testbench connecting one element of its struct array to a port
+//   (`.bus = wires[1]`) left the port unconnected.
+
+use std::bits::unsigned;
+
+const OK: Bit = '1';
+const WEAK_HIGH: Logic = 'H';
+
+struct Bus { pub sel: Bit, pub wdata: unsigned[8], pub rdata: unsigned[8] }
+view Requester for Bus { sel out, wdata out, rdata in }
+view Completer for Bus { sel in, wdata in, rdata out }
+
+entity Fan { which: unsigned[1] in, wdata: unsigned[8] in, rdata: unsigned[8] out,
+             down: Bus[2] Requester, ok: Bit out, pull: Logic out }
+impl Fan {
+    for i in 0..1 {
+        down[i].sel = Bit(which == i);
+        down[i].wdata = wdata;
+    }
+    rdata = down[which].rdata;
+    ok = OK;
+    pull = WEAK_HIGH;
+}
+
+entity Leaf { bus: Bus Completer, k: unsigned[8] in }
+impl Leaf { bus.rdata = if bus.sel { bus.wdata + k } else { 0 }; }
+
+#[test]
+entity LibraryGapsTest {}
+impl LibraryGapsTest {
+    let which: unsigned[1] = 1;
+    let wdata: unsigned[8] = 10;
+    let rdata: unsigned[8];
+    let ok: Bit;
+    let pull: Logic;
+    let wires: Bus[2];
+    let fan: Fan = { .which = which, .wdata = wdata, .rdata = rdata, .down = wires,
+                     .ok = ok, .pull = pull };
+    let l0: Leaf = { .bus = wires[0], .k = 1 };
+    let l1: Leaf = { .bus = wires[1], .k = 2 };
+    await 1ns;
+    assert!(ok == '1' and pull == 'H', "character constants drive hardware");
+    assert!(rdata == 12 and wires[1].rdata == 12, "element 1 is connected both ways");
+    which = 0;
+    await 1ns;
+    assert!(rdata == 11 and wires[1].sel == '0', "Bit(which == i) selects element 0");
+}
