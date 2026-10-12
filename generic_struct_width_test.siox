@@ -1,0 +1,36 @@
+module generic_struct_width_test;
+
+// A struct's value parameters size its fields (`unsigned[D]`,
+// `unsigned[D / 8]`). Through a view-typed port, the instance used to see
+// those fields at width 0: only type parameters were substituted.
+
+use std::bits::unsigned;
+
+struct Bus<A: integer, D: integer> {
+    pub addr: unsigned[A],
+    pub data: unsigned[D],
+    pub strobe: unsigned[D / 8],
+    pub echo: unsigned[D]
+}
+
+view Device<A: integer, D: integer> for Bus<A, D> {
+    addr in, data in, strobe out, echo out
+}
+
+entity Echo { bus: Bus<12, 32> Device }
+impl Echo {
+    bus.strobe = 0xF;
+    bus.echo = bus.data + unsigned[32](bus.addr);
+}
+
+#[test]
+entity GenericStructWidthTest {}
+impl GenericStructWidthTest {
+    let bus: Bus<12, 32>;
+    let dut: Echo = { .bus = bus };
+    bus.addr = 0x100;
+    bus.data = 0xFFFF_0000;
+    await 1ns;
+    assert!(bus.strobe == 0xF, "D / 8 sizes the strobe");
+    assert!(bus.echo == 0xFFFF_0100, "D sizes data and echo, A sizes addr");
+}
