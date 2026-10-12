@@ -31,7 +31,7 @@ impl FloatTest {
         inf = float<32, 23>(1.0 / 0.0);
         zero = float<32, 23>(0.0);
         await 1ns;
-        assert!(x == 1069547520, "1.5 is 0x3FC00000");
+        assert!(integer(x) == 1069547520, "1.5 is 0x3FC00000");
         assert!(real(y) == 0.0 - 2.25, "real(y)");
         assert!(y < x and x > y and x >= x and x != y, "ordering");
         assert!(real(-y) == 2.25 and abs(y) == -y, "negation and abs");
@@ -53,12 +53,12 @@ impl FloatTest {
         await 1ns;
         r = x + y;
         await 1ns;
-        assert!(r == 1065353216, "a tie rounds to even");
+        assert!(integer(r) == 1065353216, "a tie rounds to even");
         y = float<32, 23>(0.0000000894069671630859375);
         await 1ns;
         r = x + y;
         await 1ns;
-        assert!(r == 1065353217, "above a tie rounds up");
+        assert!(integer(r) == 1065353217, "above a tie rounds up");
         // The constructor's value is a float itself, usable in place.
         assert!(real(float<32, 23>(1.5) * float<32, 23>(2.0)) == 3.0, "constructed operands");
         assert!(float<32, 23>(3) == float<32, 23>(3.0), "an integer converts by value");
@@ -98,7 +98,7 @@ impl FloatTest {
         // Internally the word is indexed as VHDL's float is: the exponent
         // above index 0, the mantissa below it.
         assert!(x'high == 8 and x'low == 0 - 23 and x'length == 32, "binary32's index range");
-        assert!(h == 14336, "0.5 is 0x3800 in binary16");
+        assert!(integer(h) == 14336, "0.5 is 0x3800 in binary16");
 
     }
 }

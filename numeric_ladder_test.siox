@@ -1,0 +1,51 @@
+module numeric_ladder_test;
+
+// Numbers below `real` mix by exact widening along the ladder
+// unsigned/signed -> ufixed/sfixed -> float (spec 3.17): the result's format
+// holds every value of both operands, so a promotion only aligns binary
+// points and extends signs -- wiring in hardware. An integer beside a fixed
+// format is its value: `s + 1` adds 1.0.
+
+use std::fixed::{ufixed, sfixed};
+use std::float::float;
+
+entity Datapath {
+    u: unsigned[8] in, v: signed[8] in, a: ufixed<8, 4> in, s: sfixed<8, 4> in,
+    p: sfixed<12, 6> in, f: float<32, 23> in,
+    uv: signed[9] out, as_: sfixed<9, 4> out, su: sfixed<13, 4> out, sp: sfixed<12, 6> out,
+    fs: float<32, 23> out, s1: sfixed<8, 4> out, below: Bool out,
+}
+
+impl Datapath {
+    uv = u + v;             // unsigned[8] + signed[8]      -> signed[9]
+    as_ = a + s;            // ufixed<8, 4> + sfixed<8, 4>   -> sfixed<9, 4>
+    su = s + u;             // sfixed<8, 4> + unsigned[8]    -> sfixed<13, 4>
+    sp = s + p;             // sfixed<8, 4> + sfixed<12, 6>  -> sfixed<12, 6>
+    fs = f + s;             // float<32, 23> + sfixed<8, 4>  -> float<32, 23>
+    s1 = s + 1;             // 1 is 1.0 in s's format
+    below = s < u;
+}
+
+#[test]
+entity NumericLadderTest {}
+
+impl NumericLadderTest {
+    let u: unsigned[8]; let v: signed[8]; let a: ufixed<8, 4>; let s: sfixed<8, 4>;
+    let p: sfixed<12, 6>; let f: float<32, 23>;
+    let uv: signed[9]; let as_: sfixed<9, 4>; let su: sfixed<13, 4>; let sp: sfixed<12, 6>;
+    let fs: float<32, 23>; let s1: sfixed<8, 4>; let below: Bool;
+    let dut: Datapath = { .u = u, .v = v, .a = a, .s = s, .p = p, .f = f, .uv = uv, .as_ = as_,
+        .su = su, .sp = sp, .fs = fs, .s1 = s1, .below = below };
+
+    check: process {
+        u = 200; v = 0 - 3; a = ufixed<8, 4>(2.5); s = sfixed<8, 4>(0.0 - 1.25);
+        p = sfixed<12, 6>(1.015625); f = float<32, 23>(0.5);
+        await 1ns;
+        assert!(integer(sext(uv)) == 197, "200 + -3 in signed[9]");
+        assert!(real(as_) == 1.25 and real(su) == 198.75, "fixed with fixed and unsigned");
+        assert!(real(sp) == 0.0 - 0.234375, "binary points aligned to the finer format");
+        assert!(real(fs) == 0.0 - 0.75 and real(s1) == 0.0 - 0.25, "float beside fixed; s + 1.0");
+        assert!(below, "-1.25 < 200");
+        assert!(real(f + u) == 200.5 and real(a * 2) == 5.0, "the same in a testbench");
+    }
+}
