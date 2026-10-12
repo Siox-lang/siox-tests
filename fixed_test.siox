@@ -93,7 +93,7 @@ impl FixedTest {
 
     check: process {
         await 1ns;
-        assert!(a == 40 and b == 24, "2.5 and 1.5 are the 4.4 words 40 and 24");
+        assert!(integer(a) == 40 and integer(b) == 24, "2.5 and 1.5 are the 4.4 words 40 and 24");
         assert!(real(sum) == 4.0, "2.5 + 1.5");
         assert!(real(diff) == 1.0, "2.5 - 1.5");
         assert!(real(product) == 3.75, "2.5 * 1.5");
