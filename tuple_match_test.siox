@@ -1,0 +1,96 @@
+module tuple_match_test;
+
+// `match` over several values at once: a tuple pattern matches when every
+// position does, so `(State::Idle, '1', _)` is the conjunction of three
+// conditions and first match wins. The scrutinee may be a tuple literal,
+// which is never built, or a tuple-typed value, read position by position.
+// Exhaustiveness is checked over the enum positions' combinations.
+
+use std::bits::unsigned;
+
+enum State { Idle, Run, Done }
+
+fn next(s: State, start: Bit, count: unsigned[4]) -> State {
+    match (s, start, count) {
+        (State::Idle, '1', _) => { return State::Run; }
+        (State::Run, _, 0..14) => { return State::Run; }
+        (State::Run, _, _) => { return State::Done; }
+        _ => { return State::Idle; }
+    }
+}
+
+fn both(a: Bit, b: Bit) -> unsigned[2] {
+    // Every combination is named, so no `_` arm is needed.
+    match (a, b) {
+        ('0', '0') => { return 0; }
+        ('0', '1') => { return 1; }
+        ('1', '0') => { return 2; }
+        ('1', '1') => { return 3; }
+    }
+}
+
+entity Fsm { clk: Bit in, start: Bit in, count: unsigned[4] in, state: State out,
+             kind: unsigned[2] out, hit: Bit out }
+impl Fsm {
+    let s: State = State::Idle;
+    state = s;
+    kind = match (start, count) {
+        ('1', 0) => 1,
+        ('1', _) => 2,
+        _ => 0,
+    };
+    let pair: (unsigned[4], Bit);
+    pair = (count, start);
+    hit = match pair {
+        (15, '0') => '1',
+        _ => '0',
+    };
+    process {
+        if clk.rising() {
+            match (s, start, count) {
+                (State::Idle, '1', _) => { s = State::Run; }
+                (State::Run, _, 15) => { s = State::Done; }
+                (State::Done, _, _) => { s = State::Idle; }
+                _ => {}
+            }
+        }
+    }
+}
+
+#[test]
+entity TupleMatch {}
+impl TupleMatch {
+    let clk: Bit = '0';
+    let start: Bit = '0';
+    let count: unsigned[4] = 0;
+    let state: State;
+    let kind: unsigned[2];
+    let hit: Bit;
+    let f: Fsm = { .clk = clk, .start = start, .count = count, .state = state,
+                   .kind = kind, .hit = hit };
+    process {
+        assert!(next(State::Idle, '1', 0) == State::Run);
+        assert!(next(State::Run, '0', 3) == State::Run);
+        assert!(next(State::Run, '0', 15) == State::Done);
+        assert!(next(State::Done, '1', 3) == State::Idle);
+        assert!(both('1', '0') == 2);
+
+        await 1ns;
+        assert!(kind == 0);
+        start = '1';
+        await 1ns;
+        assert!(kind == 1);
+        clk = '1';
+        await 1ns;
+        assert!(state == State::Run);
+        start = '0';
+        count = 15;
+        clk = '0';
+        await 1ns;
+        assert!(hit == '1');
+        clk = '1';
+        await 1ns;
+        assert!(state == State::Done);
+        assert!(kind == 0);
+    }
+}
