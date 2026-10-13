@@ -1,0 +1,64 @@
+module tuple_values_test;
+
+// Tuples as values: types, literals, positions (`t.0`, `t.0.1`), function
+// parameters and returns, ports, arrays of tuples, aliases, `==`/`!=`, and
+// `{:?}` printing in Rust's `(a, b)` form. A tuple lowers to a struct whose
+// fields are its positions, so a tuple port or signal is wires `t.0`, `t.1`.
+
+use std::bits::unsigned;
+
+type Pair<A, B> = (A, B);
+type Tagged = (unsigned[8], Bit);
+
+fn divmod(a: unsigned[8], b: unsigned[8]) -> (unsigned[8], unsigned[8]) {
+    return (a / b, a % b);
+}
+
+fn swap<T>(a: T, b: T) -> (T, T) { return (b, a); }
+
+fn split(x: unsigned[8]) -> ((unsigned[4], unsigned[4]), Logic) {
+    return ((x[7..4], x[3..0]), x[0]);
+}
+
+fn tag(v: unsigned[8]) -> Pair<unsigned[8], Bit> { return (v, '1'); }
+
+entity Div { a: unsigned[8] in, qr: (unsigned[8], unsigned[8]) out, q: unsigned[8] out }
+impl Div {
+    qr = divmod(a, 7);
+    q = qr.0;
+}
+
+#[test]
+entity TupleValues {}
+impl TupleValues {
+    let a: unsigned[8] = 23;
+    let qr: (unsigned[8], unsigned[8]);
+    let q: unsigned[8];
+    let d: Div = { .a = a, .qr = qr, .q = q };
+    process {
+        await 1ns;
+        assert!(qr == (3, 2));
+        assert!(q == 3);
+        assert!(qr.1 == 2);
+
+        let p: (unsigned[8], unsigned[8]) = swap(3, 4);
+        assert!(p == (4, 3));
+        assert!(p != (3, 4));
+
+        let x: unsigned[8] = 0xA5;
+        let n: ((unsigned[4], unsigned[4]), Logic) = split(x);
+        assert!(n.0.0 == 10);
+        assert!(n.0.1 == 5);
+        assert!(n.1 == '1');
+
+        let pairs: (Bit, Bit)[2];
+        pairs[0] = ('1', '0');
+        pairs[1] = (pairs[0].1, pairs[0].0);
+        assert!(pairs[1] == ('0', '1'));
+
+        let t: Tagged = tag(x);
+        assert!(t == (0xA5, '1'));
+
+        print!("{:?} {:?} {:?}", p, n, pairs);
+    }
+}

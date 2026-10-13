@@ -1,0 +1,81 @@
+module tuple_destructure_test;
+
+// Taking a tuple apart: `let (q: A, r: B) = e;` declares each name, and
+// `(q, r) = e;` assigns existing places, `_` skipping a position. Every name
+// declares a type, by itself or through a type on the whole pattern
+// (`let (q, r): (A, B) = e;`, an alias too). The value is evaluated once, so
+// `(m, n) = (n, m);` swaps. The forms work as concurrent assignments, in a
+// clocked process (signals and block locals), and in a testbench.
+
+use std::bits::unsigned;
+
+type Pair<A, B> = (A, B);
+
+fn divmod(a: unsigned[8], b: unsigned[8]) -> (unsigned[8], unsigned[8]) {
+    return (a / b, a % b);
+}
+
+entity Top { clk: Bit in, a: unsigned[8] in, q: unsigned[8] out, r: unsigned[8] out,
+             sum: unsigned[8] out, deep: unsigned[8] out, inc: unsigned[8] out }
+impl Top {
+    // Concurrent: two signals driven from one call.
+    let (dq: unsigned[8], dr: unsigned[8]) = divmod(a, 7);
+    q = dq;
+    r = dr;
+
+    let s: unsigned[8] = 0;
+    let d: unsigned[8] = 0;
+    sum = s;
+    deep = d;
+    let n: ((unsigned[8], Bit), unsigned[8]);
+    inc = if n.0.1 == '1' { n.1 } else { 0 };
+    process {
+        if clk.rising() {
+            // Block locals, then a nested target with `_` positions.
+            let (x: unsigned[8], y: unsigned[8]) = divmod(a, 10);
+            s = x + y;
+            n = ((a, '1'), a + 1);
+            ((d, _), _) = n;
+        }
+    }
+}
+
+#[test]
+entity TupleDestructure {}
+impl TupleDestructure {
+    let clk: Bit = '0';
+    let a: unsigned[8] = 23;
+    let q: unsigned[8];
+    let r: unsigned[8];
+    let sum: unsigned[8];
+    let deep: unsigned[8];
+    let inc: unsigned[8];
+    let t: Top = { .clk = clk, .a = a, .q = q, .r = r, .sum = sum, .deep = deep, .inc = inc };
+    process {
+        await 1ns;
+        assert!(q == 3);
+        assert!(r == 2);
+        clk = '1';
+        await 1ns;
+        clk = '0';
+        await 1ns;
+        clk = '1';
+        await 1ns;
+        assert!(sum == 5);
+        assert!(deep == 23);
+        assert!(inc == 24);
+
+        let (x: unsigned[8], y: unsigned[8]) = divmod(100, 9);
+        assert!(x == 11);
+        assert!(y == 1);
+        let (m, k): (unsigned[8], unsigned[8]) = (5, 6);
+        (m, k) = (k, m);
+        assert!(m == 6);
+        assert!(k == 5);
+        let (first: unsigned[8], _) = divmod(50, 7);
+        assert!(first == 7);
+        let (u, v): Pair<unsigned[8], Bit> = (9, '1');
+        assert!(u == 9);
+        assert!(v == '1');
+    }
+}
