@@ -1,0 +1,29 @@
+module literal_argument_slice_test;
+
+// A function called with a bare literal (`hi(0xA5)`) and slicing or
+// indexing its parameter. The literal had a type but no layout, so in a
+// testbench the body's `x[7..4]` had no native form and the test failed with
+// "lowering is incomplete"; the same call with a typed local worked. The
+// literal now takes the parameter's declared layout, written ranges included.
+
+use std::bits::unsigned;
+
+fn hi(x: unsigned[8]) -> unsigned[4] { return x[7..4]; }
+fn top(x: unsigned[15..8]) -> unsigned[4] { return x[15..12]; }
+fn msb(x: unsigned[8]) -> Logic { return x[7]; }
+fn first(x: Logic[4]) -> Logic { return x[0]; }
+
+#[test]
+entity LiteralArgumentSlice {}
+impl LiteralArgumentSlice {
+    process {
+        let v: unsigned[8] = 0xA5;
+        let w: Logic[4] = "0101";
+        assert!(hi(0xA5) == hi(v));
+        assert!(hi(0xA5) == 10);
+        assert!(top(0xA5) == 10);
+        assert!(msb(0x80) == '1');
+        assert!(first("0101") == first(w));
+        assert!(first("0101") == '0');
+    }
+}
