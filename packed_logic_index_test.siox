@@ -1,0 +1,86 @@
+module packed_logic_index_test;
+use std::bits::unsigned;
+
+struct Packet { pub data: unsigned[9], pub wide: unsigned[81] }
+
+fn tap(value: Packet) -> Logic {
+    let copy: Packet = value;
+    return copy.data[6];
+}
+
+fn tap_at(value: Packet, index: integer) -> Logic {
+    let copy: Packet = value;
+    return copy.data[index];
+}
+
+fn echo(value: Packet) -> Packet { return value; }
+
+fn tap_nested(value: Packet) -> Logic {
+    let copy: Packet = echo(value);
+    return copy.data[6];
+}
+
+fn tap_wide(value: Packet) -> Logic {
+    let copy: Packet = value;
+    return copy.wide[78];
+}
+
+entity Probe {
+    value: Packet in, index: integer in,
+    seen: Logic out, dynamic: Logic out, nested: Logic out, wide: Logic out
+}
+impl Probe {
+    seen = tap(value);
+    dynamic = tap_at(value, index);
+    nested = tap_nested(value);
+    wide = tap_wide(value);
+}
+
+#[test]
+entity PackedLogicIndexTest {}
+impl PackedLogicIndexTest {
+    let packet: Packet = {
+        .data = "01XZUWLH-",
+        .wide = "01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-01XZUWLH-"
+    };
+    let index: integer = 6;
+    let seen: Logic;
+    let dynamic: Logic;
+    let nested: Logic;
+    let wide: Logic;
+    let probe: Probe = {
+        .value = packet, .index = index,
+        .seen = seen, .dynamic = dynamic, .nested = nested, .wide = wide
+    };
+    stimulus: process {
+        let local: Logic = tap(packet);
+        assert!(local == 'X', "procedural packed struct index preserves X");
+        await 1ns;
+        assert!(seen == 'X', "hardware packed struct index preserves X");
+        assert!(dynamic == 'X' and nested == 'X', "dynamic and nested reads preserve X");
+        assert!(wide == 'X', "multiword packed field preserves X");
+        index = 5;
+        await 1ns;
+        assert!(dynamic == 'Z', "dynamic read preserves Z");
+        index = 4;
+        await 1ns;
+        assert!(dynamic == 'U', "dynamic read preserves U");
+        index = 3;
+        await 1ns;
+        assert!(dynamic == 'W', "dynamic read preserves W");
+        index = 0;
+        await 1ns;
+        assert!(dynamic == '-', "dynamic read preserves don't-care");
+        index = 8;
+        await 1ns;
+        assert!(dynamic == '0', "binary zero remains zero");
+        index = 7;
+        await 1ns;
+        assert!(dynamic == '1', "binary one remains one");
+        index = 6;
+        // X and Z have the same value-plane bit; only the companion changes.
+        packet.data = "01ZXUWLH-";
+        await 1ns;
+        assert!(seen == 'Z' and dynamic == 'Z' and nested == 'Z', "metadata-only update triggers readers");
+    }
+}
