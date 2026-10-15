@@ -17,8 +17,12 @@ impl MetaState {
     let dirty8: unsigned[8] = "X0000000";
     let zero8: unsigned[8] = 0;
 
-    comb = dirty4;
-    if clear { comb = "0000"; }
+    // One process, so the clean write overrides the dirty one (spec 3.14);
+    // as two concurrent assignments they would resolve, keeping the 'X'.
+    drive: process {
+        comb = dirty4;
+        if clear { comb = "0000"; }
+    }
 
     if clk.rising() {
         reg = "X000";
