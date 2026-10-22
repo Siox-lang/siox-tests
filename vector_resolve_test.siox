@@ -27,10 +27,10 @@ impl VectorBus {
 }
 
 impl VectorBus {
-    b3 = bus[3..3];
-    b2 = bus[2..2];
-    b1 = bus[1..1];
-    b0 = bus[0..0];
+    b3 = bus[3];
+    b2 = bus[2];
+    b1 = bus[1];
+    b0 = bus[0];
 }
 
 #[test]

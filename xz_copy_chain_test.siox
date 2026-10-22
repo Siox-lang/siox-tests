@@ -51,9 +51,9 @@ impl Chain {
     u = t;    // two hops -- this is the one that used to read back '1'
     v = u;    // three, to show the fixed point is not a one-off
 
-    from_literal = t[2..2];
-    from_signal = u[2..2];
-    from_signal_twice = v[2..2];
+    from_literal = t[2];
+    from_signal = u[2];
+    from_signal_twice = v[2];
     vec = v;
 }
 
@@ -81,11 +81,11 @@ impl XzCopyChainTest {
     assert!(from_signal_twice == 'X', "at any depth");
 
     // The testbench sees the same element as the entity does.
-    assert!(vec[2..2] == 'X', "the testbench reads the metavalue too");
-    assert!(not (vec[2..2] == '0'), "and does not read it as a plain bit");
+    assert!(vec[2] == 'X', "the testbench reads the metavalue too");
+    assert!(not (vec[2] == '0'), "and does not read it as a plain bit");
 
     // The clean elements are untouched: poisoning must not spread.
-    assert!(vec[0..0] == '1', "a clean `1` stays a clean `1`");
-    assert!(vec[3..3] == '1', "on both sides of the metavalue");
-    assert!(vec[1..1] == '0', "and a clean `0` stays a clean `0`");
+    assert!(vec[0] == '1', "a clean `1` stays a clean `1`");
+    assert!(vec[3] == '1', "on both sides of the metavalue");
+    assert!(vec[1] == '0', "and a clean `0` stays a clean `0`");
 }

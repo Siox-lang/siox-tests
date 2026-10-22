@@ -20,10 +20,10 @@ impl Gates {
     let o: unsigned[2];
     a = xx and mask;           // {X and 1, X and 0} = {X, 0}
     o = xx or mask;            // {X or 1,  X or 0}  = {1, X}
-    and_hi = a[1..1];
-    and_lo = a[0..0];
-    or_hi = o[1..1];
-    or_lo = o[0..0];
+    and_hi = a[1];
+    and_lo = a[0];
+    or_hi = o[1];
+    or_lo = o[0];
 }
 
 #[test]

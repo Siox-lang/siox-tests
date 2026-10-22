@@ -13,9 +13,9 @@ impl WideProbe {
     let driven: unsigned[17];
     driven = "X000000000000000Z";
 
-    init_hi = initialized[16..16];
-    driven_hi = driven[16..16];
-    driven_lo = driven[0..0];
+    init_hi = initialized[16];
+    driven_hi = driven[16];
+    driven_lo = driven[0];
 }
 
 #[test]

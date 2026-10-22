@@ -76,8 +76,8 @@ impl AggregateOperatorValuesTest {
     assert!(dut.joined[3].mark == 'X' and dut.joined[2].mark == 'Z', "nominal struct leaves retained");
     assert!(dut.masked[4] == k and dut.masked[3] == 2, "multiword element masks");
     assert!(dut.inverted[2] == k - 1 and dut.inverted[1] == 0, "multiword element complement");
-    assert!(dut.flipped[3][3..3] == '0' and dut.flipped[3][2..2] == 'X' and dut.flipped[3][1..1] == 'X' and dut.flipped[3][0..0] == '1', "packed metavalue element operators");
-    assert!(dut.literal_meta[6][3..3] == '0' and dut.literal_meta[6][2..2] == 'X' and dut.literal_meta[6][1..1] == 'X' and dut.literal_meta[6][0..0] == '0', "contextual packed literals retain planes");
+    assert!(dut.flipped[3][3] == '0' and dut.flipped[3][2] == 'X' and dut.flipped[3][1] == 'X' and dut.flipped[3][0] == '1', "packed metavalue element operators");
+    assert!(dut.literal_meta[6][3] == '0' and dut.literal_meta[6][2] == 'X' and dut.literal_meta[6][1] == 'X' and dut.literal_meta[6][0] == '0', "contextual packed literals retain planes");
     pick = '0';
     index = 0;
     await 1ns;
