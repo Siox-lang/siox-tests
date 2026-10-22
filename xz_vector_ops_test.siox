@@ -67,63 +67,63 @@ impl XzVectorOpsTest {
     // `not "0000X100"` -> 1111X011: inverted per element, unknown only where
     // the operand was unknown.
     sel = 0; await 1ns;
-    assert!(y[7..7] == '1', "not: clean element inverts");
-    assert!(y[3..3] == 'X', "not: the unknown element stays unknown");
-    assert!(y[2..2] == '0', "not: and its neighbour does not");
+    assert!(y[7] == '1', "not: clean element inverts");
+    assert!(y[3] == 'X', "not: the unknown element stays unknown");
+    assert!(y[2] == '0', "not: and its neighbour does not");
 
     // `"0000X100" xor "00000101"` -> 0000X001.
     sel = 1; await 1ns;
-    assert!(y[3..3] == 'X', "xor: unknown in, unknown out");
-    assert!(y[2..2] == '0', "xor: 1 xor 1 is 0, not poisoned");
-    assert!(y[0..0] == '1', "xor: 0 xor 1 is 1");
+    assert!(y[3] == 'X', "xor: unknown in, unknown out");
+    assert!(y[2] == '0', "xor: 1 xor 1 is 0, not poisoned");
+    assert!(y[0] == '1', "xor: 0 xor 1 is 1");
 
     // The complements follow, since each is its base operation inverted.
     // `nand` resolves the unknown rather than keeping it: `and`'s forcing
     // value is 0, so `X and 0` is `'0'` and the complement is `'1'`. nvc gives
     // 11111011 here, and getting this wrong is how a test can look stricter
     // than the semantics actually are.
-    sel = 2; await 1ns; assert!(y[3..3] == '1', "nand: X and 0 is forced, so nand is 1");
-    sel = 2; await 1ns; assert!(y[2..2] == '0', "nand: 1 nand 1 is 0");
-    sel = 3; await 1ns; assert!(y[3..3] == 'X', "nor: per element");
-    sel = 4; await 1ns; assert!(y[3..3] == 'X', "xnor: per element");
-    sel = 4; await 1ns; assert!(y[2..2] == '1', "xnor: 1 xnor 1 is 1");
+    sel = 2; await 1ns; assert!(y[3] == '1', "nand: X and 0 is forced, so nand is 1");
+    sel = 2; await 1ns; assert!(y[2] == '0', "nand: 1 nand 1 is 0");
+    sel = 3; await 1ns; assert!(y[3] == 'X', "nor: per element");
+    sel = 4; await 1ns; assert!(y[3] == 'X', "xnor: per element");
+    sel = 4; await 1ns; assert!(y[2] == '1', "xnor: 1 xnor 1 is 1");
 
     // A shift moves elements, so it moves their discriminants.
     sel = 5; await 1ns;
-    assert!(y[5..5] == 'X', "shl: the unknown moved up two places");
-    assert!(y[4..4] == '1', "shl: and so did its neighbour");
-    assert!(y[1..1] == '0', "shl: zeroes shift in");
+    assert!(y[5] == 'X', "shl: the unknown moved up two places");
+    assert!(y[4] == '1', "shl: and so did its neighbour");
+    assert!(y[1] == '0', "shl: zeroes shift in");
     sel = 6; await 1ns;
-    assert!(y[1..1] == 'X', "shr: the unknown moved down two places");
-    assert!(y[7..7] == '0', "shr: zeroes shift in at the top");
+    assert!(y[1] == 'X', "shr: the unknown moved down two places");
+    assert!(y[7] == '0', "shr: zeroes shift in at the top");
 
     // `'H'` is a weak 1, not an unknown: it must not poison anything.
     sel = 7; await 1ns;
-    assert!(y[3..3] == '0', "and: H and 0 is 0");
-    assert!(y[2..2] == '1', "and: the rest of the vector is untouched");
+    assert!(y[3] == '0', "and: H and 0 is 0");
+    assert!(y[2] == '1', "and: the rest of the vector is untouched");
     sel = 8; await 1ns;
-    assert!(y[3..3] == '1', "or: H or 0 is 1");
+    assert!(y[3] == '1', "or: H or 0 is 1");
     sel = 9; await 1ns;
-    assert!(y[4..4] == '1', "add: H counts as 1, so 12 + 5 is 17");
-    assert!(y[0..0] == '1', "add: and the sum is a number, not poison");
+    assert!(y[4] == '1', "add: H counts as 1, so 12 + 5 is 17");
+    assert!(y[0] == '1', "add: and the sum is a number, not poison");
 
     // `'U'` dominates `'X'`: an unforced logical result with a `'U'` operand is
     // `'U'`, which is what distinguishes "never driven" from "driven to
     // conflict". Reporting `'X'` for both throws that away.
     sel = 10; await 1ns;
-    assert!(y[3..3] == 'U', "or: U or 0 stays U, not X");
-    assert!(y[0..0] == '1', "or: and a forced element is still forced");
+    assert!(y[3] == 'U', "or: U or 0 stays U, not X");
+    assert!(y[0] == '1', "or: and a forced element is still forced");
     sel = 11; await 1ns;
-    assert!(y[3..3] == 'U', "not: not U is U");
-    assert!(y[2..2] == '0', "not: its neighbour inverts normally");
+    assert!(y[3] == 'U', "not: not U is U");
+    assert!(y[2] == '0', "not: its neighbour inverts normally");
 
     // Forcing still wins over the domination rule ...
     sel = 12; await 1ns;
-    assert!(y[3..3] == '0', "and: U and 0 is forced to 0");
+    assert!(y[3] == '0', "and: U and 0 is forced to 0");
 
     // ... and arithmetic still poisons to `'X'`, which is what nvc gives for a
     // `'U'` operand: the domination rule belongs to the logical tables only.
     sel = 13; await 1ns;
-    assert!(y[3..3] == 'X', "add: a U operand poisons to X, not U");
-    assert!(y[0..0] == 'X', "add: across the whole vector");
+    assert!(y[3] == 'X', "add: a U operand poisons to X, not U");
+    assert!(y[0] == 'X', "add: across the whole vector");
 }

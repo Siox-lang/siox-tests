@@ -50,11 +50,11 @@ impl MetavalueStateTest {
     };
 
     await 1ns;
-    assert!(comb[3..3] == 'X', "dirty combinational value is visible");
-    assert!(narrowed[0..0] == 'X', "wide arithmetic poisons before narrowing");
+    assert!(comb[3] == 'X', "dirty combinational value is visible");
+    assert!(narrowed[0] == 'X', "wide arithmetic poisons before narrowing");
 
     clk = '1'; await 1ns;
-    assert!(reg[3..3] == 'X', "clocked metavalue literal retains its metadata");
+    assert!(reg[3] == 'X', "clocked metavalue literal retains its metadata");
     clk = '0'; await 1ns;
 
     clear = '1'; await 1ns;

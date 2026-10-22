@@ -49,11 +49,11 @@ impl ProcessAggregateMetadataTest {
     let resolved: ResolvedMetadataBus = { .data = clean, .enabled = enabled, .index = index };
     exercise: process {
         await 1ns;
-        assert!(resolved.result[3..3] == 'Z', "inactive resolved index is not evaluated");
+        assert!(resolved.result[3] == 'Z', "inactive resolved index is not evaluated");
         assert!(dut.echoed.count == 7 and dut.echoed.mark == 'Z', "ordinary aggregate neighbours");
-        assert!(dut.echoed.bits[-1][2..2] == 'X', "persistent packed array X plane");
-        assert!(dut.echoed.bits[-1][1..1] == 'Z', "persistent packed array Z plane");
-        assert!(dut.flipped[3][2..2] == 'X' and dut.flipped[3][1..1] == 'X', "hardware consumes aggregate planes");
+        assert!(dut.echoed.bits[-1][2] == 'X', "persistent packed array X plane");
+        assert!(dut.echoed.bits[-1][1] == 'Z', "persistent packed array Z plane");
+        assert!(dut.flipped[3][2] == 'X' and dut.flipped[3][1] == 'X', "hardware consumes aggregate planes");
         let local: Packet = data;
         assert!(local.bits[-1][1] == 'Z', "recursive local copy");
         assert!(local.wide[127] == '1' and local.wide[63] == 'Z' and local.wide[0] == 'X', "multiword aggregate plane copy");
@@ -84,12 +84,12 @@ impl ProcessAggregateMetadataTest {
         data = local;
         await 1ns;
         assert!(dut.echoed.count == 12 and dut.echoed.mark == 'X', "whole aggregate publication");
-        assert!(dut.echoed.bits[0][3..3] == 'Z' and dut.echoed.bits[0][2..2] == 'X', "dynamic packed write publication");
+        assert!(dut.echoed.bits[0][3] == 'Z' and dut.echoed.bits[0][2] == 'X', "dynamic packed write publication");
         local.bits[0] = 15;
         data = local;
         await 1ns;
-        assert!(dut.echoed.bits[0][3..3] == '1' and dut.echoed.bits[0][2..2] == '1', "clean replacement clears stale metadata");
-        assert!(dut.echoed.bits[-1][1..1] == 'Z', "clean replacement preserves other element");
+        assert!(dut.echoed.bits[0][3] == '1' and dut.echoed.bits[0][2] == '1', "clean replacement clears stale metadata");
+        assert!(dut.echoed.bits[-1][1] == 'Z', "clean replacement preserves other element");
         let chosen: Packet = if pick == 0 { local } else { data };
         let matched: Packet = match pick { 0 => chosen, _ => data };
         let spread: Packet = Packet { ..matched, .count = 23 };
@@ -99,8 +99,8 @@ impl ProcessAggregateMetadataTest {
         assert!(spread.bits[-1][3] == 'Z' and spread.bits[-1][2] == '1' and spread.bits[-1][1] == '0', "bit and slice writes update recursive planes");
         data = spread;
         await 1ns;
-        assert!(dut.echoed.bits[-1][3..3] == 'Z' and dut.echoed.bits[-1][2..2] == '1' and dut.echoed.bits[-1][1..1] == '0', "projected planes published");
-        assert!(dut.echoed.wide[63..63] == 'Z' and dut.echoed.wide[0..0] == 'X', "multiword plane publication");
+        assert!(dut.echoed.bits[-1][3] == 'Z' and dut.echoed.bits[-1][2] == '1' and dut.echoed.bits[-1][1] == '0', "projected planes published");
+        assert!(dut.echoed.wide[63] == 'Z' and dut.echoed.wide[0] == 'X', "multiword plane publication");
         let nested: Packet[2][2] = [[data, data], [data, data]];
         nested[1][0].bits[0][3] = 'Z';
         nested[1][0].bits[0][2] = 'X';
@@ -119,10 +119,10 @@ impl ProcessAggregateMetadataTest {
         index = 0;
         enabled = true;
         await 1ns;
-        assert!(resolved.result[3..3] == '0' and resolved.result[2..2] == 'X' and resolved.result[1..1] == 'X' and resolved.result[0..0] == '1', "binary-initialized input planes survive resolution");
+        assert!(resolved.result[3] == '0' and resolved.result[2] == 'X' and resolved.result[1] == 'X' and resolved.result[0] == '1', "binary-initialized input planes survive resolution");
         enabled = false;
         index = 999;
         await 1ns;
-        assert!(resolved.result[2..2] == 'Z', "resolved deactivation guards metadata hoists");
+        assert!(resolved.result[2] == 'Z', "resolved deactivation guards metadata hoists");
     }
 }

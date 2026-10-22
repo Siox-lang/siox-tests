@@ -16,10 +16,10 @@ entity Probe {
 
 impl Probe {
     let v: unsigned[4] = "1X10";
-    b3 = v[3..3];
-    b2 = v[2..2];
-    b1 = v[1..1];
-    b0 = v[0..0];
+    b3 = v[3];
+    b2 = v[2];
+    b1 = v[1];
+    b0 = v[0];
 }
 
 #[test]

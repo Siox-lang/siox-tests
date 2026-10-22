@@ -28,7 +28,7 @@ impl Probe {
     let chan: Nibble[4] = "rgba";
 
     lv = bits;
-    mvx = meta[2..2];
+    mvx = meta[2];
     a0 = word[0];   // 'H'
     a4 = word[5];   // space
     a5 = word[6];   // S

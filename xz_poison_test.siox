@@ -16,8 +16,8 @@ impl Alu {
     let mv: unsigned[4] = "0X00";   // element 2 is a metavalue
     let y: unsigned[4];
     y = a + mv;
-    lo = y[0..0];
-    hi = y[3..3];
+    lo = y[0];
+    hi = y[3];
 }
 
 #[test]
