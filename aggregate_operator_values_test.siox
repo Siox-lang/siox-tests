@@ -6,7 +6,7 @@ use std::ops::And;
 
 struct Pair { pub n: integer, pub mark: Logic }
 impl And<Pair, Pair> for Pair {
-    fn and(self, rhs: Pair) -> Pair {
+    fn and(rhs: Pair) -> Pair {
         return Pair { .n = self.n + rhs.n, .mark = self.mark };
     }
 }

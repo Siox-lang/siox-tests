@@ -38,7 +38,7 @@ fn bounds(v: unsigned[128][-1..0][3..2], row: integer) -> Bool {
         and v'length == 2 and v[row]'left == -1 and v[row]'right == 0;
 }
 impl Tagged {
-    pub fn combine(self, v: unsigned[8][2], i: integer) -> unsigned[128] {
+    pub fn combine(v: unsigned[8][2], i: integer) -> unsigned[128] {
         return self.word + unsigned[128](pick(v, i));
     }
 }

@@ -12,7 +12,7 @@ struct Packet { pub kind: Kind, pub at: Point, pub payload: integer[3], pub flag
 struct Pair { pub a: integer, pub b: integer }
 
 impl Display for Pair {
-    fn fmt(self, f: Formatter) {
+    fn fmt(f: Formatter) {
         let total: integer = self.a + self.b;
         write!(f, "<{} and {} = {}>", self.a, self.b, total);
     }

@@ -32,7 +32,7 @@ struct Holder { pub xs: unsigned[8][2], pub tag: unsigned[8] }
 fn sum2(v: unsigned[8][2]) -> unsigned[8] { return v[0] + v[1]; }
 fn pick(v: unsigned[8][4], i: unsigned[8]) -> unsigned[8] { return v[i]; }
 fn firstA(ps: Pair[2]) -> unsigned[8] { return ps[0].a + ps[1].b; }
-impl Pair { pub fn plusSecond(self, v: unsigned[8][2]) -> unsigned[8] { return self.a + v[1]; } }
+impl Pair { pub fn plusSecond(v: unsigned[8][2]) -> unsigned[8] { return self.a + v[1]; } }
 
 entity Sink {
     v: unsigned[8][2] in,

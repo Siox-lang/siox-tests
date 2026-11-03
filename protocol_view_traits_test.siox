@@ -6,11 +6,11 @@ use std::logic::Bit;
 // Protocol behavior can be shared through traits while views describe which
 // physical signals each endpoint may drive.
 trait Readable<T> {
-    fn read(self) -> T;
+    fn read() -> T;
 }
 
 trait Writable<T> {
-    fn write(self, value: T);
+    fn write(value: T);
 }
 
 fn read<Bus: Readable, Value>(bus: Bus) -> Value {
@@ -45,25 +45,25 @@ view SpiPeripheral for Spi {
 }
 
 impl Writable<unsigned[8]> for Spi SpiController {
-    fn write(self, value: unsigned[8]) {
+    fn write(value: unsigned[8]) {
         self.controller_data = value;
     }
 }
 
 impl Readable<unsigned[8]> for Spi SpiController {
-    fn read(self) -> unsigned[8] {
+    fn read() -> unsigned[8] {
         return self.peripheral_data;
     }
 }
 
 impl Writable<unsigned[8]> for Spi SpiPeripheral {
-    fn write(self, value: unsigned[8]) {
+    fn write(value: unsigned[8]) {
         self.peripheral_data = value;
     }
 }
 
 impl Readable<unsigned[8]> for Spi SpiPeripheral {
-    fn read(self) -> unsigned[8] {
+    fn read() -> unsigned[8] {
         return self.controller_data;
     }
 }
@@ -139,25 +139,25 @@ view I2cTarget for I2c {
 }
 
 impl Writable<Bit> for I2c I2cController {
-    fn write(self, drive_low: Bit) {
+    fn write(drive_low: Bit) {
         self.controller_drive_low = drive_low;
     }
 }
 
 impl Readable<Bit> for I2c I2cController {
-    fn read(self) -> Bit {
+    fn read() -> Bit {
         return not (self.controller_drive_low or self.target_drive_low);
     }
 }
 
 impl Writable<Bit> for I2c I2cTarget {
-    fn write(self, drive_low: Bit) {
+    fn write(drive_low: Bit) {
         self.target_drive_low = drive_low;
     }
 }
 
 impl Readable<Bit> for I2c I2cTarget {
-    fn read(self) -> Bit {
+    fn read() -> Bit {
         return not (self.controller_drive_low or self.target_drive_low);
     }
 }

@@ -1,7 +1,7 @@
 // A trait method with a body is a default the implementor may omit.
 //
 // The type checker already worked this way: `trait_required` counts only the
-// body-less methods, so `impl Meter for Plain { fn raw(..) }` — omitting the
+// body-less methods, so `impl Meter for Plain { static fn raw(..) }` — omitting the
 // two defaulted methods — is a complete implementation and is accepted.
 // Dispatch did not agree. All three method tables (the checker's, lowering's
 // and the emitter's) were built from `impl` items alone, so calling an
@@ -17,25 +17,25 @@ use std::bits::unsigned;
 
 trait Meter {
     // Required: no body.
-    fn raw(self) -> unsigned[8];
+    fn raw() -> unsigned[8];
     // Defaulted, and calls another trait method — so the default must
     // dispatch back to the *implementor's* `raw`, not to some fixed one.
-    fn scaled(self) -> unsigned[8] { return self.raw() * 2; }
+    fn scaled() -> unsigned[8] { return self.raw() * 2; }
     // Defaulted and self-contained.
-    fn label(self) -> unsigned[8] { return 100; }
+    fn label() -> unsigned[8] { return 100; }
 }
 
 // Inherits both defaults.
 struct Plain { pub v: unsigned[8] }
 impl Meter for Plain {
-    fn raw(self) -> unsigned[8] { return self.v; }
+    fn raw() -> unsigned[8] { return self.v; }
 }
 
 // Overrides one default, inherits the other.
 struct Custom { pub v: unsigned[8] }
 impl Meter for Custom {
-    fn raw(self) -> unsigned[8] { return self.v; }
-    fn scaled(self) -> unsigned[8] { return self.raw() * 10; }
+    fn raw() -> unsigned[8] { return self.v; }
+    fn scaled() -> unsigned[8] { return self.raw() * 10; }
 }
 
 // The other shapes an implementor can take. A default has to be inherited
@@ -43,7 +43,7 @@ impl Meter for Custom {
 // function reached as `Type::name()`, through a different table again.
 enum Mode { Slow, Fast }
 impl Meter for Mode {
-    fn raw(self) -> unsigned[8] { return if self == Mode::Fast { 10 } else { 2 }; }
+    fn raw() -> unsigned[8] { return if self == Mode::Fast { 10 } else { 2 }; }
 }
 
 trait Named {

@@ -9,7 +9,7 @@ struct Pair {
 }
 
 impl Index<integer, unsigned> for Pair {
-    fn index(self, index: integer) -> unsigned[8] {
+    fn index(index: integer) -> unsigned[8] {
         if index == 0 {
             return self.first;
         }
@@ -18,7 +18,7 @@ impl Index<integer, unsigned> for Pair {
 }
 
 impl Index<Range, unsigned> for Pair {
-    fn index(self, index: Range) -> unsigned[8] {
+    fn index(index: Range) -> unsigned[8] {
         if index.left == 0 and index.right == 0 {
             return self.first;
         }
@@ -27,7 +27,7 @@ impl Index<Range, unsigned> for Pair {
 }
 
 impl IndexAssign<integer, unsigned> for Pair {
-    fn index_assign(self, index: integer, value: unsigned[8]) {
+    fn index_assign(index: integer, value: unsigned[8]) {
         if index == 0 {
             self.first = value;
         } else {

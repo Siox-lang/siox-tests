@@ -24,7 +24,7 @@ use std::ops::Add;
 struct Vec2 { pub x: unsigned[8], pub y: unsigned[8] }
 
 impl Add<Vec2, Vec2> for Vec2 {
-    fn add(self, rhs: Vec2) -> Vec2 {
+    fn add(rhs: Vec2) -> Vec2 {
         return Vec2 { .x = self.x + rhs.x, .y = self.y + rhs.y };
     }
 }
@@ -32,7 +32,7 @@ impl Add<Vec2, Vec2> for Vec2 {
 // The same computation three ways: as a method, as a free function, and as a
 // free function whose body combines a call with an operator.
 impl Vec2 {
-    pub fn doubled(self) -> Vec2 { return Vec2 { .x = self.x * 2, .y = self.y * 2 }; }
+    pub fn doubled() -> Vec2 { return Vec2 { .x = self.x * 2, .y = self.y * 2 }; }
 }
 fn twice(v: Vec2) -> Vec2 { return Vec2 { .x = v.x * 2, .y = v.y * 2 }; }
 fn nested(v: Vec2) -> Vec2 { return twice(v) + v; }
