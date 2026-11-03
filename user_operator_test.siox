@@ -13,18 +13,18 @@ use std::cmp::{Eq, Ord};
 struct Money(unsigned[8]);
 
 impl Add<Money, Money> for Money {
-    fn add(self, rhs: Money) -> Money {
+    fn add(rhs: Money) -> Money {
         return Money(unsigned[8](self) + unsigned[8](rhs));
     }
 }
 
 impl Eq<Money> for Money {
-    fn eq(self, rhs: Money) -> Bool { return unsigned[8](self) == unsigned[8](rhs); }
+    fn eq(rhs: Money) -> Bool { return unsigned[8](self) == unsigned[8](rhs); }
 }
 
 impl Ord<Money> for Money {
-    fn lt(self, rhs: Money) -> Bool { return unsigned[8](self) < unsigned[8](rhs); }
-    fn le(self, rhs: Money) -> Bool { return not rhs.lt(self); }
+    fn lt(rhs: Money) -> Bool { return unsigned[8](self) < unsigned[8](rhs); }
+    fn le(rhs: Money) -> Bool { return not rhs.lt(self); }
 }
 
 entity Compare {

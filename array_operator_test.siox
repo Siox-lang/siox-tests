@@ -16,7 +16,7 @@ enum Tri { Lo, Hi, Unk }
 enum Mode { Copy, Other, Combine }
 
 impl And<Tri, Tri> for Tri {
-    fn and(self, rhs: Tri) -> Tri {
+    fn and(rhs: Tri) -> Tri {
         if self == Tri::Lo { return Tri::Lo; }
         if rhs == Tri::Lo { return Tri::Lo; }
         if self == Tri::Hi and rhs == Tri::Hi { return Tri::Hi; }

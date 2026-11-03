@@ -7,7 +7,7 @@ extern "C" { fn putchar(value: integer) -> integer; }
 
 struct Counter { pub n: integer, pub wide: unsigned[128], pub tag: Logic }
 impl Counter {
-    pub fn update(self, delta: integer) {
+    pub fn update(delta: integer) {
         if delta <= 0 { return; }
         let next: integer = self.n + delta;
         self.n = next;
@@ -16,7 +16,7 @@ impl Counter {
         return;
         self.n = 999;
     }
-    pub fn mode(self, mode: integer) {
+    pub fn mode(mode: integer) {
         match mode {
             0 => { self.tag = 'X'; return; }
             1 => { self.tag = 'Z'; }

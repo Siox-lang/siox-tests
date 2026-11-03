@@ -25,14 +25,14 @@ view Sink for Stream {
 }
 
 impl Stream Source {
-    fn publish(self, value: unsigned[8], enabled: Bit) {
+    fn publish(value: unsigned[8], enabled: Bit) {
         self.valid = enabled;
         self.data = value;
     }
 }
 
 impl Stream Sink {
-    fn accept(self, enabled: Bit) {
+    fn accept(enabled: Bit) {
         self.ready = enabled;
     }
 }
@@ -101,7 +101,7 @@ view StatusBus for StatusSignals {
 }
 
 impl StatusSignals StatusBus {
-    fn update(self, next: unsigned[8]) {
+    fn update(next: unsigned[8]) {
         self.active = self.enabled;
         self.value = next;
     }
