@@ -47,12 +47,12 @@ impl Meter for Mode {
 }
 
 trait Named {
-    fn tag() -> unsigned[8] { return 77; }
-    fn other() -> unsigned[8] { return 5; }
+    static fn tag() -> unsigned[8] { return 77; }
+    static fn other() -> unsigned[8] { return 5; }
 }
 struct Thing { }
 impl Named for Thing {
-    fn other() -> unsigned[8] { return 9; }   // overrides one static default
+    static fn other() -> unsigned[8] { return 9; }   // overrides one static default
 }
 
 entity Uses {

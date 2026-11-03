@@ -13,7 +13,7 @@ impl Word {
     pub attr whole: integer = self'high + 1;
     attr twice: integer = self'whole * 2;      // defined through another
     // `Self` is the type the call names; `v` keeps its own format.
-    pub fn compare(v: Word) -> integer { return Self'whole * 100 + v'whole * 10 + v'twice; }
+    pub static fn compare(v: Word) -> integer { return Self'whole * 100 + v'whole * 10 + v'twice; }
 }
 
 entity Formats {

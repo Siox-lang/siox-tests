@@ -3,13 +3,13 @@ module identity_a;
 use identity_common::Bus;
 
 pub trait Measure {
-    fn tag() -> integer {
+    static fn tag() -> integer {
         return 11;
     }
 }
 
 pub trait From {
-    fn hook_name() -> integer {
+    static fn hook_name() -> integer {
         return 111;
     }
 }

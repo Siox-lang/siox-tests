@@ -36,7 +36,7 @@ fn make(v: unsigned[8]) -> Pair { return Pair { .a = v, .b = v + 1 }; }
 fn take(p: Pair) -> unsigned[8] { return p.a * 10 + p.b; }
 fn give() -> Pair { return { 3, 4 }; }
 impl Pair {
-    pub fn twice(v: unsigned[8]) -> Pair { return Pair { .a = v * 2, .b = v * 2 + 1 }; }
+    pub static fn twice(v: unsigned[8]) -> Pair { return Pair { .a = v * 2, .b = v * 2 + 1 }; }
 }
 
 entity Counter<W: integer> { d: unsigned[8] in, q: unsigned[8] out }
