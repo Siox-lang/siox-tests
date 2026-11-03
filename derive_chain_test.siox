@@ -9,7 +9,7 @@ enum Base { A, B }
 enum Extended { A, B, C }
 
 impl From<Base> for Extended {
-    fn from(v: Base) -> Extended {
+    static fn from(v: Base) -> Extended {
         if v == Base::B {
             return Extended::B;
         }

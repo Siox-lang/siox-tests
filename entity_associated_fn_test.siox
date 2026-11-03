@@ -6,7 +6,7 @@ module examples::entity_associated_fn_test;
 entity Arithmetic {}
 
 impl Arithmetic {
-    pub fn add_two(value: integer) -> integer {
+    pub static fn add_two(value: integer) -> integer {
         return value + 2;
     }
 }

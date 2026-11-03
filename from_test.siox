@@ -4,7 +4,7 @@ use std::logic::ULogic;
 struct Pair { pub lo: unsigned[8], pub hi: unsigned[8] }
 
 impl From<integer> for Pair {
-    fn from(v: integer) -> Pair {
+    static fn from(v: integer) -> Pair {
         return Pair { .lo = v, .hi = 42 };
     }
 }
