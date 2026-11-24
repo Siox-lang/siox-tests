@@ -1,7 +1,5 @@
 module examples::string_local_test;
 
-use std::primitive::string;
-
 // A string held in a *testbench-local* — one not connected to any DUT port.
 // These had no element storage at all: writes were dropped, every element read
 // back as 0, and whole-string comparison degenerated to always-true, so a
@@ -12,13 +10,13 @@ use std::primitive::string;
 entity StringLocalTest {}
 
 impl StringLocalTest {
-    // Both spellings: unconstrained (length from the literal) and sized.
-    let u: string = "hello";
-    let s: string[5] = "hello";
-    let other: string[5] = "world";
-    let copy: string = u;
-    let empty: string = "";
-    let other_empty: string = "";
+    // Both kinds of text: growable `String` and fixed `Char[5]`.
+    let u: String = "hello";
+    let s: Char[5] = "hello";
+    let other: Char[5] = "world";
+    let copy: String = u;
+    let empty: String = "";
+    let other_empty: String = "";
 
     assert!(u == "hello", "unconstrained local matches its literal");
     assert!(u != "world", "and does not match a different one");

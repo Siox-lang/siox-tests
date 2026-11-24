@@ -1,15 +1,14 @@
 module examples::char_read_test;
 
-use std::primitive::string;
 use std::text::unicode;
 
 struct CharacterBox { pub value: Char }
 
-// A string is a `Char` array; each element reads as its Unicode code point.
+// Fixed text is a `Char` array; each element reads as its Unicode code point.
 // Exercised on all three engines, including the native binary.
 entity Echo {
-    s: string[3] in,
-    o: string[3] out
+    s: Char[3] in,
+    o: Char[3] out
 }
 
 impl Echo {
@@ -20,9 +19,9 @@ impl Echo {
 entity CharReadTest {}
 
 impl CharReadTest {
-    let s: string = "Hi!";
-    let o: string[3];
-    let scratch: string = "abc";
+    let s: Char[3] = "Hi!";
+    let o: Char[3];
+    let scratch: Char[3] = "abc";
     let local: Char = 'λ';
     let boxed: CharacterBox = { .value = 'λ' };
 

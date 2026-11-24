@@ -2,7 +2,6 @@ module examples::format_test;
 
 use std::bits::unsigned;
 use std::logic::Bit;
-use std::primitive::string;
 
 // `print!`/`assert!` formatting: `{}` takes the next argument, `{{`/`}}` are
 // literal braces, and enum/Logic operands render as their symbol. The message
@@ -18,8 +17,8 @@ impl FormatTest {
     let n: unsigned[8] = 42;
     let b: Bit = '1';
     let s: State;
-    let text: string = "hé🙂";
-    let empty: string = "";
+    let text: String = "hé🙂";
+    let empty: String = "";
 
     print!("plain");
     print!("value {}", n);

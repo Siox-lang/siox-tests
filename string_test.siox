@@ -1,14 +1,11 @@
 module examples::string_test;
 
-// Strings from the standard library: `string` is `Char[]` (unconstrained),
-// a string literal supplies the length, and whole-string equality compares
-// symbol by symbol.
-
-use std::primitive::string;
+// Fixed text is `Char[N]`: a literal supplies the length, and whole-text
+// equality compares symbol by symbol. (Growable text is `String`.)
 
 entity Echo {
-    s: string[5] in,
-    o: string[5] out
+    s: Char[5] in,
+    o: Char[5] out
 }
 
 impl Echo {
@@ -19,8 +16,8 @@ impl Echo {
 entity StringTest {}
 
 impl StringTest {
-    let s: string = "hello";
-    let o: string[5];
+    let s: Char[5] = "hello";
+    let o: Char[5];
 
     let dut: Echo = { .s = s, .o = o };
 
