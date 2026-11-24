@@ -1,7 +1,5 @@
 module examples::nested_array_local_test;
 
-use std::primitive::string;
-
 struct WidePair {
     pub value: unsigned[128],
     pub character: Char
@@ -23,8 +21,8 @@ impl NestedArrayLocalTest {
             .character = 'β'
         }
     ];
-    let words: string[3][2] = ["abc", "def"];
-    let copied_words: string[3][2] = words;
+    let words: Char[3][2] = ["abc", "def"];
+    let copied_words: Char[3][2] = words;
 
     assert!(
         matrix[1][1] == 340282366920938463463374607431768211455,

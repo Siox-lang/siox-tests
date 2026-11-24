@@ -33,7 +33,7 @@ struct Deep { pub inner: Pair, pub flag: unsigned[8] }
 
 // Field values that are themselves aggregates: each names no leaf of its own,
 // so seeding has to descend rather than skip.
-struct Holder { pub arr: unsigned[8][3], pub name: string[3], pub n: unsigned[8] }
+struct Holder { pub arr: unsigned[8][3], pub name: Char[3], pub n: unsigned[8] }
 
 entity Seeds {
     fromLiteral: unsigned[8] out,

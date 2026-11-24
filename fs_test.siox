@@ -19,7 +19,7 @@ impl FsTest {
     let d: Rom = { .addr = addr, .data = data };
 
     // Runtime read in the native test executable.
-    let s: string = read<string>("banner.txt");
+    let s: String = read<String>("banner.txt");
 
     await 1ns;
     assert!(data == 17, "rom.bin[0] = 0x11, baked at compile time");
